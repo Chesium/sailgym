@@ -1,15 +1,18 @@
 //! Thin `wasm_bindgen` wrapper over `sailgym-physics` (F8.1).
 //!
-//! Section 01 ships a **placeholder** `Sim` whose only job is to prove the
-//! Rust ⇄ WASM boundary works end to end: construct from a JSON string,
-//! advance a counter, hand a flat `f64` buffer back to JS, report a version.
-//!
 //! There is no physics here and there never will be: every equation lives in
-//! `sailgym-physics` (F8. "No physical equation is implemented in TypeScript",
-//! and none is implemented in this wrapper either). The methods below match
-//! the F8.2 signatures exactly; the F8.2 methods that section 01 does not need
-//! are deliberately *not* stubbed.
+//! `sailgym-physics` (F8). This file only marshals strings and flat buffers
+//! across the boundary. The method set is the subset of F8.2 that exists at
+//! this milestone — `new`, `reset`, `set_controls`, `advance`, `snapshot`,
+//! `set_parameter`, `parameters_json`; the rest arrive with the sections that
+//! specify them.
+//!
+//! The API is coarse-grained by construction (brief §24): per-force-component
+//! and per-entity calls are forbidden.
 
+use sailgym_physics::parameters::BoatParameters;
+use sailgym_physics::simulation::Simulation;
+use sailgym_physics::state::{BoatState, Controls};
 use wasm_bindgen::prelude::*;
 
 /// Installs the panic hook so a Rust panic surfaces as a JS console error
@@ -26,42 +29,117 @@ pub fn main() {
     console_error_panic_hook::set_once();
 }
 
-/// Placeholder simulation handle. The real state machine lands in section 02.
+fn js_err(context: &str, e: impl std::fmt::Display) -> JsValue {
+    JsValue::from_str(&format!("{context}: {e}"))
+}
+
+/// The simulation handle JavaScript holds.
 #[wasm_bindgen]
 pub struct Sim {
+    inner: Simulation,
     built: String,
-    counter: u32,
 }
 
 #[wasm_bindgen]
 impl Sim {
     /// Construct from a JSON configuration document.
     ///
-    /// Section 01 only validates that the string parses; the configuration
-    /// schema itself is defined later. Invalid JSON is an `Err`, so the
-    /// boundary's error path is exercised from day one.
+    /// Recognised keys, both optional:
+    ///
+    /// ```json
+    /// { "seed": 0, "parameters": { ... the full F7 catalogue ... } }
+    /// ```
+    ///
+    /// `{}` yields the ILCA 7 defaults with seed 0. Scenario-shaped documents
+    /// (initial state, wind, overrides) arrive in section 09.
     #[wasm_bindgen(constructor)]
     pub fn new(config_json: &str) -> Result<Sim, JsValue> {
-        let _config: serde_json::Value = serde_json::from_str(config_json)
-            .map_err(|e| JsValue::from_str(&format!("invalid config JSON: {e}")))?;
+        let config: serde_json::Value =
+            serde_json::from_str(config_json).map_err(|e| js_err("invalid config JSON", e))?;
+
+        let seed = config
+            .get("seed")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0);
+        let params = match config.get("parameters") {
+            Some(p) => serde_json::from_value::<BoatParameters>(p.clone())
+                .map_err(|e| js_err("invalid parameters", e))?,
+            None => BoatParameters::ilca7(),
+        };
+        params
+            .validate()
+            .map_err(|e| js_err("invalid parameters", e))?;
+
         Ok(Sim {
+            inner: Simulation::new(params, seed),
             built: env!("CARGO_PKG_VERSION").to_string(),
-            counter: 0,
         })
     }
 
-    /// Advance exactly `n` fixed steps. Returns steps actually taken.
+    /// Restart the simulation.
     ///
-    /// The placeholder takes every requested step, so it always returns `n`.
-    pub fn advance(&mut self, n: u32) -> u32 {
-        self.counter = self.counter.wrapping_add(n);
-        n
+    /// Recognised keys, both optional: `seed`, and `state` as the full
+    /// thirteen-field F3 record. `{}` restarts at rest at the origin with the
+    /// current seed.
+    pub fn reset(&mut self, scenario_json: &str) -> Result<(), JsValue> {
+        let scenario: serde_json::Value =
+            serde_json::from_str(scenario_json).map_err(|e| js_err("invalid scenario JSON", e))?;
+
+        let seed = scenario
+            .get("seed")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or_else(|| self.inner.seed());
+        let state = match scenario.get("state") {
+            Some(s) => serde_json::from_value::<BoatState>(s.clone())
+                .map_err(|e| js_err("invalid initial state", e))?,
+            None => Simulation::initial_state(self.inner.params()),
+        };
+
+        self.inner.reset(state, seed);
+        Ok(())
     }
 
-    /// Flat `f64` view of the state. Placeholder layout is `[counter]`;
-    /// the real F8.3 layout lands in task 2.4.
+    /// Set the control rates. Rates, never absolute angles (brief §12, §13).
+    pub fn set_controls(&mut self, rudder_rate: f64, sheet_rate: f64, release: bool) {
+        self.inner.set_controls(Controls {
+            rudder_rate_cmd: rudder_rate,
+            sheet_rate_cmd: sheet_rate,
+            sheet_release: release,
+        });
+    }
+
+    /// Advance exactly `n` fixed steps of `dt`. Returns steps actually taken.
+    pub fn advance(&mut self, n: u32) -> u32 {
+        self.inner.advance(n)
+    }
+
+    /// Flat `f64` view of `BoatState`, layout = F8.3 field order.
     pub fn snapshot(&self) -> Box<[f64]> {
-        vec![f64::from(self.counter)].into_boxed_slice()
+        Box::new(self.inner.state().to_array())
+    }
+
+    /// Live parameter editing (brief §31). Returns whether a reset is
+    /// required.
+    pub fn set_parameter(&mut self, path: &str, value: f64) -> Result<bool, JsValue> {
+        self.inner
+            .set_parameter(path, value)
+            .map_err(|e| js_err("set_parameter", e))
+    }
+
+    /// The whole F7 catalogue, as a JSON **string**.
+    ///
+    /// A string rather than a structured object keeps this crate free of
+    /// `js-sys`/`serde-wasm-bindgen`; the caller does one `JSON.parse`.
+    pub fn parameters_json(&self) -> Result<JsValue, JsValue> {
+        let json =
+            serde_json::to_string(self.inner.params()).map_err(|e| js_err("parameters_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// Fixed physics timestep, seconds. The browser clock needs it to convert
+    /// wall time into whole steps, and must not hard-code it (F8).
+    pub fn dt(&self) -> f64 {
+        self.inner.params().sim.dt
     }
 
     /// The `sailgym-wasm` crate version this module was built from.

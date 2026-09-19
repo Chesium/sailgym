@@ -1,5 +1,5 @@
-//! Task 1.2 boundary proof: the `wasm_bindgen` surface behaves in a real
-//! browser, not just in `cargo test` on the host.
+//! Boundary proof: the `wasm_bindgen` surface behaves in a real browser, not
+//! just in `cargo test` on the host.
 //!
 //! Run with: `wasm-pack test --headless --chrome crates/sailgym-wasm`
 //!
@@ -28,10 +28,44 @@ fn new_rejects_invalid_json() {
 }
 
 #[wasm_bindgen_test]
-fn advance_returns_requested_steps_and_snapshot_tracks_the_counter() {
+fn snapshot_has_the_f8_3_layout() {
+    let sim = Sim::new("{}").expect("`{}` must construct a Sim");
+    // Task 2.4: the snapshot is the 13-field F8.3 buffer.
+    assert_eq!(sim.snapshot().len(), 13);
+}
+
+#[wasm_bindgen_test]
+fn advance_returns_requested_steps_and_moves_the_clock() {
     let mut sim = Sim::new("{}").expect("`{}` must construct a Sim");
-    assert_eq!(sim.snapshot().as_ref(), &[0.0]);
+    let dt = sim.dt();
+    assert_eq!(sim.snapshot()[12], 0.0);
     assert_eq!(sim.advance(3), 3);
     assert_eq!(sim.advance(4), 4);
-    assert_eq!(sim.snapshot().as_ref(), &[7.0]);
+    // Index 12 is `t` (F8.3).
+    assert!((sim.snapshot()[12] - 7.0 * dt).abs() < 1e-12);
+
+    sim.reset("{}").expect("`{}` must reset");
+    assert_eq!(sim.snapshot()[12], 0.0);
+}
+
+#[wasm_bindgen_test]
+fn set_parameter_is_reflected_in_parameters_json() {
+    let mut sim = Sim::new("{}").expect("`{}` must construct a Sim");
+    assert_eq!(sim.set_parameter("sail.area", 8.0), Ok(false));
+    let json = sim
+        .parameters_json()
+        .expect("parameters must serialise")
+        .as_string()
+        .expect("parameters_json returns a JSON string");
+    assert!(json.contains("\"area\":8.0"), "{json}");
+    assert!(sim.set_parameter("no.such.path", 1.0).is_err());
+}
+
+#[wasm_bindgen_test]
+fn controls_steer_the_boat() {
+    let mut sim = Sim::new("{}").expect("`{}` must construct a Sim");
+    // +1 = steer the bow to starboard (F2.2). Index 10 is `delta_r`.
+    sim.set_controls(1.0, 0.0, false);
+    sim.advance(100);
+    assert!(sim.snapshot()[10] > 0.0);
 }

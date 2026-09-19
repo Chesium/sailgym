@@ -8,16 +8,15 @@
  */
 import init, { Sim } from '../wasm/sailgym_wasm.js'
 
-/** The subset of the F8.2 `Sim` surface that section 01 implements. */
-export interface SimHandle {
-  advance(n: number): number
-  snapshot(): Float64Array
-  version(): string
-  free(): void
-}
+/**
+ * The `Sim` surface, taken straight from the `wasm-pack`-generated
+ * declarations rather than restated here: a hand-written mirror is one more
+ * place for the TypeScript side to drift from the Rust one (F8).
+ */
+export type SimHandle = Sim
 
 export interface WasmModule {
-  Sim: new (configJson: string) => SimHandle
+  Sim: typeof Sim
 }
 
 /**

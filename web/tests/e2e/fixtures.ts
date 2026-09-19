@@ -72,3 +72,29 @@ export async function gotoApp(page: Page, opts?: { scenario?: string }): Promise
 
   expect(log, 'the app must load with no console errors and no page errors').toEqual([])
 }
+
+/**
+ * The F8.3 snapshot, read from the `data-*` attributes of
+ * `[data-testid="snapshot"]`.
+ *
+ * brief §42 asks browser tests to check numeric state rather than pixels where
+ * practical. JavaScript renders a `number` to its shortest round-tripping
+ * decimal, so `Number(attribute)` recovers the exact double the simulation
+ * produced — which is what makes the determinism spec a 0-ULP comparison.
+ *
+ * Keys are the camel-cased attribute names: `t`, `x`, `y`, `psi`, `phi`, `u`,
+ * `v`, `r`, `p`, `beta`, `betaDot`, `deltaR`, `lSheet`, plus `dt`.
+ */
+export async function readSnapshot(page: Page): Promise<Record<string, number>> {
+  return page.evaluate(() => {
+    const el = document.querySelector('[data-testid="snapshot"]')
+    if (!(el instanceof HTMLElement)) {
+      throw new Error('no [data-testid="snapshot"] element on the page')
+    }
+    const out: Record<string, number> = {}
+    for (const [key, value] of Object.entries(el.dataset)) {
+      out[key] = Number(value)
+    }
+    return out
+  })
+}
