@@ -59,7 +59,11 @@ test.describe('controls', () => {
   })
 
   test('Space eases the mainsheet', async ({ page }) => {
-    await gotoApp(page)
+    // A scenario with rope left to pay out. The page default is `free_sail`
+    // from section 09, whose sheet is at `l_sheet_max` so the boom swings
+    // free — easing there is a no-op by construction, not a defect.
+    // `close_hauled` starts at 2.0 m.
+    await gotoApp(page, { scenario: 'close_hauled' })
     const before = await readSnapshot(page)
     await page.keyboard.down(' ')
     await page.waitForTimeout(600)

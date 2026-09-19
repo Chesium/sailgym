@@ -6,18 +6,44 @@
 //! this milestone — `new`, `reset`, `set_controls`, `advance`, `snapshot`,
 //! `set_parameter`, `parameters_json`, `parameter_meta_json`, `diagnostics`,
 //! plus the section 03 wind methods `sample_wind_grid`, `wind_at_boat`,
-//! `set_wind` and `wind_json`; the rest arrive with the sections that specify
-//! them.
+//! `set_wind` and `wind_json`, and the section 09 scenario and recording
+//! methods `scenarios_json`, `scenario_json`, `restart`, `start_recording`,
+//! `stop_recording`, `is_recording`, `recorded_frames`, `episode_to_binary`,
+//! `episode_from_binary` and `episode_from_json`.
+//!
+//! ## The one thing this file reads that the core may not
+//!
+//! `EpisodeHeader::created_utc` is metadata and never reaches the physics
+//! (F9.1), so the physics crate is forbidden from producing it. The browser's
+//! `Date.now()` is bound below and formatted by the core's pure
+//! `recording::iso8601_utc`, which takes the millisecond count as an
+//! argument. That is the whole of the wall clock in sailgym's browser build.
 //!
 //! The API is coarse-grained by construction (brief §24): per-force-component
 //! and per-entity calls are forbidden.
 
+use std::collections::BTreeMap;
+
 use sailgym_physics::environment::wind::WindConfig;
 use sailgym_physics::environment::{wind_to_bearing, WindField};
 use sailgym_physics::parameters::BoatParameters;
+use sailgym_physics::recording::{
+    iso8601_utc, Episode, EpisodeHeader, Recorder, ToolchainInfo, EPISODE_SCHEMA_VERSION,
+};
+use sailgym_physics::scenario::{
+    load_all_shipped, CameraSuggestion, InitialState, Scenario, SCENARIO_SCHEMA_VERSION,
+};
 use sailgym_physics::simulation::Simulation;
 use sailgym_physics::state::{BoatState, Controls};
 use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern "C" {
+    /// `Date.now()`. The only clock in the browser build, and it feeds
+    /// nothing but `EpisodeHeader::created_utc` (F9.1).
+    #[wasm_bindgen(js_namespace = Date, js_name = now)]
+    fn date_now_ms() -> f64;
+}
 
 /// Installs the panic hook so a Rust panic surfaces as a JS console error
 /// rather than an opaque `unreachable` trap. `wasm_bindgen(start)` makes the
@@ -47,11 +73,45 @@ fn parse_wind(value: &serde_json::Value) -> Result<WindConfig, JsValue> {
     Ok(cfg)
 }
 
+/// A scenario document describing a run that did **not** come from one of the
+/// six shipped files — an ad-hoc `reset({ state, wind })` from a test fixture.
+///
+/// The recording header has to say honestly where the episode began, and
+/// `EpisodeHeader` carries the fully resolved `BoatParameters` alongside this,
+/// so the empty `parameter_overrides` costs nothing: the catalogue that was
+/// actually in force is recorded either way.
+fn ad_hoc_scenario(inner: &Simulation) -> Scenario {
+    Scenario {
+        schema_version: SCENARIO_SCHEMA_VERSION,
+        name: "custom".to_string(),
+        description: "An ad-hoc initial condition, not one of the six shipped scenarios."
+            .to_string(),
+        seed: inner.seed(),
+        parameter_overrides: BTreeMap::new(),
+        initial_state: InitialState::from_boat_state(inner.state()),
+        wind: *inner.wind().config(),
+        camera: CameraSuggestion::default(),
+        initial_controls: None,
+    }
+}
+
 /// The simulation handle JavaScript holds.
 #[wasm_bindgen]
 pub struct Sim {
     inner: Simulation,
     built: String,
+    /// The scenario the current run started from, for the recording header.
+    scenario: Scenario,
+    /// The document the last [`Sim::reset`] was given, verbatim.
+    ///
+    /// [`Sim::restart`] replays it. Kept as text rather than as the parsed
+    /// `Scenario` because the browser's ad-hoc fixtures carry a full
+    /// thirteen-field F3 state, and `InitialState` — being the human-facing
+    /// form (F1) — cannot express `v`, `r`, `p`, `β̇` or `δr`.
+    reset_document: String,
+    /// `Some` while recording (brief §33). An observer: see
+    /// `sailgym_physics::recording`.
+    recorder: Option<Recorder>,
 }
 
 #[wasm_bindgen]
@@ -91,36 +151,195 @@ impl Sim {
             inner.set_wind(parse_wind(w)?);
         }
 
+        let scenario = match config.get("scenario") {
+            Some(doc) => {
+                let sc =
+                    Scenario::load(&doc.to_string()).map_err(|e| js_err("invalid scenario", e))?;
+                inner
+                    .load_scenario(&sc)
+                    .map_err(|e| js_err("invalid scenario", e))?;
+                sc
+            }
+            None => ad_hoc_scenario(&inner),
+        };
+
         Ok(Sim {
             inner,
             built: env!("CARGO_PKG_VERSION").to_string(),
+            scenario,
+            reset_document: "{}".to_string(),
+            recorder: None,
         })
     }
 
     /// Restart the simulation.
     ///
-    /// Recognised keys, all optional: `seed`, `state` as the full
-    /// thirteen-field F3 record, and `wind` as a full `WindConfig`. `{}`
-    /// restarts at rest at the origin with the current seed and wind.
+    /// Two document shapes are accepted, told apart by `schema_version`:
+    ///
+    /// * **A full scenario** (section 09) — everything `Scenario` carries:
+    ///   parameter overrides, initial state, wind, seed and the controls in
+    ///   force at `t = 0`. This is what `scenarios_json()` returns and what
+    ///   the picker hands back.
+    /// * **An ad-hoc state** — the section 02–08 shape, `{ seed?, state?,
+    ///   wind? }`, still supported because the browser test fixtures are
+    ///   written in it. The stored scenario is refreshed from the resulting
+    ///   state so a recording started afterwards still describes its own
+    ///   initial condition honestly.
+    ///
+    /// An in-progress recording is discarded: its header describes a run that
+    /// no longer exists (brief §33).
     pub fn reset(&mut self, scenario_json: &str) -> Result<(), JsValue> {
-        let scenario: serde_json::Value =
-            serde_json::from_str(scenario_json).map_err(|e| js_err("invalid scenario JSON", e))?;
+        self.apply(scenario_json, true)?;
+        self.reset_document = scenario_json.to_string();
+        Ok(())
+    }
 
-        let seed = scenario
+    /// Restart from the document the last [`Sim::reset`] was given,
+    /// **keeping the parameter catalogue currently in force**.
+    ///
+    /// This is what the Reset button and the `R` key do, and the distinction
+    /// from [`Sim::reset`] is deliberate. brief §31 makes the whole F7
+    /// catalogue live-editable and section 08 made a `sim.*` edit
+    /// *reset-required*; a reset that re-applied the scenario's parameters
+    /// would throw away the very edit it exists to make good. Choosing a
+    /// scenario in the picker is the other case — its `parameter_overrides`
+    /// are the point of choosing it — and that goes through `reset`.
+    pub fn restart(&mut self) -> Result<(), JsValue> {
+        let document = std::mem::take(&mut self.reset_document);
+        let outcome = self.apply(&document, false);
+        self.reset_document = document;
+        outcome
+    }
+
+    /// The body of [`Sim::reset`] and [`Sim::restart`]. `with_parameters`
+    /// decides whether a scenario document's `parameter_overrides` are
+    /// applied.
+    fn apply(&mut self, scenario_json: &str, with_parameters: bool) -> Result<(), JsValue> {
+        let document: serde_json::Value =
+            serde_json::from_str(scenario_json).map_err(|e| js_err("invalid scenario JSON", e))?;
+        self.recorder = None;
+
+        if document.get("schema_version").is_some() {
+            let sc = Scenario::load(scenario_json).map_err(|e| js_err("invalid scenario", e))?;
+            let outcome = if with_parameters {
+                self.inner.load_scenario(&sc)
+            } else {
+                self.inner.restart_scenario(&sc)
+            };
+            outcome.map_err(|e| js_err("invalid scenario", e))?;
+            self.scenario = sc;
+            return Ok(());
+        }
+
+        let seed = document
             .get("seed")
             .and_then(serde_json::Value::as_u64)
             .unwrap_or_else(|| self.inner.seed());
-        let state = match scenario.get("state") {
+        let state = match document.get("state") {
             Some(s) => serde_json::from_value::<BoatState>(s.clone())
                 .map_err(|e| js_err("invalid initial state", e))?,
             None => Simulation::initial_state(self.inner.params()),
         };
 
         self.inner.reset(state, seed);
-        if let Some(w) = scenario.get("wind") {
+        if let Some(w) = document.get("wind") {
             self.inner.set_wind(parse_wind(w)?);
         }
+        self.scenario = ad_hoc_scenario(&self.inner);
         Ok(())
+    }
+
+    // --- scenarios (section 09) -------------------------------------------
+
+    /// All six shipped scenarios (brief §32) as one JSON array of documents.
+    ///
+    /// Coarse-grained (brief §24): the whole catalogue in a single call, and
+    /// the documents are the core's own, so the browser never restates a
+    /// scenario's contents.
+    pub fn scenarios_json(&self) -> Result<JsValue, JsValue> {
+        let all = load_all_shipped().map_err(|e| js_err("shipped scenarios", e))?;
+        let json = serde_json::to_string(&all).map_err(|e| js_err("scenarios_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// The scenario the current run started from, as a JSON string.
+    pub fn scenario_json(&self) -> Result<JsValue, JsValue> {
+        let json = serde_json::to_string(&self.scenario).map_err(|e| js_err("scenario_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    // --- recording (brief §33, section 09) --------------------------------
+
+    /// Begin recording at `hz` samples of **simulated** time per second.
+    ///
+    /// The current state is logged immediately, so frame 0 of the episode is
+    /// the state the recording was started from. The recorder is an observer
+    /// and cannot change a trajectory.
+    pub fn start_recording(&mut self, hz: f64) {
+        let header = EpisodeHeader {
+            schema_version: EPISODE_SCHEMA_VERSION,
+            scenario: self.scenario.clone(),
+            parameters: *self.inner.params(),
+            dt: self.inner.params().sim.dt,
+            log_hz: hz,
+            toolchain: ToolchainInfo::current(),
+            // The one clock reading in the browser build. Metadata only: the
+            // core formats it and nothing in the physics ever sees it (F9.1).
+            created_utc: iso8601_utc(date_now_ms()),
+        };
+        let mut rec = Recorder::start(hz, header);
+        let d = sailgym_physics::diagnostics::diagnostics(&self.inner);
+        rec.observe(&self.inner, &d);
+        self.recorder = Some(rec);
+    }
+
+    /// Whether a recording is in progress.
+    pub fn is_recording(&self) -> bool {
+        self.recorder.is_some()
+    }
+
+    /// Frames logged so far, for the record button's readout.
+    pub fn recorded_frames(&self) -> u32 {
+        self.recorder.as_ref().map_or(0, |r| r.len() as u32)
+    }
+
+    /// Close the recording and return the episode as a JSON **string**.
+    pub fn stop_recording(&mut self) -> Result<JsValue, JsValue> {
+        let rec = self
+            .recorder
+            .take()
+            .ok_or_else(|| JsValue::from_str("stop_recording: no recording is in progress"))?;
+        let json = rec
+            .finish()
+            .to_json()
+            .map_err(|e| js_err("stop_recording", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// Encode an episode JSON document as the typed-array binary form
+    /// (brief §33). The codec lives in the core; this only marshals.
+    pub fn episode_to_binary(&self, episode_json: &str) -> Result<Box<[u8]>, JsValue> {
+        let episode = Episode::from_json(episode_json).map_err(|e| js_err("episode", e))?;
+        let bytes = episode.to_binary().map_err(|e| js_err("episode", e))?;
+        Ok(bytes.into_boxed_slice())
+    }
+
+    /// Decode the binary form back to an episode JSON document.
+    pub fn episode_from_binary(&self, bytes: &[u8]) -> Result<JsValue, JsValue> {
+        let episode = Episode::from_binary(bytes).map_err(|e| js_err("episode", e))?;
+        let json = episode.to_json().map_err(|e| js_err("episode", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// Validate and normalise an episode JSON document.
+    ///
+    /// The import path calls this so that an episode from another schema is
+    /// rejected by the **core**, with the core's message, rather than by a
+    /// version check written a second time in TypeScript (F8).
+    pub fn episode_from_json(&self, episode_json: &str) -> Result<JsValue, JsValue> {
+        let episode = Episode::from_json(episode_json).map_err(|e| js_err("episode", e))?;
+        let json = episode.to_json().map_err(|e| js_err("episode", e))?;
+        Ok(JsValue::from_str(&json))
     }
 
     /// Set the control rates. Rates, never absolute angles (brief §12, §13).
@@ -133,8 +352,28 @@ impl Sim {
     }
 
     /// Advance exactly `n` fixed steps of `dt`. Returns steps actually taken.
+    ///
+    /// While recording, the steps are issued one at a time so the recorder
+    /// can see every completed state; F9.7 makes that bit-identical to the
+    /// batched call, and `recording::tests::recording_does_not_perturb`
+    /// asserts it. The full `Diagnostics` record is built only on the steps
+    /// the sample interval actually keeps — at 20 Hz and `dt = 0.005` that is
+    /// one step in ten.
     pub fn advance(&mut self, n: u32) -> u32 {
-        self.inner.advance(n)
+        if self.recorder.is_none() {
+            return self.inner.advance(n);
+        }
+        for _ in 0..n {
+            self.inner.advance(1);
+            let t = self.inner.state().t;
+            if self.recorder.as_ref().is_some_and(|r| r.due(t)) {
+                let d = sailgym_physics::diagnostics::diagnostics(&self.inner);
+                if let Some(r) = self.recorder.as_mut() {
+                    r.observe(&self.inner, &d);
+                }
+            }
+        }
+        n
     }
 
     /// Flat `f64` view of `BoatState`, layout = F8.3 field order.

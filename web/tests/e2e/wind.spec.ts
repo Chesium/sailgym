@@ -147,10 +147,15 @@ test.describe('wind', () => {
   })
 
   test('a westerly reads 270 degrees and its arrows point east', async ({ page }) => {
-    await gotoApp(page)
+    // `close_hauled` is the shipped scenario with a westerly (section 09):
+    // uniform 3.5 m/s from bearing 270. Before section 09 this test used the
+    // page default, whose bearing was 270 because `WindConfig::default()`
+    // said so; the default is now the `free_sail` scenario, which is a
+    // northerly, so the westerly has to be asked for by name.
+    await gotoApp(page, { scenario: 'close_hauled' })
     // Uniform: the wind at the boat is exactly the configured vector, so the
     // readout is an exact statement about the from/toward convention rather
-    // than a gusty approximation of one. The default bearing is 270.
+    // than a gusty approximation of one.
     await page.getByTestId('wind-mode').selectOption('uniform')
     await page.getByTestId('toggle-wind-arrows').click()
     await advanceFrames(page, 5)

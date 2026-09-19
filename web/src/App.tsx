@@ -14,6 +14,15 @@ import { BoatSvg } from './render/BoatSvg'
 import { ForceOverlay, OverlayControls, OverlayLegend } from './render/ForceOverlay'
 import { HeelIndicator, HeelProbe } from './render/HeelIndicator'
 import { DEFAULT_INPUT } from './sim/controls'
+import { importEpisode } from './sim/episodeIo'
+import {
+  createReplaySource,
+  snapshotFromFrame,
+  LIVE,
+  type PlaybackMode,
+  type ReplayProbe,
+} from './sim/replay'
+import type { Episode } from './sim/scenarioTypes'
 import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetInputState } from './sim/sheetInput'
 import { useSimulation } from './sim/useSimulation'
 import { Charts, useChartSampler } from './ui/Charts'
@@ -23,6 +32,9 @@ import { Hud } from './ui/Hud'
 import { Layout } from './ui/Layout'
 import { ModeSwitch } from './ui/ModeSwitch'
 import { ParameterPanel } from './ui/ParameterPanel'
+import { RecordControls } from './ui/RecordControls'
+import { ScenarioPicker } from './ui/ScenarioPicker'
+import { Timeline, type PlaybackSpeed } from './ui/Timeline'
 import { useUiStore } from './ui/store'
 import { WindReadout } from './ui/WindReadout'
 import { ArrowProbe, buildArrows, type ArrowField } from './wind/ArrowOverlay'
@@ -32,7 +44,11 @@ import { useWindField } from './wind/useWindField'
 
 const VIEWPORT = { width: 780, height: 520 }
 
-/** M3/M4 fixtures; section 09 supplies the full scenario selector. */
+/**
+ * `?scenario=` — one of the six shipped ids (brief §32), one of the legacy
+ * browser fixtures, or absent for the default. Resolved in
+ * `sim/useSimulation.ts`; nothing here decides what a name means.
+ */
 function scenarioFromUrl(): string {
   return new URLSearchParams(window.location.search).get('scenario') ?? ''
 }
@@ -83,6 +99,32 @@ export default function App() {
   const [showArrows, setShowArrows] = useState(false)
   const baseCentre = useRef<Vec2>({ x: 0, y: 0 })
 
+  // --- recording and replay (brief §33) ----------------------------------
+  const [episode, setEpisode] = useState<Episode | null>(null)
+  const [playback, setPlayback] = useState<PlaybackMode>(LIVE)
+  const [replayTime, setReplayTime] = useState(0)
+  const [replayPlaying, setReplayPlaying] = useState(false)
+  const [replaySpeed, setReplaySpeed] = useState<PlaybackSpeed>(1)
+
+  const enterReplay = useCallback(() => {
+    if (episode === null) {
+      return
+    }
+    const source = createReplaySource(episode)
+    // The live boat and the replayed one would otherwise animate past each
+    // other in the same view. Pausing is also what makes "replay works with
+    // the physics clock paused" the ordinary case rather than a special one.
+    sim.pause()
+    setPlayback({ kind: 'replay', source })
+    setReplayTime(source.startTime)
+    setReplayPlaying(false)
+  }, [episode, sim])
+
+  const exitReplay = useCallback(() => {
+    setReplayPlaying(false)
+    setPlayback(LIVE)
+  }, [])
+
   // Read the wind mode the core actually started with, and take the 128×128
   // grid timing once, in this browser (task 3.3).
   useEffect(() => {
@@ -106,7 +148,79 @@ export default function App() {
     setWindMode(next)
   }
 
-  const s = sim.snapshot
+  // The scenario's camera is a *suggestion* (brief §32): applied once when a
+  // scenario loads, and overridden by anything the player does afterwards.
+  const suggestedFor = useRef<string | null>(null)
+  useEffect(() => {
+    const scenario = sim.scenario
+    if (scenario === null || suggestedFor.current === scenario.name) {
+      return
+    }
+    suggestedFor.current = scenario.name
+    setMode(scenario.camera.mode)
+    setZoom(scenario.camera.zoom)
+    setPan({ x: 0, y: 0 })
+  }, [sim.scenario])
+
+  const selectScenario = useCallback(
+    (id: string) => {
+      exitReplay()
+      sim.loadScenario(id)
+      // Keep the URL honest, so a reload — and a copied link — reproduce the
+      // run. `replaceState` rather than `pushState`: switching scenarios is
+      // not navigation.
+      const url = new URL(window.location.href)
+      url.searchParams.set('scenario', id)
+      window.history.replaceState(null, '', url)
+    },
+    [exitReplay, sim],
+  )
+
+  // The E2E probe. See `ReplayProbe`.
+  const { withSim } = sim
+  useEffect(() => {
+    const probe: ReplayProbe = {
+      episodeJson: () => (episode === null ? null : JSON.stringify(episode)),
+      binary: () => {
+        if (episode === null) {
+          return null
+        }
+        const bytes = withSim((core) =>
+          core.episode_to_binary(JSON.stringify(episode)),
+        )
+        return bytes === null ? null : Array.from(bytes)
+      },
+      load: (data) => {
+        const loaded = withSim((core) =>
+          importEpisode(core, typeof data === 'string' ? data : Uint8Array.from(data)),
+        )
+        if (loaded !== null) {
+          setEpisode(loaded)
+        }
+      },
+      frameTime: (index) =>
+        playback.kind === 'replay' ? playback.source.frameAt(index).t : null,
+      frameState: (index) =>
+        playback.kind === 'replay' ? [...playback.source.frameAt(index).state] : null,
+      patchFrame: (index, field, value) => {
+        if (playback.kind === 'replay') {
+          // Mutates the stored frame in place. If the render follows this,
+          // the renderer is reading stored data and not recomputing it.
+          playback.source.frameAt(index).state[field] = value
+        }
+      },
+      frameCount: () => (playback.kind === 'replay' ? playback.source.frameCount : 0),
+    }
+    window.__sailgym = probe
+    return () => {
+      delete window.__sailgym
+    }
+  }, [episode, playback, withSim])
+
+  // In replay the renderer reads a stored frame exactly as it reads a live
+  // snapshot — same layout, same components, no physics (brief §33).
+  const replayFrame = playback.kind === 'replay' ? playback.source.sampleAt(replayTime) : null
+  const s = replayFrame === null ? sim.snapshot : snapshotFromFrame(replayFrame)
   const scale = PIXELS_PER_METRE * zoom
   baseCentre.current = trackedCentre(
     baseCentre.current,
@@ -170,6 +284,12 @@ export default function App() {
             : 'loading sailgym…'}
       </div>
       <ModeSwitch />
+      <ScenarioPicker
+        scenarios={sim.scenarios}
+        current={sim.scenario?.name ?? ''}
+        onSelect={selectScenario}
+        disabled={!sim.ready}
+      />
       <ClockControls
         state={sim.clockState}
         onToggleRunning={sim.toggleRunning}
@@ -319,6 +439,28 @@ export default function App() {
 
   const instruments = (
     <>
+      <div style={{ display: 'grid', gap: 6, flex: '1 1 420px', minWidth: 320 }}>
+        <RecordControls
+          ready={sim.ready}
+          withSim={sim.withSim}
+          episode={episode}
+          onEpisode={setEpisode}
+          onReplay={enterReplay}
+          replaying={playback.kind === 'replay'}
+        />
+        {playback.kind === 'replay' && (
+          <Timeline
+            source={playback.source}
+            time={replayTime}
+            playing={replayPlaying}
+            speed={replaySpeed}
+            onTime={setReplayTime}
+            onPlaying={setReplayPlaying}
+            onSpeed={setReplaySpeed}
+            onExit={exitReplay}
+          />
+        )}
+      </div>
       {/* brief §26: top-down geometry cannot show roll, so heel gets its own
           stern view. `φ` comes from the snapshot, the capsize report from the
           diagnostics; both are the core's numbers (F8).

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "name": "gybe",
+  "description": "Broad off the wind in a gusty northerly with the boom well out to port and the sheet eased. Bear away through dead downwind and the aerodynamic torque reverses, the boom accelerates across and the sheet takes a transient load. How hard that load is depends entirely on how the sheet is handled.",
+  "seed": 20250904,
+  "parameter_overrides": {},
+  "initial_state": {
+    "x": 0.0,
+    "y": 0.0,
+    "heading_deg": 170.0,
+    "heel_deg": 0.0,
+    "speed": 2.5,
+    "boom_deg_to_port": 75.0,
+    "sheet_length": 4.0
+  },
+  "wind": {
+    "mode": "gust",
+    "speed": 5.0,
+    "bearing_deg": 0.0,
+    "variation": 0.12,
+    "length_scale": 120.0,
+    "time_scale": 25.0,
+    "modes": 12,
+    "spectral_slope": 1.5
+  },
+  "camera": {
+    "mode": "follow",
+    "zoom": 1.0
+  },
+  "initial_controls": null
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "name": "free_sail",
+  "description": "Neutral sandbox: a light uniform northerly, the boat at rest at the origin heading east, and the mainsheet fully eased so the boom is unrestrained over its whole range. The default on load.",
+  "seed": 0,
+  "parameter_overrides": {},
+  "initial_state": {
+    "x": 0.0,
+    "y": 0.0,
+    "heading_deg": 90.0,
+    "heel_deg": 0.0,
+    "speed": 0.0,
+    "boom_deg_to_port": 0.0,
+    "sheet_length": 4.5
+  },
+  "wind": {
+    "mode": "uniform",
+    "speed": 5.0,
+    "bearing_deg": 0.0,
+    "variation": 0.15,
+    "length_scale": 120.0,
+    "time_scale": 25.0,
+    "modes": 12,
+    "spectral_slope": 1.5
+  },
+  "camera": {
+    "mode": "northUp",
+    "zoom": 1.0
+  },
+  "initial_controls": null
+}

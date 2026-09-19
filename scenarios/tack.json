@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "name": "tack",
+  "description": "Close-hauled on port with way on, set up so the boat can be steered through the wind by hand. Steer to port with A and the sail unloads near head-to-wind, the boom crosses on its own and fills on the other side. Nothing here performs the tack.",
+  "seed": 20250903,
+  "parameter_overrides": {},
+  "initial_state": {
+    "x": 0.0,
+    "y": 0.0,
+    "heading_deg": 45.0,
+    "heel_deg": 0.0,
+    "speed": 1.8,
+    "boom_deg_to_port": -35.0,
+    "sheet_length": 2.0
+  },
+  "wind": {
+    "mode": "uniform",
+    "speed": 4.0,
+    "bearing_deg": 0.0,
+    "variation": 0.15,
+    "length_scale": 120.0,
+    "time_scale": 25.0,
+    "modes": 12,
+    "spectral_slope": 1.5
+  },
+  "camera": {
+    "mode": "follow",
+    "zoom": 1.0
+  },
+  "initial_controls": null
+}

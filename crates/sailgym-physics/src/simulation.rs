@@ -9,6 +9,7 @@ use crate::environment::wind::{ProceduralWind, WindConfig};
 use crate::environment::WindField;
 use crate::forces::{evaluate, ForceBreakdown, WindForces};
 use crate::parameters::{BoatParameters, ParamError};
+use crate::scenario::{Scenario, ScenarioError};
 use crate::stability::capsize::CapsizeState;
 use crate::stability::hydrostatics::GzCurve;
 use crate::state::{BoatState, Controls};
@@ -199,6 +200,68 @@ impl Simulation {
     pub fn reset_parameters(&mut self) {
         self.params = BoatParameters::ilca7();
         self.refresh_forces();
+    }
+
+    /// Load a scenario: parameters, state, seed, wind and the controls in
+    /// force at `t = 0`, in that order (section 09, task 9.1).
+    ///
+    /// The whole load is validated **before** anything is committed, through
+    /// `Scenario::validate`, so a rejected scenario leaves the running
+    /// simulation exactly as it was. That mirrors `set_parameter`
+    /// (section 08 handoff §2.1): an invalid catalogue must never reach the
+    /// equations of motion, and a half-applied scenario is worse than none.
+    ///
+    /// The scenario is an initial condition and an environment. It sets no
+    /// future input, and nothing here reads it again after this call
+    /// (brief §32).
+    pub fn load_scenario(&mut self, sc: &Scenario) -> Result<(), ScenarioError> {
+        sc.validate()?;
+        let params = sc.to_parameters()?;
+        self.params = params;
+        self.restart_scenario(sc)
+    }
+
+    /// Restart from a scenario's initial condition **keeping the parameter
+    /// catalogue currently in force**.
+    ///
+    /// This is what the Reset button and the `R` key do, and the distinction
+    /// from [`Simulation::load_scenario`] is deliberate: brief §31 makes the
+    /// whole catalogue live-editable and section 08 made a `sim.*` edit
+    /// *reset-required*, so a reset that threw the edit away would make that
+    /// edit unreachable. Choosing a scenario in the picker is the other case
+    /// — the scenario's own overrides are the point of choosing it — and
+    /// that goes through `load_scenario`.
+    pub fn restart_scenario(&mut self, sc: &Scenario) -> Result<(), ScenarioError> {
+        sc.validate()?;
+        let wind = sc.wind;
+        wind.validate()
+            .map_err(|e| ScenarioError::Wind(e.to_string()))?;
+
+        // `reset` rebuilds the wind field from the seed and refreshes the
+        // cached forces; `set_wind` then installs the scenario's own
+        // configuration against the same seed.
+        self.reset(sc.to_boat_state(), sc.seed);
+        self.set_wind(wind);
+        self.set_controls(sc.to_controls());
+        Ok(())
+    }
+
+    /// Replace the whole catalogue, validating first.
+    ///
+    /// The scenario loader and the WASM wrapper both need this; it is the
+    /// bulk sibling of [`Simulation::set_parameter`] and applies the same two
+    /// checks (F7 consistency, and that the F6.7 `GZ` curve fits).
+    pub fn set_parameters(&mut self, p: BoatParameters) -> Result<(), ParamError> {
+        p.validate()?;
+        GzCurve::fit(
+            p.stability.gm,
+            p.stability.phi_peak,
+            p.stability.gz_max,
+            p.stability.phi_vanish,
+        )?;
+        self.params = p;
+        self.refresh_forces();
+        Ok(())
     }
 
     /// Live parameter editing (F8.2, brief §31). Returns whether the change

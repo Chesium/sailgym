@@ -20,6 +20,14 @@ import { controlsFromInput, DEFAULT_INPUT, type InputConfig } from './controls'
 import { createClock, type Clock, type ClockState, type SpeedMultiplier } from './clock'
 import { actionFor, EDGE_ACTIONS, normaliseKey } from './keymap'
 import { loadWasm, type SimHandle } from './loadWasm'
+import {
+  DEFAULT_SCENARIO,
+  readCurrentScenario,
+  readScenarios,
+  summarise,
+  type Scenario,
+  type ScenarioSummary,
+} from './scenarioTypes'
 import { readSnapshot, SNAPSHOT_FIELDS, type Snapshot } from './snapshot'
 
 /** The parameters the renderer needs, as `parameters_json()` shapes them. */
@@ -62,6 +70,18 @@ export interface SimulationHandle {
   clockState: ClockState
   params: RenderParams | null
   trajectory: readonly WorldPoint[]
+  /** The six shipped scenarios (brief §32), as the core lists them. */
+  scenarios: readonly ScenarioSummary[]
+  /** The scenario the current run started from. */
+  scenario: Scenario | null
+  /**
+   * Load a scenario by id and restart from it.
+   *
+   * Parameters, initial state, wind and seed move together — a scenario is
+   * only meaningful whole. The clock is reset, so the new run starts at
+   * `t = 0`, and every later reset replays *this* scenario.
+   */
+  loadScenario(id: string): void
   start(): void
   pause(): void
   toggleRunning(): void
@@ -88,12 +108,44 @@ export interface SimulationHandle {
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
 
-/** The `?scenario=` fixtures, replaced by the scenario system in section 09. */
-const FIXTURES = ['coast', 'free_sail', 'sheet', 'capsize', 'knockdown', 'fast'] as const
+/**
+ * Browser test fixtures from sections 02–08: ad-hoc initial conditions that
+ * are **not** scenarios and are deliberately not shipped as documents.
+ *
+ * `free_sail` used to be one of these and is now the shipped scenario of
+ * brief §32, authored to reproduce the fixture exactly so the section 05–08
+ * specs that drive it are testing the same boat.
+ *
+ * They stay because each one exists for a named test — `coast` for the
+ * rudder specs, `capsize` and `knockdown` for the heel indicator, `fast` for
+ * the R6 warning (section 08 handoff §10.4), `sheet` for the mainsheet drag
+ * — and none of them is a configuration brief §32 asks the product to ship.
+ */
+const LEGACY_FIXTURES = ['coast', 'sheet', 'capsize', 'knockdown', 'fast'] as const
 
-/** Minimal M3/M4/M5/M6 fixtures, replaced by the scenario system in section 09. */
-function initialScenario(sim: SimHandle, name: string): string {
-  if (!(FIXTURES as readonly string[]).includes(name)) return '{}'
+/**
+ * The document `Sim.reset` is given at load and at every reset.
+ *
+ * A shipped scenario id wins; then a legacy fixture; then, for anything else
+ * including the empty string, the default scenario (brief §32: `free_sail`
+ * is "the default on load").
+ */
+function scenarioDocument(sim: SimHandle, name: string): string {
+  const shipped = readScenarios(sim)
+  const wanted = name === '' ? DEFAULT_SCENARIO : name
+  const found = shipped.find((s) => s.name === wanted)
+  if (found !== undefined) {
+    return JSON.stringify(found)
+  }
+  if ((LEGACY_FIXTURES as readonly string[]).includes(wanted)) {
+    return legacyFixture(sim, wanted)
+  }
+  const fallback = shipped.find((s) => s.name === DEFAULT_SCENARIO) ?? shipped[0]
+  return JSON.stringify(fallback)
+}
+
+/** Minimal M3–M7 fixtures; see {@link LEGACY_FIXTURES}. */
+function legacyFixture(sim: SimHandle, name: string): string {
   const values = sim.snapshot()
   const state: Record<string, number> = {}
   SNAPSHOT_FIELDS.forEach((field, i) => {
@@ -126,23 +178,16 @@ function initialScenario(sim: SimHandle, name: string): string {
     // *driven* into, not one it is placed in.
     wind.speed = 7
     wind.bearing_deg = 0
-  } else if (name === 'knockdown') {
-    // Already on its ear and still rolling: the state a gust and a wave leave
-    // the boat in. It carries `φ` past 100° in the first fifth of a second and
-    // then falls back, which is what the heel indicator has to render. The
-    // roll rate is an initial condition, not a force.
+  } else {
+    // `knockdown`: already on its ear and still rolling — the state a gust
+    // and a wave leave the boat in. It carries `φ` past 100° in the first
+    // fifth of a second and then falls back, which is what the heel
+    // indicator has to render. The roll rate is an initial condition, not a
+    // force.
     wind.speed = 8
     wind.bearing_deg = 0
     state.phi = 1.5
     state.p = 8
-  } else {
-    wind.speed = 5
-    wind.bearing_deg = 0
-    // `free_sail` means a free boom. Since section 06 the sheet is a real
-    // rope and the default state is hauled hard in, which would pin the boom
-    // on the centreline; fully eased, the rope is slack over the whole boom
-    // range and contributes nothing.
-    state.l_sheet = sheet.l_sheet_max
   }
   wind.mode = 'uniform'
   return JSON.stringify({ state, wind })
@@ -171,8 +216,18 @@ export function useSimulation(
     stepsTaken: 0,
   })
   const [trajectory, setTrajectory] = useState<readonly WorldPoint[]>([])
+  const [scenarios, setScenarios] = useState<readonly ScenarioSummary[]>([])
+  const [scenario, setScenario] = useState<Scenario | null>(null)
 
   const simRef = useRef<SimHandle | null>(null)
+  /**
+   * The scenario document every reset replays.
+   *
+   * Held in a ref rather than captured by the clock's sink: the picker can
+   * change it at runtime, and a captured constant would quietly send `R` back
+   * to whichever scenario the page happened to load with.
+   */
+  const scenarioDocRef = useRef<string>('{}')
   const clockRef = useRef<Clock | null>(null)
   const heldRef = useRef<Set<string>>(new Set())
   const trackRef = useRef<WorldPoint[]>([])
@@ -202,17 +257,21 @@ export function useSimulation(
         setDt(sim.dt())
         setParams(JSON.parse(sim.parameters_json() as string) as RenderParams)
 
-        const scenario = initialScenario(sim, scenarioNameRef.current)
-        if (scenario !== '{}') {
-          sim.reset(scenario)
-        }
+        setScenarios(summarise(readScenarios(sim)))
+        scenarioDocRef.current = scenarioDocument(sim, scenarioNameRef.current)
+        sim.reset(scenarioDocRef.current)
+        setScenario(readCurrentScenario(sim))
         setSnapshot(readSnapshot(sim.snapshot()))
         setDiagnostics(readDiagnostics(sim))
 
         clockRef.current = createClock(sim.dt(), {
           advance: (n) => sim.advance(n),
           reset: () => {
-            sim.reset(scenario)
+            // `restart`, not `reset`: a reset replays the scenario's initial
+            // condition but keeps the parameter catalogue in force, so a
+            // live brief §31 edit — including the reset-required `sim.dt` —
+            // survives the reset that is supposed to make it good.
+            sim.restart()
             // `sim.dt` is live-editable (brief §31) and `set_parameter`
             // reports such an edit as reset-required (F8.2): this is the
             // point at which the browser clock has to adopt it, or it goes on
@@ -390,6 +449,26 @@ export function useSimulation(
     }
   }, [])
 
+  const loadScenario = useCallback(
+    (id: string) => {
+      const sim = simRef.current
+      if (sim === null) {
+        return
+      }
+      // `reset`, not `restart`: choosing a scenario is the case where its
+      // own `parameter_overrides` are the point (see `Sim::restart`).
+      scenarioDocRef.current = scenarioDocument(sim, id)
+      sim.reset(scenarioDocRef.current)
+      // Then through the clock, so `simTime` and `stepsTaken` are zeroed and
+      // the trajectory is cleared by the one code path that already does
+      // both. `restart` replays the document just installed, so this is
+      // idempotent.
+      withClock((c) => c.reset())
+      setScenario(readCurrentScenario(sim))
+    },
+    [withClock],
+  )
+
   return {
     ready,
     error,
@@ -400,6 +479,9 @@ export function useSimulation(
     clockState,
     params,
     trajectory,
+    scenarios,
+    scenario,
+    loadScenario,
     start: useCallback(() => withClock((c) => c.start()), [withClock]),
     pause: useCallback(() => withClock((c) => c.pause()), [withClock]),
     toggleRunning: useCallback(

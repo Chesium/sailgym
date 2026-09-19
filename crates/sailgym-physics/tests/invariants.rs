@@ -1078,3 +1078,126 @@ fn heel_reduces_drive() {
     // The sail itself is what lost the force, not the hull.
     assert!(roll_of(heeled.sail, 0.5).abs() < roll_of(upright.sail, 0.0).abs());
 }
+
+#[test]
+fn deterministic_replay() {
+    use sailgym_physics::diagnostics::diagnostics;
+    use sailgym_physics::recording::{
+        iso8601_utc, Episode, EpisodeHeader, Recorder, ToolchainInfo, EPISODE_SCHEMA_VERSION,
+        FRAME_LEN,
+    };
+    use sailgym_physics::scenario::load_shipped;
+
+    // brief §35's deterministic-replay invariant, taken through the section
+    // 09 recorder rather than only through the state: the same seed and the
+    // same control sequence must reproduce every *logged* value bit for bit,
+    // not merely a trajectory that looks the same.
+    //
+    // The scripted commands below are the test's, not the scenario's
+    // (brief §32 forbids a scenario from carrying any), and they are indexed
+    // by step so the two runs cannot differ in *when* a command landed.
+    const SCRIPT: [(u32, f64, f64, bool); 6] = [
+        (0, 0.0, -1.0, false),
+        (400, 0.6, 0.0, false),
+        (900, 0.0, 0.0, false),
+        (1500, -0.8, 0.5, false),
+        (2200, 0.0, 0.0, true),
+        (3000, 0.0, -1.0, false),
+    ];
+    const LOG_HZ: f64 = 20.0;
+
+    let episode = |scenario: &str| -> Episode {
+        let sc = load_shipped(scenario).expect("a shipped scenario");
+        let p = sc.to_parameters().expect("valid parameters");
+        let mut sim = Simulation::new(p, sc.seed);
+        sim.load_scenario(&sc).expect("the scenario loads");
+
+        let mut rec = Recorder::start(
+            LOG_HZ,
+            EpisodeHeader {
+                schema_version: EPISODE_SCHEMA_VERSION,
+                scenario: sc.clone(),
+                parameters: p,
+                dt: p.sim.dt,
+                log_hz: LOG_HZ,
+                toolchain: ToolchainInfo::current(),
+                // A constant, not a clock: physics reads no wall time (F9.1)
+                // and neither may a test that asserts reproducibility.
+                created_utc: iso8601_utc(0.0),
+            },
+        );
+
+        let mut next = 0usize;
+        for i in 0..steps_for(30.0, &p) {
+            while next < SCRIPT.len() && SCRIPT[next].0 == i {
+                let (_, rudder_rate_cmd, sheet_rate_cmd, sheet_release) = SCRIPT[next];
+                sim.set_controls(Controls {
+                    rudder_rate_cmd,
+                    sheet_rate_cmd,
+                    sheet_release,
+                });
+                next += 1;
+            }
+            sim.advance(1);
+            if rec.due(sim.state().t) {
+                let d = diagnostics(&sim);
+                rec.observe(&sim, &d);
+            }
+        }
+        rec.finish()
+    };
+
+    for scenario in ["beam_reach_capsize", "gybe"] {
+        let a = episode(scenario);
+        let b = episode(scenario);
+
+        assert_eq!(a.header, b.header, "{scenario}: headers differ");
+        assert_eq!(
+            a.frames.len(),
+            b.frames.len(),
+            "{scenario}: frame counts differ"
+        );
+        assert!(
+            a.frames.len() > 500,
+            "{scenario}: only {} frames — 30 s at {LOG_HZ} Hz should be ~600",
+            a.frames.len()
+        );
+
+        for (k, (x, y)) in a.frames.iter().zip(b.frames.iter()).enumerate() {
+            let (p, q) = (x.to_array(), y.to_array());
+            for i in 0..FRAME_LEN {
+                assert_eq!(
+                    p[i].to_bits(),
+                    q[i].to_bits(),
+                    "{scenario}: frame {k}, scalar {i}: {} vs {}",
+                    p[i],
+                    q[i]
+                );
+            }
+            assert_eq!(x.capsized, y.capsized, "{scenario}: frame {k}");
+        }
+
+        // The episode has to have been an episode: the boat moved, the rig
+        // was loaded, and the script really reached the recorder.
+        let last = a.frames.last().expect("frames");
+        assert!(
+            last.state[0].abs() + last.state[1].abs() > 1.0,
+            "{scenario}: the boat never moved"
+        );
+        assert!(
+            a.frames.iter().any(|f| f.sheet_tension > 1.0),
+            "{scenario}: the sheet never took load"
+        );
+        assert!(
+            a.frames.iter().any(|f| f.controls[2] == 1.0),
+            "{scenario}: the release command never reached a frame"
+        );
+
+        // …and it survives both serialisations unchanged, which is what the
+        // browser replays from.
+        let json = a.to_json().expect("json");
+        assert_eq!(Episode::from_json(&json).expect("json round trip"), a);
+        let bytes = a.to_binary().expect("binary");
+        assert_eq!(Episode::from_binary(&bytes).expect("binary round trip"), a);
+    }
+}

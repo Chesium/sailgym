@@ -8,3 +8,8 @@ publish.workspace = true
 
 [dependencies]
 sailgym-physics = { workspace = true }
+# `gen_golden` writes the committed golden trajectories, which are JSON. The
+# control scripts it shares with `tests/regression.rs` derive serde traits, so
+# both consumers of that one file need the same two crates (section 09).
+serde = { workspace = true }
+serde_json = { workspace = true }
