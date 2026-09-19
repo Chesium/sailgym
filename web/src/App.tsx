@@ -53,6 +53,22 @@ function scenarioFromUrl(): string {
   return new URLSearchParams(window.location.search).get('scenario') ?? ''
 }
 
+/**
+ * `?renderHz=` — cap how often the frame loop publishes to React.
+ *
+ * brief §37 requires the physics to be independent of the render rate, and
+ * task 10.5 requires that to be *measured* rather than asserted by reading the
+ * code. This is the knob the measurement turns: the clock still ticks on every
+ * animation frame, so `t` advances at the same wall-clock rate; only the
+ * drawing is throttled. Absent or unparseable means "every frame", which is
+ * the shipped behaviour.
+ */
+function renderHzFromUrl(): number {
+  const raw = new URLSearchParams(window.location.search).get('renderHz')
+  const hz = raw === null ? 0 : Number(raw)
+  return Number.isFinite(hz) && hz > 0 ? hz : 0
+}
+
 /** The three F6.1 wind modes, as the scenario JSON spells them. */
 const WIND_MODES = ['uniform', 'spatial', 'gust'] as const
 type WindModeName = (typeof WIND_MODES)[number]
@@ -88,7 +104,7 @@ export default function App() {
     [wind],
   )
 
-  const sim = useSimulation(undefined, onFrame, scenarioFromUrl())
+  const sim = useSimulation(undefined, onFrame, scenarioFromUrl(), renderHzFromUrl())
   const ui = useUiStore()
   const charts = useChartSampler(sim.diagnostics, ui.sampleHz)
   const [mode, setMode] = useState<CameraMode>('northUp')

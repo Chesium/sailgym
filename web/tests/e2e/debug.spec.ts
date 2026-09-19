@@ -268,6 +268,18 @@ test.describe('debug readouts and charts', () => {
     // the hull drags it back below — so the warning is asserted in both
     // directions on one run, against `u` itself.
     await gotoApp(page, { scenario: 'fast' })
+    // Stop the clock **before** switching modes. At 6.5 m/s the hull is
+    // shedding about 2.8 m/s² (F6.6 with the F7 coefficients), so the boat
+    // falls from 6.5 to 5.0 m/s in half a second — less time than a mode
+    // switch and its attribute wait. The first full gate run of section 10
+    // duly read 4.95 m/s on Edge and failed. Pausing makes the "above the
+    // limit" half of the assertion a statement about the scenario rather than
+    // about how fast the browser was; the "back below it" half is resumed and
+    // polled for, exactly as before.
+    const pause = page.getByTestId('clock-pause')
+    await pause.click()
+    await expect(pause).toHaveAttribute('data-running', 'false')
+    await page.getByTestId('clock-reset').click()
     await enterDebug(page)
 
     expect(Number((await page.getByTestId('snapshot').getAttribute('data-u')) ?? 0)).toBeGreaterThan(5)
@@ -275,6 +287,8 @@ test.describe('debug readouts and charts', () => {
     await expect(page.getByTestId('diag-hull_model_warning')).toHaveAttribute('data-value', 'true')
 
     // Hull resistance alone takes it under 5 m/s well inside this window.
+    await pause.click()
+    await expect(pause).toHaveAttribute('data-running', 'true')
     await expect
       .poll(
         async () => Number((await page.getByTestId('snapshot').getAttribute('data-u')) ?? 0),

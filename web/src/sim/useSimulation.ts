@@ -29,6 +29,7 @@ import {
   type ScenarioSummary,
 } from './scenarioTypes'
 import { readSnapshot, SNAPSHOT_FIELDS, type Snapshot } from './snapshot'
+import { beginSpan, endSpan, noteRudderCommand } from '../render/perfMarks'
 
 /** The parameters the renderer needs, as `parameters_json()` shapes them. */
 export interface RenderParams {
@@ -201,6 +202,7 @@ export function useSimulation(
   input: InputConfig = DEFAULT_INPUT,
   onFrame?: FrameHook,
   scenarioName = '',
+  renderHz = 0,
 ): SimulationHandle {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -242,6 +244,15 @@ export function useSimulation(
   // changes afterwards.
   const scenarioNameRef = useRef(scenarioName)
   scenarioNameRef.current = scenarioName
+  // brief §37: physics must stay independent of the render rate. `renderHz`
+  // caps how often the frame loop publishes to React — the clock still ticks
+  // on every animation frame, so the simulation advances at wall-clock rate
+  // whatever the page is drawing. `0` means "publish every frame", which is
+  // the shipped behaviour; `tests/e2e/perf.spec.ts` sets 20 through
+  // `?renderHz=` to measure the two against each other (task 10.5).
+  const renderHzRef = useRef(renderHz)
+  renderHzRef.current = renderHz
+  const lastPublishRef = useRef(-Infinity)
 
   // --- module + simulation lifetime ---------------------------------------
   useEffect(() => {
@@ -360,6 +371,15 @@ export function useSimulation(
         return
       }
       held.add(key)
+      // Task 10.5's input-lag measurement starts here, on the key-down that
+      // actually changes the helm, against the rudder angle currently drawn.
+      // The far end is in `render/BoatSvg.tsx`, after the commit.
+      if (!e.repeat && (action === 'steerPort' || action === 'steerStarboard')) {
+        const sim = simRef.current
+        if (sim !== null) {
+          noteRudderCommand(readSnapshot(sim.snapshot()).deltaR)
+        }
+      }
       applyControls()
     }
 
@@ -406,18 +426,33 @@ export function useSimulation(
       if (sim === null || clock === null) {
         return
       }
+      beginSpan('frame')
       const delta = previous === null ? 0 : now - previous
       previous = now
 
+      // Every call across the F8 boundary in this frame, and nothing else.
+      beginSpan('wasm')
       const c = controlsFromInput(heldRef.current, inputRef.current, sheetRateRef.current)
       sim.set_controls(c.rudderRateCmd, c.sheetRateCmd, c.sheetRelease)
       clock.tick(delta)
-
       const next = readSnapshot(sim.snapshot())
+      const diag = readDiagnostics(sim)
+      endSpan('wasm')
+
+      // The physics above has already advanced. Everything below is
+      // presentation, and this is the only thing `renderHz` skips.
+      const hz = renderHzRef.current
+      if (hz > 0 && now - lastPublishRef.current < 1000 / hz) {
+        endSpan('frame')
+        return
+      }
+      lastPublishRef.current = now
+
       frameHookRef.current?.(sim, next, delta)
       setSnapshot(next)
-      setDiagnostics(readDiagnostics(sim))
+      setDiagnostics(diag)
       setClockState(clock.getState())
+      endSpan('frame')
 
       if (next.t - lastTrackRef.current >= TRAJECTORY_INTERVAL_S) {
         lastTrackRef.current = next.t

@@ -22,6 +22,7 @@ import type { Layer } from '@deck.gl/core'
 import DeckGL from '@deck.gl/react'
 
 import type { Viewport } from '../render/Camera'
+import { beginSpan, endSpan } from '../render/perfMarks'
 
 export interface DeckOverlayProps {
   viewport: Viewport
@@ -58,6 +59,10 @@ export function DeckOverlay({ viewport, layers }: DeckOverlayProps) {
         viewState={viewState}
         controller={false}
         layers={layers}
+        // Task 10.5's `deck` span: deck.gl draws on its own schedule, so the
+        // only place its cost can be seen is between its own hooks.
+        onBeforeRender={() => beginSpan('deck')}
+        onAfterRender={() => endSpan('deck')}
         width={`${viewport.width}px`}
         height={`${viewport.height}px`}
         style={{ position: 'absolute', inset: '0' }}

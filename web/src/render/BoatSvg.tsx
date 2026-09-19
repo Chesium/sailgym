@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 import { boatTransform, worldTransform, type Camera, type Vec2 } from './Camera'
 import {
@@ -14,6 +14,7 @@ import { SheetRope, type SheetRigDims } from './SheetRope'
 import { radiansToDegrees } from '../sim/units'
 import { Trajectory } from './Trajectory'
 import type { SheetEvent } from '../sim/sheetInput'
+import { endSpanFrom, noteRudderRendered } from './perfMarks'
 
 /** Boat pose, straight off the snapshot. */
 export interface BoatPose {
@@ -66,6 +67,21 @@ export function BoatSvg({
 }: BoatSvgProps) {
   const dragging = useRef<{ x: number; y: number } | null>(null)
   const { width, height } = camera.viewport
+
+  // Task 10.5's `svg` span, and the far end of its input-lag measurement.
+  //
+  // The start is here, at the top of the render, and the end is in the layout
+  // effect below — which React runs after this subtree has been committed to
+  // the DOM — so the span covers render **and** commit rather than only the
+  // component function. The effect has no dependency array on purpose: it must
+  // run on every commit, because every commit is a frame the rudder could have
+  // moved in.
+  const renderStartedAt = typeof performance === 'undefined' ? 0 : performance.now()
+  const deltaR = pose.deltaR
+  useLayoutEffect(() => {
+    endSpanFrom('svg', renderStartedAt)
+    noteRudderRendered(deltaR)
+  })
 
   const boom = boomSegment(rig, 0)
   const rudder = rudderSegment(rig, hull, pose.deltaR)

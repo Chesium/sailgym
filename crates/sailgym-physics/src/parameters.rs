@@ -258,8 +258,15 @@ impl ResistanceParams {
 /// paths agree: `sail.area`, `board.cd0`, `rudder.oswald`.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FoilSection {
-    /// m². Tag depends on the surface; see each owner's `Default`.
-    /// KNOWN for the sail (brief §3), ASSUMED for board and rudder.
+    // `area` carries **no F7 tag of its own**, deliberately: a tag describes a
+    // *value*, and the three surfaces sharing this struct do not share a value
+    // or a provenance — the sail's is class data, the board's and the rudder's
+    // are estimates. Each owner states the tag with a `Tag override:` note on
+    // its own `section` field, which `catalogue` reads. A surface that forgets
+    // to leaves an untagged leaf, which `provenance::every_field_tagged`
+    // refuses. (A plain comment, not a doc comment: the parser must not see a
+    // tag here.)
+    /// m². The reference area the F5.3 coefficients act on.
     pub area: f64,
     /// dimensionless. ASSUMED — aspect ratio; the board's is doubled for the
     /// free-surface mirror.
@@ -336,6 +343,10 @@ impl FoilSection {
 /// A foil plus where it is mounted. The centreboard (F6.5).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FoilMountParams {
+    /// The F5.3 coefficient block, flattened (section 02 §2.8).
+    ///
+    /// Tag override: `area` ASSUMED — 0.20 m² is a plan-form estimate for the
+    /// ILCA centreboard, not published class data.
     #[serde(flatten)]
     pub section: FoilSection,
     /// m, in B. ASSUMED — centre of effort relative to the CG.
@@ -379,6 +390,10 @@ impl FoilMountParams {
 /// Sail, boom and rig geometry.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SailParams {
+    /// The F5.3 coefficient block, flattened (section 02 §2.8).
+    ///
+    /// Tag override: `area` KNOWN — the ILCA 7 sail is 7.06 m² by class rule
+    /// (brief §3).
     #[serde(flatten)]
     pub section: FoilSection,
     /// m. KNOWN — boom length.
@@ -456,6 +471,10 @@ impl SailParams {
 /// Rudder foil, mounting and actuator limits.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RudderParams {
+    /// The F5.3 coefficient block, flattened (section 02 §2.8).
+    ///
+    /// Tag override: `area` ASSUMED — 0.105 m² is a plan-form estimate for the
+    /// ILCA rudder blade, not published class data.
     #[serde(flatten)]
     pub section: FoilSection,
     /// m, in B. ASSUMED — rudder centre of effort relative to the CG.
@@ -954,22 +973,87 @@ fn tag_and_unit(doc: &str) -> (String, String) {
     (tag, unit)
 }
 
-fn leaf(path: String, field: &SourceField, kind: &str) -> ParamMeta {
-    let (tag, unit) = tag_and_unit(&field.doc);
+fn leaf(
+    path: String,
+    field: &SourceField,
+    kind: &str,
+    overrides: &BTreeMap<String, TagOverride>,
+) -> ParamMeta {
+    let (mut tag, unit) = tag_and_unit(&field.doc);
+    let mut doc = field.doc.clone();
+    if let Some(o) = overrides.get(&field.name) {
+        tag = o.tag.clone();
+        // The override sentence is prepended rather than appended, because it
+        // is the more specific statement and it is what the panel's tooltip
+        // should lead with.
+        doc = format!("{} {}", o.note, doc).trim().to_string();
+    }
     ParamMeta {
         reset_required: path.starts_with("sim."),
         path,
         tag,
         unit,
-        doc: field.doc.clone(),
+        doc,
         kind: kind.to_string(),
     }
+}
+
+/// A per-owner tag for one leaf of a shared, flattened struct.
+///
+/// `FoilSection` is shared by the sail, the centreboard and the rudder, and
+/// `area` is KNOWN for one of them and ASSUMED for the other two: the tag
+/// belongs to the value, and there are three values behind one declaration.
+/// F5.3 pins `FoilParams`'s field list, so splitting `area` out is not
+/// available (F13.1); instead each owner states the tag on its own `section`
+/// field and this carries it.
+struct TagOverride {
+    tag: String,
+    note: String,
+}
+
+/// Read `Tag override: \`name\` TAG — reason.` entries out of a doc comment.
+///
+/// The marker is machine-first on purpose. A tag that a human has to infer
+/// from prose is a tag that goes stale without anything noticing, and the
+/// whole point of `catalogue` is that nothing about a parameter is kept in two
+/// places.
+fn tag_overrides(doc: &str) -> BTreeMap<String, TagOverride> {
+    const MARKER: &str = "Tag override:";
+    let mut out = BTreeMap::new();
+    for (i, _) in doc.match_indices(MARKER) {
+        let rest = &doc[i + MARKER.len()..];
+        // The sentence runs to the next marker, so several overrides can sit
+        // in one doc comment.
+        let end = rest.find(MARKER).unwrap_or(rest.len());
+        let sentence = rest[..end].trim();
+        let Some(name) = sentence
+            .split('`')
+            .nth(1)
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty())
+        else {
+            continue;
+        };
+        let (tag, _) = tag_and_unit(sentence);
+        if tag.is_empty() {
+            continue;
+        }
+        out.insert(
+            name,
+            TagOverride {
+                tag,
+                note: format!("{MARKER} {sentence}"),
+            },
+        );
+    }
+    out
 }
 
 fn walk(
     structs: &BTreeMap<String, Vec<SourceField>>,
     ty: &str,
     prefix: &str,
+    overrides: &BTreeMap<String, TagOverride>,
     out: &mut Vec<ParamMeta>,
 ) {
     let Some(fields) = structs.get(ty) else {
@@ -978,11 +1062,11 @@ fn walk(
     for field in fields {
         let own = format!("{prefix}{}", field.name);
         match field.ty.as_str() {
-            "f64" => out.push(leaf(own, field, "f64")),
-            "bool" => out.push(leaf(own, field, "bool")),
+            "f64" => out.push(leaf(own, field, "f64", overrides)),
+            "bool" => out.push(leaf(own, field, "bool", overrides)),
             "Vec3" => {
                 for c in ["x", "y", "z"] {
-                    out.push(leaf(format!("{own}.{c}"), field, "f64"));
+                    out.push(leaf(format!("{own}.{c}"), field, "f64", overrides));
                 }
             }
             // Not a scalar, so `set_path` has never accepted it.
@@ -996,7 +1080,15 @@ fn walk(
                 } else {
                     format!("{own}.")
                 };
-                walk(structs, group, &next, out);
+                // A tag override reaches exactly the struct it is written on,
+                // and no further: the owner knows what its own `area` is, not
+                // what a nested group's might be.
+                let inherited = if field.flatten {
+                    tag_overrides(&field.doc)
+                } else {
+                    BTreeMap::new()
+                };
+                walk(structs, group, &next, &inherited, out);
             }
         }
     }
@@ -1009,7 +1101,7 @@ fn walk(
 pub fn catalogue() -> Vec<ParamMeta> {
     let structs = source_structs(include_str!("parameters.rs"));
     let mut out = Vec::new();
-    walk(&structs, "BoatParameters", "", &mut out);
+    walk(&structs, "BoatParameters", "", &BTreeMap::new(), &mut out);
     out
 }
 
@@ -1246,6 +1338,39 @@ mod tests {
     /// an F7 tag on `ParamMeta::reset_required`, which has no physical
     /// meaning. Reusing the same parser the catalogue uses also means this
     /// test fails if that parser ever stops seeing a field.
+    /// A shared, flattened field takes its tag from its **owner** (section 10).
+    ///
+    /// `FoilSection::area` is one declaration behind three values: 7.06 m² by
+    /// class rule for the sail, and plan-form estimates for the board and the
+    /// rudder. Section 08's handoff §5 recorded that all three showed `KNOWN`
+    /// in the panel and that two of them were wrong; this is the guard on the
+    /// fix.
+    #[test]
+    fn a_shared_field_takes_its_tag_from_its_owner() {
+        let by_path: BTreeMap<String, String> =
+            catalogue().into_iter().map(|m| (m.path, m.tag)).collect();
+        assert_eq!(by_path["sail.area"], "KNOWN");
+        assert_eq!(by_path["board.area"], "ASSUMED");
+        assert_eq!(by_path["rudder.area"], "ASSUMED");
+        // The coefficients really are shared, so they must *not* be
+        // overridden — otherwise the mechanism is leaking.
+        for surface in ["sail", "board", "rudder"] {
+            assert_eq!(by_path[&format!("{surface}.cd0")], "ASSUMED");
+        }
+        // And the base declaration carries no tag of its own, which is what
+        // makes a missing override a failure rather than a silent default.
+        let structs = source_structs(include_str!("parameters.rs"));
+        let area = structs["FoilSection"]
+            .iter()
+            .find(|f| f.name == "area")
+            .expect("FoilSection::area");
+        assert!(
+            !PARAM_TAGS.iter().any(|t| area.doc.contains(t)),
+            "FoilSection::area must carry no tag of its own: {}",
+            area.doc
+        );
+    }
+
     #[test]
     fn every_parameter_field_is_tagged() {
         const LEAF_TYPES: [&str; 4] = ["f64", "bool", "Vec3", "Integrator"];
@@ -1271,19 +1396,53 @@ mod tests {
             "the walk must reach the flattened and the nested groups: {reachable:?}"
         );
 
+        // The assertion is on the **resolved** catalogue, not on the
+        // declaration, because since section 10 a tag may legitimately live on
+        // the owner rather than on the field: `FoilSection` is shared by three
+        // surfaces and `area` is KNOWN for one of them and ASSUMED for the
+        // other two (see `TagOverride`). Resolving first is strictly stronger
+        // than scanning declarations — it is what the panel actually shows —
+        // and it still fails on a field nobody tagged anywhere.
+        let catalogue = catalogue();
+        let relevant = |path: &str, field: &str| -> bool {
+            path == field
+                || path.ends_with(&format!(".{field}"))
+                || path.contains(&format!(".{field}."))
+                || path.starts_with(&format!("{field}."))
+        };
+
         let mut fields = 0usize;
         let mut tagged = 0usize;
         for name in &reachable {
             for f in &structs[name] {
-                if LEAF_TYPES.contains(&f.ty.as_str()) {
-                    fields += 1;
+                if !LEAF_TYPES.contains(&f.ty.as_str()) {
+                    continue;
+                }
+                fields += 1;
+                // `sim.integrator` is not a scalar and has never been
+                // addressable (section 02 §2.8), so it produces no leaf; its
+                // own doc comment must therefore carry the tag.
+                let leaves: Vec<&ParamMeta> = catalogue
+                    .iter()
+                    .filter(|m| relevant(&m.path, &f.name))
+                    .collect();
+                if leaves.is_empty() {
                     assert!(
                         PARAM_TAGS.iter().any(|tag| f.doc.contains(tag)),
                         "untagged parameter field: {name}.{}",
                         f.name
                     );
-                    tagged += 1;
+                } else {
+                    for m in leaves {
+                        assert!(
+                            PARAM_TAGS.contains(&m.tag.as_str()),
+                            "untagged parameter leaf: {} (from {name}.{})",
+                            m.path,
+                            f.name
+                        );
+                    }
                 }
+                tagged += 1;
             }
         }
 

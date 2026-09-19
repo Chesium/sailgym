@@ -1201,3 +1201,163 @@ fn deterministic_replay() {
         assert_eq!(Episode::from_binary(&bytes).expect("binary round trip"), a);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Section 10 — completing the brief §35 set, and the audit that keeps
+// `docs/invariants.md` honest (task 10.1)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn tension_never_negative() {
+    // brief §35's unilateral constraint stated as a property of the element
+    // itself rather than of a trajectory. `sheet_unilateral_constraint` above
+    // covers what the simulation actually reaches; this covers what it could
+    // reach if a live parameter edit (brief §31) or a hand-written scenario put
+    // the rig somewhere the shipped boat never goes.
+    //
+    // `T = max(0, k·e + c·ė)` is structural (F6.8), so the bound is **exactly
+    // zero** and is compared as such — not "within a tolerance", which would be
+    // a weaker statement than the model supports. The mirror of this test in
+    // `rigging::mainsheet::tests::tension_never_negative` asserts the same
+    // property on the same function; keeping one here is what makes gate step 4
+    // a complete reading of brief §35 on its own.
+    let p = params();
+    let mut rng = Lcg(0x7E45_1010_2020_3030);
+    let mut ever_taut = false;
+    let mut ever_slack = false;
+    for k in 0..200_000 {
+        // One case in seven is drawn from deliberately impossible ranges: a
+        // boom well past its stops, a rope shorter than nothing and payout
+        // rates no winch could produce. The element must still be a `max`.
+        let wild = k % 7 == 0;
+        let (beta, beta_dot, l_sheet, l_dot) = if wild {
+            (
+                rng.range(-8.0, 8.0),
+                rng.range(-500.0, 500.0),
+                rng.range(-10.0, 100.0),
+                rng.range(-500.0, 500.0),
+            )
+        } else {
+            (
+                rng.range(-1.9, 1.9),
+                rng.range(-6.0, 6.0),
+                rng.range(p.sheet.l_sheet_min, p.sheet.l_sheet_max),
+                rng.range(-p.sheet.sheet_release_rate, p.sheet.sheet_release_rate),
+            )
+        };
+        let st = BoatState {
+            beta,
+            beta_dot,
+            l_sheet,
+            ..BoatState::ZERO
+        };
+        let out = sheet_output(&st, l_dot, &p);
+        assert!(
+            out.tension >= 0.0,
+            "case {k}: T = {} at beta = {beta}, beta_dot = {beta_dot}, L = {l_sheet}, L̇ = {l_dot}",
+            out.tension
+        );
+        assert!(
+            out.tension.is_finite() && out.m_beta.is_finite(),
+            "case {k}: non-finite sheet output"
+        );
+        if out.tension > 0.0 {
+            ever_taut = true;
+        } else {
+            // A rope that carries no tension carries no force and no torque,
+            // through the same expression — there is no slackness branch.
+            assert_eq!(out.tension, 0.0, "case {k}: T is negative zero or worse");
+            assert_eq!(out.m_beta, 0.0, "case {k}: slack rope produced a torque");
+            assert_eq!(out.boom_load.f, Vec3::ZERO, "case {k}");
+            assert_eq!(out.hull_load.f, Vec3::ZERO, "case {k}");
+            ever_slack = true;
+        }
+    }
+    // Both sides of the `max` have to have been taken, or the test is a
+    // statement about one branch of a two-branch expression.
+    assert!(
+        ever_taut && ever_slack,
+        "taut={ever_taut}, slack={ever_slack}"
+    );
+}
+
+/// `docs/invariants.md` lists every test in this suite, and every test it lists
+/// exists (task 10.1).
+///
+/// The table is the brief §35 audit: an invariant with no row cannot be
+/// reviewed, and a row naming a test that does not exist is a claim with
+/// nothing behind it. Both directions are checked, so the document cannot
+/// drift from the suite in either.
+///
+/// Rows name their test as `` `<path>::<fn>` `` relative to the repository
+/// root, because three of the brief §35 items are proved outside this file:
+/// `timestep_convergence` and `error_at_default_dt` live in
+/// `tests/convergence.rs` (task 10.2), which gate step 4 also runs.
+#[test]
+fn documented_invariants_exist() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let doc_path = root.join("docs/invariants.md");
+    let doc = std::fs::read_to_string(&doc_path)
+        .unwrap_or_else(|e| panic!("{}: {e}", doc_path.display()));
+
+    // Every `` `path::fn` `` in a table row of the document.
+    let mut listed: Vec<(String, String)> = Vec::new();
+    for line in doc.lines().filter(|l| l.trim_start().starts_with('|')) {
+        for cell in line.split('|') {
+            for token in cell.split('`').skip(1).step_by(2) {
+                if let Some((file, name)) = token.rsplit_once("::") {
+                    if file.ends_with(".rs") {
+                        listed.push((file.to_string(), name.to_string()));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        listed.len() >= 20,
+        "docs/invariants.md names only {} tests; the brief §35 set is larger than that",
+        listed.len()
+    );
+
+    // 1. Every test the document names exists, in the file it names.
+    let mut sources: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+    for (file, name) in &listed {
+        let source = sources.entry(file.clone()).or_insert_with(|| {
+            let path = root.join(file);
+            std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
+        });
+        assert!(
+            source.contains(&format!("fn {name}(")),
+            "docs/invariants.md names {file}::{name}, which does not exist"
+        );
+    }
+
+    // 2. Every test in *this* file appears in the document. A new invariant
+    //    that nobody documented is exactly what this half catches.
+    let here = include_str!("invariants.rs");
+    let documented: std::collections::BTreeSet<&str> =
+        listed.iter().map(|(_, n)| n.as_str()).collect();
+    let mut undocumented = Vec::new();
+    for (i, line) in here.lines().enumerate() {
+        if line.trim() != "#[test]" {
+            continue;
+        }
+        let Some(decl) = here.lines().nth(i + 1) else {
+            continue;
+        };
+        let Some(name) = decl
+            .trim()
+            .strip_prefix("fn ")
+            .and_then(|s| s.split('(').next())
+        else {
+            continue;
+        };
+        if !documented.contains(name) {
+            undocumented.push(name.to_string());
+        }
+    }
+    assert!(
+        undocumented.is_empty(),
+        "tests in tests/invariants.rs with no row in docs/invariants.md: {undocumented:?}"
+    );
+}
