@@ -52,14 +52,13 @@ impl Generalized {
     }
 }
 
-/// A source of generalised forces. Implemented by the M1 placeholder
-/// (section 02, R4) and, from section 04, by the real model.
+/// A pure source of generalised forces and boom torque.
 pub trait ForceModel {
     /// Pure: must not mutate anything. Returns generalised forces in `H`
     /// (F4.4).
     fn generalized(&self, st: &BoatState, c: &Controls, p: &BoatParameters, t: f64) -> Generalized;
 
-    /// Boom moment about `+z_B` at the mast. Zero until section 05.
+    /// Boom moment about `+z_B` at the mast: aerodynamic and passive moments.
     fn boom_moment(&self, st: &BoatState, c: &Controls, p: &BoatParameters, t: f64) -> f64;
 }
 

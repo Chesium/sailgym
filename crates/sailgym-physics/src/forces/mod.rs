@@ -25,13 +25,13 @@
 //! so an accidental reorder shows up in review rather than in a golden-file
 //! mismatch three sections later.
 //!
-//! ## What is still zero at M3
+//! ## Deferred loads
 //!
-//! Sail (section 05), mainsheet (section 06) and hydrostatic righting
-//! (section 07) contribute exactly zero. They are summed anyway, at their
+//! Mainsheet (section 06) and hydrostatic righting (section 07) contribute zero. They are summed anyway, at their
 //! final position in the order, so that landing them changes a value and not
 //! the arithmetic structure.
 
+use crate::aero::{apparent::apparent_wind_cg, sail::sail_load};
 use crate::dynamics::{ForceModel, Generalized, Load};
 use crate::environment::WindField;
 use crate::frames::world_to_body;
@@ -39,6 +39,7 @@ use crate::hydro::centerboard::centerboard_load;
 use crate::hydro::hull::hull_loads;
 use crate::hydro::rudder::rudder_load;
 use crate::parameters::BoatParameters;
+use crate::rigging::boom::{boom_passive_moments, BoomMoments};
 use crate::state::{BoatState, Controls};
 use crate::vec::{Vec2, Vec3};
 
@@ -61,8 +62,7 @@ pub struct ForceBreakdown {
     pub m_beta: f64,
     pub k_restore: f64,
     pub gz: f64,
-    /// Apparent wind at the boat, in `B`. Filled by section 05
-    /// (`aero::apparent`); zero until then.
+    /// Apparent wind at the CG, in `B`.
     pub aw_boat: Vec3,
     /// True wind at the boat, rotated into the horizontal body frame `H`.
     pub tw_boat: Vec2,
@@ -71,17 +71,12 @@ pub struct ForceBreakdown {
 /// The real force model. R4 is closed here: this replaces the M1 placeholder
 /// that section 02 shipped, which section 04 deleted outright.
 ///
-/// Sail, sheet and roll terms stay zero until sections 05–07.
+/// Still-air adapter, used for explicit zero-wind tests. The simulation uses
+/// `WindForces`, borrowing its actual environment.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct PhysicalForces;
 
-/// Zero wind everywhere.
-///
-/// [`ForceModel::generalized`] (F4.4, `dynamics.rs`) carries no wind field,
-/// and at M3 no force reads one — the water is still (F6.5) and there is no
-/// sail. The wind only reaches [`ForceBreakdown::tw_boat`], which is
-/// diagnostics. **Section 05 must give the force model real access to the
-/// wind**; see the section 04 handoff note.
+/// Zero wind for the explicit still-air adapter.
 struct NoWind;
 
 impl WindField for NoWind {
@@ -114,6 +109,20 @@ impl ForceModel for PhysicalForces {
     }
 }
 
+/// The physical model borrowing the simulation's environment. Each RK stage
+/// samples at its own position and time; changing wind needs no cached copy.
+pub struct WindForces<'a> {
+    pub wind: &'a dyn WindField,
+}
+impl ForceModel for WindForces<'_> {
+    fn generalized(&self, st: &BoatState, c: &Controls, p: &BoatParameters, t: f64) -> Generalized {
+        evaluate(st, c, p, self.wind, t).total
+    }
+    fn boom_moment(&self, st: &BoatState, c: &Controls, p: &BoatParameters, t: f64) -> f64 {
+        evaluate(st, c, p, self.wind, t).m_beta
+    }
+}
+
 /// Compute the full breakdown once. `generalized` and the diagnostics both
 /// read it, so they can never disagree.
 ///
@@ -126,6 +135,7 @@ pub fn evaluate(
     t: f64,
 ) -> ForceBreakdown {
     let mut total = Generalized::default();
+    let wind_world = w.sample(st.x, st.y, t);
 
     // 1. hull — all four F6.6 terms, added straight into `H`.
     //
@@ -154,9 +164,16 @@ pub fn evaluate(
     let rudder = rudder_load(st, p);
     total.add(rudder.load, st.phi);
 
-    // 4. sail — zero until section 05.
-    let sail = Load::default();
-    total.add(sail, st.phi);
+    // 4. sail
+    let sail = sail_load(st, wind_world, p);
+    total.add(sail.load, st.phi);
+    let (damping, limit) = boom_passive_moments(st, p);
+    let boom = BoomMoments {
+        aero: sail.m_beta,
+        sheet: 0.0,
+        damping,
+        limit,
+    };
 
     // 5. mainsheet — zero until section 06. Both the pull on the boom and its
     //    reaction on the hull at the block land here (F6.8).
@@ -168,23 +185,23 @@ pub fn evaluate(
     total.k += k_restore;
 
     ForceBreakdown {
-        sail,
+        sail: sail.load,
         board: board.load,
         rudder: rudder.load,
         hull: hull.load,
         sheet,
         total,
-        alpha_sail: 0.0,
+        alpha_sail: sail.alpha,
         alpha_board: board.alpha,
         alpha_rudder: rudder.alpha,
-        cl_sail: 0.0,
-        cd_sail: 0.0,
+        cl_sail: sail.cl,
+        cd_sail: sail.cd,
         sheet_tension: 0.0,
-        m_beta: 0.0,
+        m_beta: boom.total(),
         k_restore,
         gz: 0.0,
-        aw_boat: Vec3::ZERO,
-        tw_boat: world_to_body(w.sample(st.x, st.y, t), st.psi),
+        aw_boat: apparent_wind_cg(st, wind_world),
+        tw_boat: world_to_body(wind_world, st.psi),
     }
 }
 
@@ -193,7 +210,7 @@ mod tests {
     use super::*;
     use crate::integrator::step;
     use crate::state::{STATE_FIELDS, STATE_LEN};
-    use crate::testkit::still_air;
+    use crate::testkit::uniform_wind;
 
     /// Deterministic test-local generator; see the note in `state.rs`.
     struct Lcg(u64);
@@ -337,6 +354,7 @@ mod tests {
         let mut p = params();
         p.board.section.area = 0.0;
         p.rudder.section.area = 0.0;
+        p.sail.section.area = 0.0;
 
         let mut rng = Lcg(0x1257_0000_4444_5555);
         for k in 0..200 {
@@ -362,18 +380,115 @@ mod tests {
     }
 
     #[test]
-    fn wind_reaches_the_breakdown_but_no_force_yet() {
-        // At M3 the sail is zero, so the wind may appear only in `tw_boat`.
+    fn wind_reaches_the_sail_and_breakdown() {
         let p = params();
-        let st = BoatState {
-            u: 2.0,
-            ..crate::simulation::Simulation::initial_state(&p)
-        };
+        let st = crate::simulation::Simulation::initial_state(&p);
         let calm = evaluate(&st, &Controls::default(), &p, &NoWind, 0.0);
-        let breezy = evaluate(&st, &Controls::default(), &p, &still_air(), 0.0);
-        assert_eq!(calm.total, breezy.total);
-        assert_eq!(calm.sail, Load::default());
-        assert_eq!(calm.sheet, Load::default());
-        assert_eq!(calm.k_restore, 0.0);
+        let breezy = evaluate(
+            &st,
+            &Controls::default(),
+            &p,
+            &uniform_wind(5.0, 180.0),
+            0.0,
+        );
+        assert_eq!(calm.sail.f, Vec3::ZERO);
+        assert!(breezy.sail.f.length() > 0.0);
+        assert!(breezy.m_beta < 0.0);
+        assert_ne!(calm.total, breezy.total);
+        assert_eq!(breezy.sheet, Load::default());
+        assert_eq!(breezy.k_restore, 0.0);
+    }
+}
+
+#[cfg(test)]
+mod sail_integrated {
+    use super::*;
+    use crate::environment::wind::{WindConfig, WindMode};
+    use crate::rng::Pcg32;
+    use crate::simulation::Simulation;
+
+    fn beam_sim(params: BoatParameters, speed: f64) -> Simulation {
+        let mut sim = Simulation::new(params, 5);
+        sim.set_wind(WindConfig {
+            mode: WindMode::Uniform,
+            speed,
+            bearing_deg: 180.0,
+            ..Default::default()
+        });
+        sim
+    }
+
+    #[test]
+    fn boom_swings_free_without_sheet() {
+        let mut sim = beam_sim(BoatParameters::ilca7(), 5.0);
+        let mut reached = false;
+        for _ in 0..2000 {
+            sim.advance(1);
+            reached |= sim.state().beta < -1.0;
+        }
+        assert!(reached, "boom never swung to leeward: {:?}", sim.state());
+    }
+
+    #[test]
+    fn boat_accelerates_from_rest() {
+        let mut p = BoatParameters::ilca7();
+        // Test-only drag at the gooseneck slows easing; no holding spring.
+        p.sail.c_beta = 1000.0;
+        let mut sim = beam_sim(p, 8.0);
+        sim.reset(
+            BoatState {
+                beta: -1.0,
+                ..Simulation::initial_state(&p)
+            },
+            5,
+        );
+        let mut peak_u = 0.0_f64;
+        for _ in 0..4000 {
+            sim.advance(1);
+            peak_u = peak_u.max(sim.state().u);
+        }
+        assert!(
+            peak_u > 0.5,
+            "peak u={peak_u}, final heel={}",
+            sim.state().phi
+        );
+    }
+
+    #[test]
+    fn energy_bounded() {
+        let p = BoatParameters::ilca7();
+        let mut rng = Pcg32::seed_from_u64(504);
+        for episode in 0..20 {
+            let mut sim = beam_sim(p, rng.range(2.0, 10.0));
+            sim.reset(
+                BoatState {
+                    u: rng.range(-3.0, 3.0),
+                    v: rng.range(-1.0, 1.0),
+                    psi: rng.range(-3.0, 3.0),
+                    phi: rng.range(-1.0, 1.0),
+                    r: rng.range(-0.5, 0.5),
+                    p: rng.range(-0.5, 0.5),
+                    beta: rng.range(-1.7, 1.7),
+                    beta_dot: rng.range(-1.0, 1.0),
+                    ..Simulation::initial_state(&p)
+                },
+                episode,
+            );
+            for _ in 0..12000 {
+                sim.advance(1);
+                let st = sim.state();
+                let energy = 0.5
+                    * ((p.total_mass() + p.inertia.a_x) * st.u.powi(2)
+                        + (p.total_mass() + p.inertia.a_y) * st.v.powi(2)
+                        + (p.inertia.i_zz + p.inertia.a_psi) * st.r.powi(2)
+                        + (p.inertia.i_xx + p.inertia.a_phi) * st.p.powi(2)
+                        + p.sail.i_boom * st.beta_dot.powi(2)
+                        + p.sail.k_lim * (st.beta.abs() - p.sail.beta_max).max(0.0).powi(2));
+                assert!(
+                    st.is_finite() && energy.is_finite() && energy < 100_000.0,
+                    "episode {episode}: energy={energy}, {st:?}"
+                );
+            }
+        }
     }
 }

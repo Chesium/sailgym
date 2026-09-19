@@ -3,10 +3,9 @@ import { expect, gotoApp, readSnapshot, test } from './fixtures'
 /**
  * Hydrodynamics in the browser (task 4.6).
  *
- * The M1 placeholder force model is gone (R4) and there is no sail until
- * section 05, so the boat has no way to accelerate itself. The `coast` test
- * scenario gives it an initial surge speed and nothing else — an initial
- * condition, not a force.
+ * The `coast` fixture supplies initial surge speed and explicitly zero wind.
+ * With M4, the sail also experiences the still-air flow caused by boat motion;
+ * no component supplies propulsion.
  *
  * What is asserted is what the real model now produces and the placeholder
  * could not: a rudder whose authority comes from the water it moves through, a

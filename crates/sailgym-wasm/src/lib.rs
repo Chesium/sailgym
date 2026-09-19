@@ -141,6 +141,13 @@ impl Sim {
         Box::new(self.inner.state().to_array())
     }
 
+    /// Current-state diagnostics as a JSON string, like `parameters_json`.
+    pub fn diagnostics(&self) -> Result<JsValue, JsValue> {
+        let d = sailgym_physics::diagnostics::diagnostics(&self.inner);
+        let json = serde_json::to_string(&d).map_err(|e| js_err("diagnostics", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
     /// Live parameter editing (brief §31). Returns whether a reset is
     /// required.
     pub fn set_parameter(&mut self, path: &str, value: f64) -> Result<bool, JsValue> {

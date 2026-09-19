@@ -6,10 +6,11 @@ import {
   boomSegment,
   hullPath,
   rudderSegment,
-  sailPath,
   type HullDims,
   type RigDims,
 } from './geometry'
+import { sailShape } from './SailShape'
+import { radiansToDegrees } from '../sim/units'
 import { Trajectory } from './Trajectory'
 
 /** Boat pose, straight off the snapshot. */
@@ -24,6 +25,7 @@ export interface BoatPose {
 export interface BoatSvgProps {
   camera: Camera
   pose: BoatPose
+  alpha: number
   hull: HullDims
   rig: RigDims
   trajectory: readonly Vec2[]
@@ -40,6 +42,7 @@ const GRID_SPACING_M = 10
 export function BoatSvg({
   camera,
   pose,
+  alpha,
   hull,
   rig,
   trajectory,
@@ -49,7 +52,7 @@ export function BoatSvg({
   const dragging = useRef<{ x: number; y: number } | null>(null)
   const { width, height } = camera.viewport
 
-  const boom = boomSegment(rig, pose.beta)
+  const boom = boomSegment(rig, 0)
   const rudder = rudderSegment(rig, hull, pose.deltaR)
   const board = boardSegment(rig, hull)
 
@@ -152,12 +155,13 @@ export function BoatSvg({
         />
         <path
           data-testid="boat-sail"
-          d={sailPath(rig, pose.beta)}
+          d={sailShape(rig, pose.beta, alpha)}
           fill="none"
           stroke="#d64d3f"
           strokeWidth={2.5}
           vectorEffect="non-scaling-stroke"
         />
+        <g data-testid="boom" transform={`rotate(${radiansToDegrees(pose.beta)} ${rig.mastX} 0)`}>
         <line
           data-testid="boat-boom"
           x1={boom.x1}
@@ -168,6 +172,7 @@ export function BoatSvg({
           strokeWidth={2}
           vectorEffect="non-scaling-stroke"
         />
+        </g>
         <circle data-testid="boat-mast" cx={rig.mastX} cy={0} r={0.12} fill="#2b3a45" />
         <line
           data-testid="boat-rudder"

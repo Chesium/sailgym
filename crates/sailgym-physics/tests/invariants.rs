@@ -3,14 +3,10 @@
 //! This file starts here, at M3, and grows through sections 05–07; section 10
 //! completes it. Gate step 4 runs this target.
 //!
-//! **There is no sail until section 05**, so nothing here may assume the boat
-//! can accelerate itself. Every test is driven by an initial velocity or by an
-//! explicit external [`Load`] injected through
-//! [`sailgym_physics::testkit::WithExternalLoad`] — never by a temporary
-//! thrust term (`docs/04-hydro.md`, "the propulsion gap").
+//! Hydrodynamic guards retain explicit still-air fixtures and external loads.
+//! M4 adds wind-driven trajectories, diagnostics and continuous tack motion.
 
 use sailgym_physics::dynamics::Load;
-use sailgym_physics::environment::wind_from_bearing;
 use sailgym_physics::forces::PhysicalForces;
 use sailgym_physics::integrator::step;
 use sailgym_physics::parameters::BoatParameters;
@@ -62,6 +58,10 @@ fn rest_equilibrium() {
     let p = params();
     let start = Simulation::initial_state(&p);
     let mut sim = Simulation::new(p, 0);
+    sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+        speed: 0.0,
+        ..Default::default()
+    });
     sim.reset(start, 0);
     sim.advance(10_000);
 
@@ -150,6 +150,7 @@ fn force_sign_sanity() {
     let mut p = params();
     p.board.section.area = 0.0;
     p.rudder.section.area = 0.0;
+    p.sail.section.area = 0.0;
 
     let mut rng = Lcg(0x5164_0000_1111_2222);
     for k in 0..200 {
@@ -290,13 +291,6 @@ fn coordinate_frame_consistency() {
     // that is the actual content of the test.
     let p = params();
     let steps = steps_for(20.0, &p);
-    let model = WithExternalLoad {
-        inner: PhysicalForces,
-        extra: Load {
-            f: Vec3::new(150.0, 0.0, 0.0),
-            r: Vec3::ZERO,
-        },
-    };
     let controls = Controls {
         rudder_rate_cmd: 0.3,
         ..Controls::default()
@@ -320,9 +314,15 @@ fn coordinate_frame_consistency() {
             psi: st.psi + theta,
             ..st
         };
-        // ...and the wind with it. The sail arrives in section 05; rotating
-        // the bearing here is what makes this test still hold then.
-        let _wind: Vec2 = wind_from_bearing(5.0, bearing_deg - theta.to_degrees());
+        // Rotate the actual field, so this also exercises the sail in M4.
+        let wind = sailgym_physics::testkit::uniform_wind(5.0, bearing_deg - theta.to_degrees());
+        let model = WithExternalLoad {
+            inner: sailgym_physics::forces::WindForces { wind: &wind },
+            extra: Load {
+                f: Vec3::new(150.0, 0.0, 0.0),
+                r: Vec3::ZERO,
+            },
+        };
         let mut out = Vec::with_capacity(steps as usize);
         for _ in 0..steps {
             st = step(&st, &controls, &p, &model, p.sim.dt, p.sim.integrator);
@@ -410,4 +410,184 @@ fn finite_number_invariant() {
             assert!(st.is_finite(), "episode {k}, step {i}: {:?}", st.to_array());
         }
     }
+}
+
+#[test]
+fn sail_mirror_symmetry_trajectory() {
+    use sailgym_physics::environment::wind::{WindConfig, WindMode};
+    let p = params();
+    let start = BoatState {
+        psi: 0.2,
+        phi: 0.1,
+        beta: -0.4,
+        u: 2.0,
+        v: 0.1,
+        r: 0.02,
+        p: -0.01,
+        ..Simulation::initial_state(&p)
+    };
+    let mut a = Simulation::new(p, 505);
+    let mut b = Simulation::new(p, 505);
+    a.set_wind(WindConfig {
+        mode: WindMode::Uniform,
+        speed: 3.5,
+        bearing_deg: 135.0,
+        ..Default::default()
+    });
+    b.set_wind(WindConfig {
+        mode: WindMode::Uniform,
+        speed: 3.5,
+        bearing_deg: 45.0,
+        ..Default::default()
+    });
+    a.reset(start, 505);
+    b.reset(mirror_state(&start), 505);
+    for i in 0..steps_for(30.0, &p) {
+        let c = Controls {
+            rudder_rate_cmd: if i < 800 { 0.1 } else { 0.0 },
+            ..Default::default()
+        };
+        a.set_controls(c);
+        b.set_controls(mirror_controls(&c));
+        a.advance(1);
+        b.advance(1);
+        for ((actual, expected), name) in b
+            .state()
+            .to_array()
+            .into_iter()
+            .zip(mirror_state(a.state()).to_array())
+            .zip(STATE_FIELDS)
+        {
+            assert!(
+                (actual - expected).abs() < 1e-9,
+                "step {i}, {name}: {actual} vs {expected}"
+            );
+        }
+    }
+    assert!(a.state().beta != start.beta && a.state().x.abs() > 1.0);
+}
+
+#[test]
+fn no_sail_angle_command() {
+    fn check(dir: &std::path::Path) {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                check(&path);
+                continue;
+            }
+            if path.extension().is_none_or(|x| x != "rs") {
+                continue;
+            }
+            if matches!(
+                path.file_name().unwrap().to_str().unwrap(),
+                "integrator.rs" | "state.rs"
+            ) {
+                continue;
+            }
+            let source = std::fs::read_to_string(&path).unwrap();
+            let compact: String = source.chars().filter(|c| !c.is_whitespace()).collect();
+            for (_, tail) in compact
+                .match_indices(".beta")
+                .map(|(i, _)| (i, &compact[i + 5..]))
+            {
+                let assignment = (tail.starts_with('=') && !tail.starts_with("=="))
+                    || ["+=", "-=", "*=", "/="]
+                        .iter()
+                        .any(|op| tail.starts_with(op));
+                assert!(
+                    !assignment,
+                    "boom angle assignment outside integrator/state: {}",
+                    path.display()
+                );
+            }
+        }
+    }
+    check(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src"));
+}
+
+#[test]
+fn apparent_wind_consistency() {
+    use sailgym_physics::diagnostics::diagnostics;
+    let p = params();
+    let mut sim = Simulation::new(p, 506);
+    sim.reset(
+        BoatState {
+            psi: 0.7,
+            phi: 0.4,
+            u: 2.0,
+            v: -0.3,
+            r: 0.2,
+            p: 0.1,
+            beta: -0.5,
+            ..Simulation::initial_state(&p)
+        },
+        506,
+    );
+    for _ in 0..200 {
+        sim.advance(1);
+        let st = sim.state();
+        let w = sim.wind_at_boat();
+        // Independent CG derivation: the angular contribution is zero at CG.
+        let ax = w.x * st.psi.cos() + w.y * st.psi.sin() - st.u;
+        let ay = -w.x * st.psi.sin() + w.y * st.psi.cos() - st.v;
+        let expected = Vec3::new(ax, ay * st.phi.cos(), -ay * st.phi.sin());
+        let d = diagnostics(&sim);
+        assert!((d.apparent_wind_body - expected).length() < 1e-12);
+        assert!((d.apparent_wind_speed - expected.length()).abs() < 1e-12);
+        assert!((d.apparent_wind_angle - expected.y.atan2(-expected.x)).abs() < 1e-12);
+        assert_eq!(d.t, st.t);
+        assert_eq!(d.steps, sim.steps());
+    }
+}
+
+#[test]
+fn tack_through_wind() {
+    use sailgym_physics::environment::wind::{WindConfig, WindMode};
+    let p = params();
+    let mut sim = Simulation::new(p, 507);
+    sim.set_wind(WindConfig {
+        mode: WindMode::Uniform,
+        speed: 3.5,
+        bearing_deg: 135.0,
+        ..Default::default()
+    });
+    sim.reset(
+        BoatState {
+            u: 3.0,
+            beta: -0.4,
+            ..Simulation::initial_state(&p)
+        },
+        507,
+    );
+    let wind_heading = -std::f64::consts::FRAC_PI_4;
+    let mut crossed = false;
+    let mut changed_side = false;
+    let mut max_jump = 0.0_f64;
+    for i in 0..steps_for(40.0, &p) {
+        // Build rudder deflection for four seconds, then release to self-centre.
+        sim.set_controls(Controls {
+            rudder_rate_cmd: if i < 800 { 0.1 } else { 0.0 },
+            ..Default::default()
+        });
+        let before = *sim.state();
+        sim.advance(1);
+        let after = sim.state();
+        crossed |= before.psi > wind_heading && after.psi <= wind_heading;
+        changed_side |= crossed && after.beta > 0.0;
+        max_jump = max_jump.max((after.beta - before.beta).abs());
+        assert!(
+            (after.beta - before.beta).abs() < 0.3,
+            "step {i}: discontinuous boom"
+        );
+    }
+    assert!(
+        crossed && changed_side,
+        "wind crossed={crossed}, boom crossed={changed_side}"
+    );
+    eprintln!(
+        "tack: max boom step {max_jump:.9} rad, final psi={}, beta={}",
+        sim.state().psi,
+        sim.state().beta
+    );
 }

@@ -77,7 +77,7 @@ One agent per section, in order. Suggested prompt:
 |---|---|---|
 | Throwaway scaffold force model (R4) | 02, task 2.3 | 04, task 4.5 — with greps proving deletion |
 | Boom unrestrained by any sheet | 05 | 06 |
-| `phi` present but not integrated | 05 | 07 (with no change to section 05 code) |
+| Roll integrates; hydrostatic righting absent | 05 | 07 (with no change to section 05 code) |
 | `reward` placeholder always zero | 09 | Out of v1 scope; brief §33 asks for the hook only |
 
 ## Open item requiring human sign-off

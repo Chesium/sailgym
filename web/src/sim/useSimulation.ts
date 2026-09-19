@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { readDiagnostics, type Diagnostics } from './diagnostics'
 import { controlsFromInput, DEFAULT_INPUT, type InputConfig } from './controls'
 import { createClock, type Clock, type ClockState, type SpeedMultiplier } from './clock'
 import { actionFor, EDGE_ACTIONS, normaliseKey } from './keymap'
@@ -51,6 +52,7 @@ export interface SimulationHandle {
   version: string
   dt: number
   snapshot: Snapshot
+  diagnostics: Diagnostics | null
   clockState: ClockState
   params: RenderParams | null
   trajectory: readonly WorldPoint[]
@@ -74,29 +76,24 @@ export interface SimulationHandle {
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
 
-/**
- * A `Sim::reset` scenario document: the core's own initial state with the
- * surge velocity `u` replaced.
- *
- * There is no sail until section 05, so after section 04 the boat cannot
- * accelerate itself and a browser test of steering has nothing to steer. This
- * is the sanctioned substitute — an initial condition, not a force — and it is
- * deliberately built from `snapshot()` rather than written out here, so that
- * every other field (notably `l_sheet`, which starts at `l_sheet_min`) keeps
- * the value Rust chose. No physics and no parameter is duplicated in
- * TypeScript (F8).
- *
- * Section 09 replaces this with the real scenario system (brief section 32).
- */
-function surgeScenario(sim: SimHandle, u: number): string {
+/** Minimal M3/M4 fixtures, replaced by the scenario system in section 09. */
+function initialScenario(sim: SimHandle, name: string): string {
+  if (name !== 'coast' && name !== 'free_sail') return '{}'
   const values = sim.snapshot()
   const state: Record<string, number> = {}
-  SNAPSHOT_FIELDS.forEach((name, i) => {
-    // `SNAPSHOT_FIELDS` is camel case; the Rust `BoatState` is snake case.
-    state[name.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`)] = values[i]
+  SNAPSHOT_FIELDS.forEach((field, i) => {
+    state[field.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`)] = values[i]
   })
-  state.u = u
-  return JSON.stringify({ state })
+  const wind = JSON.parse(sim.wind_json() as string) as Record<string, unknown>
+  if (name === 'coast') {
+    state.u = 4
+    wind.speed = 0
+  } else {
+    wind.speed = 5
+    wind.bearing_deg = 0
+  }
+  wind.mode = 'uniform'
+  return JSON.stringify({ state, wind })
 }
 
 /** Sim-seconds between recorded trajectory points, and how many to keep. */
@@ -106,13 +103,14 @@ const TRAJECTORY_MAX_POINTS = 3000
 export function useSimulation(
   input: InputConfig = DEFAULT_INPUT,
   onFrame?: FrameHook,
-  initialSurge = 0,
+  scenarioName = '',
 ): SimulationHandle {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [version, setVersion] = useState('')
   const [dt, setDt] = useState(0)
   const [params, setParams] = useState<RenderParams | null>(null)
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null)
   const [snapshot, setSnapshot] = useState<Snapshot>(ZERO_SNAPSHOT)
   const [clockState, setClockState] = useState<ClockState>({
     running: true,
@@ -134,8 +132,8 @@ export function useSimulation(
   frameHookRef.current = onFrame
   // Read once, when the module loads; the simulation is not rebuilt if it
   // changes afterwards.
-  const initialSurgeRef = useRef(initialSurge)
-  initialSurgeRef.current = initialSurge
+  const scenarioNameRef = useRef(scenarioName)
+  scenarioNameRef.current = scenarioName
 
   // --- module + simulation lifetime ---------------------------------------
   useEffect(() => {
@@ -151,12 +149,12 @@ export function useSimulation(
         setDt(sim.dt())
         setParams(JSON.parse(sim.parameters_json() as string) as RenderParams)
 
-        const surge = initialSurgeRef.current
-        const scenario = surge === 0 ? '{}' : surgeScenario(sim, surge)
+        const scenario = initialScenario(sim, scenarioNameRef.current)
         if (scenario !== '{}') {
           sim.reset(scenario)
         }
         setSnapshot(readSnapshot(sim.snapshot()))
+        setDiagnostics(readDiagnostics(sim))
 
         clockRef.current = createClock(sim.dt(), {
           advance: (n) => sim.advance(n),
@@ -259,6 +257,7 @@ export function useSimulation(
       const sim = simRef.current
       if (sim !== null) {
         setSnapshot(readSnapshot(sim.snapshot()))
+        setDiagnostics(readDiagnostics(sim))
       }
     }
 
@@ -298,6 +297,7 @@ export function useSimulation(
       const next = readSnapshot(sim.snapshot())
       frameHookRef.current?.(sim, next, delta)
       setSnapshot(next)
+      setDiagnostics(readDiagnostics(sim))
       setClockState(clock.getState())
 
       if (next.t - lastTrackRef.current >= TRAJECTORY_INTERVAL_S) {
@@ -326,6 +326,7 @@ export function useSimulation(
     const sim = simRef.current
     if (sim !== null) {
       setSnapshot(readSnapshot(sim.snapshot()))
+      setDiagnostics(readDiagnostics(sim))
     }
   }, [])
 
@@ -335,6 +336,7 @@ export function useSimulation(
     version,
     dt,
     snapshot,
+    diagnostics,
     clockState,
     params,
     trajectory,

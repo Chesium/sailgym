@@ -92,22 +92,6 @@ export function boomSegment(
 }
 
 /**
- * Sail, drawn as the triangle mast → clew with a leeward bulge. Purely
- * indicative: the sail shape is not part of the physics, which uses a flat
- * chord from the mast to the clew (F6.3).
- */
-export function sailPath(rig: RigDims, beta: number): string {
-  const { x1, y1, x2, y2 } = boomSegment(rig, beta)
-  // Control point offset perpendicular to the boom, on the leeward side.
-  const bx = x2 - x1
-  const by = y2 - y1
-  const camber = 0.12
-  const cx = x1 + bx * 0.5 - by * camber
-  const cy = y1 + by * 0.5 + bx * camber
-  return `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`
-}
-
-/**
  * Rudder blade, from the stock aft along `ĉ_r(δr) = (−cos δr, −sin δr)`
  * (F2.2): a positive `δr` puts the trailing edge to starboard.
  */

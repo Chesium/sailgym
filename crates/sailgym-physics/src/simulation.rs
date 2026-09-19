@@ -5,10 +5,9 @@
 //! seed explicitly, and `advance(n)` is exactly `n` calls to `advance(1)`
 //! (F9.1, F9.2, F9.7).
 
-use crate::dynamics::ForceModel;
 use crate::environment::wind::{ProceduralWind, WindConfig};
 use crate::environment::WindField;
-use crate::forces::PhysicalForces;
+use crate::forces::WindForces;
 use crate::parameters::{BoatParameters, ParamError};
 use crate::state::{BoatState, Controls};
 use crate::vec::Vec2;
@@ -18,7 +17,6 @@ pub struct Simulation {
     state: BoatState,
     params: BoatParameters,
     controls: Controls,
-    force_model: Box<dyn ForceModel>,
     wind: ProceduralWind,
     seed: u64,
     steps: u64,
@@ -32,7 +30,6 @@ impl Simulation {
             state: Self::initial_state(&params),
             params,
             controls: Controls::default(),
-            force_model: Box::new(PhysicalForces),
             wind: ProceduralWind::new(WindConfig::default(), seed),
             seed,
             steps: 0,
@@ -96,7 +93,7 @@ impl Simulation {
                 &self.state,
                 &self.controls,
                 &self.params,
-                self.force_model.as_ref(),
+                &WindForces { wind: &self.wind },
                 dt,
                 method,
             );
