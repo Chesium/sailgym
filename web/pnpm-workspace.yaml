@@ -8,3 +8,17 @@ allowBuilds:
   # @swc/core (via vite-plugin-top-level-await) only probes for a native binding
   # that pnpm has already installed as an optional platform package.
   '@swc/core': false
+
+overrides:
+  # R5 fired here. `vite-plugin-top-level-await` re-prints every output chunk
+  # through @swc/core, and from @swc/core 1.16.0 that print fails on deck.gl's
+  # bundle with `missing field \`type\``, breaking `pnpm build` outright.
+  # Verified by bisection on this host: 1.14.0, 1.15.47 build; 1.16.0, 1.16.1
+  # and 1.16.2 (the version pnpm resolves by default) do not.
+  #
+  # The dev server and therefore the whole F12 gate are unaffected — the plugin
+  # only runs in `generateBundle` — so nothing but a production build catches
+  # this. Remove the pin once the plugin supports a current @swc/core, and
+  # re-check whether the plugin is needed at all: `build.target` is `esnext`
+  # and every browser in brief §38 has had native top-level await since 2021.
+  '@swc/core': 1.15.47

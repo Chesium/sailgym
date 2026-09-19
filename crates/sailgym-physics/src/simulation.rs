@@ -6,9 +6,12 @@
 //! (F9.1, F9.2, F9.7).
 
 use crate::dynamics::ForceModel;
+use crate::environment::wind::{ProceduralWind, WindConfig};
+use crate::environment::WindField;
 use crate::forces::ScaffoldForces;
 use crate::parameters::{BoatParameters, ParamError};
 use crate::state::{BoatState, Controls};
+use crate::vec::Vec2;
 
 /// The simulator.
 pub struct Simulation {
@@ -16,6 +19,7 @@ pub struct Simulation {
     params: BoatParameters,
     controls: Controls,
     force_model: Box<dyn ForceModel>,
+    wind: ProceduralWind,
     seed: u64,
     steps: u64,
 }
@@ -29,6 +33,7 @@ impl Simulation {
             params,
             controls: Controls::default(),
             force_model: Box::new(ScaffoldForces),
+            wind: ProceduralWind::new(WindConfig::default(), seed),
             seed,
             steps: 0,
         }
@@ -50,6 +55,31 @@ impl Simulation {
         self.seed = seed;
         self.steps = 0;
         self.controls = Controls::default();
+        // The wind is procedural, not stateful, but it is *seeded*: rebuilding
+        // it here is what makes a reset with a new seed give a new field, and
+        // a reset with the same seed reproduce the old one bit for bit
+        // (brief §34).
+        self.wind = ProceduralWind::new(*self.wind.config(), seed);
+    }
+
+    /// The wind field. Section 03 samples it for the visualization and the
+    /// HUD; the sail starts reading it in section 05.
+    pub fn wind(&self) -> &ProceduralWind {
+        &self.wind
+    }
+
+    /// Replace the wind field, keeping the boat state and the current seed.
+    ///
+    /// This is how the mode can be switched at runtime without a reload
+    /// (section 03 acceptance criterion 5). It is not a parameter edit: the
+    /// wind is environment, not boat (F7).
+    pub fn set_wind(&mut self, cfg: WindConfig) {
+        self.wind = ProceduralWind::new(cfg, self.seed);
+    }
+
+    /// True wind at the boat's position and simulation time, world frame.
+    pub fn wind_at_boat(&self) -> Vec2 {
+        self.wind.sample(self.state.x, self.state.y, self.state.t)
     }
 
     pub fn set_controls(&mut self, c: Controls) {
@@ -88,7 +118,7 @@ impl Simulation {
     }
 
     /// The seed every procedural source in the simulation derives from
-    /// (F9.2). Unused until the wind field arrives in section 03.
+    /// (F9.2). The wind field is the first consumer.
     pub fn seed(&self) -> u64 {
         self.seed
     }
@@ -216,6 +246,31 @@ mod tests {
         assert_eq!(sim.seed(), 99);
         assert_eq!(*sim.controls(), Controls::default());
         assert_eq!(sim.state().to_array(), start.to_array());
+    }
+
+    #[test]
+    fn wind_is_reseeded_by_reset_and_replaceable_at_runtime() {
+        use crate::environment::wind::WindMode;
+
+        let mut sim = Simulation::new(BoatParameters::ilca7(), 1);
+        let before = sim.wind_at_boat();
+
+        // A reset with the same seed reproduces the same field, bit for bit.
+        sim.reset(Simulation::initial_state(sim.params()), 1);
+        assert_eq!(sim.wind_at_boat().x.to_bits(), before.x.to_bits());
+
+        // A different seed gives a different field.
+        sim.reset(Simulation::initial_state(sim.params()), 2);
+        assert_ne!(sim.wind_at_boat(), before);
+
+        // Switching mode at runtime leaves the boat alone.
+        let state = *sim.state();
+        sim.set_wind(WindConfig {
+            mode: WindMode::Uniform,
+            ..*sim.wind().config()
+        });
+        assert_eq!(sim.wind().mode_count(), 0);
+        assert_eq!(sim.state().to_array(), state.to_array());
     }
 
     #[test]

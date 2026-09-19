@@ -68,7 +68,10 @@ export function BoatSvg({
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      style={{ display: 'block', background: '#eaf2f8', touchAction: 'none' }}
+      // Transparent, not the sea colour: section 03 puts the deck.gl wind
+      // canvas *underneath* this SVG, and an opaque background here would hide
+      // it completely. The sea colour moved to the wrapper in `App.tsx`.
+      style={{ display: 'block', background: 'transparent', touchAction: 'none' }}
       onPointerDown={(e) => {
         // Middle button, or Shift + any button. Plain left-drag stays free.
         if (e.button === 1 || e.shiftKey) {

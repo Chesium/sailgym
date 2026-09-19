@@ -4,12 +4,15 @@
 //! `sailgym-physics` (F8). This file only marshals strings and flat buffers
 //! across the boundary. The method set is the subset of F8.2 that exists at
 //! this milestone — `new`, `reset`, `set_controls`, `advance`, `snapshot`,
-//! `set_parameter`, `parameters_json`; the rest arrive with the sections that
-//! specify them.
+//! `set_parameter`, `parameters_json`, plus the section 03 wind methods
+//! `sample_wind_grid`, `wind_at_boat`, `set_wind` and `wind_json`; the rest
+//! arrive with the sections that specify them.
 //!
 //! The API is coarse-grained by construction (brief §24): per-force-component
 //! and per-entity calls are forbidden.
 
+use sailgym_physics::environment::wind::WindConfig;
+use sailgym_physics::environment::{wind_to_bearing, WindField};
 use sailgym_physics::parameters::BoatParameters;
 use sailgym_physics::simulation::Simulation;
 use sailgym_physics::state::{BoatState, Controls};
@@ -33,6 +36,16 @@ fn js_err(context: &str, e: impl std::fmt::Display) -> JsValue {
     JsValue::from_str(&format!("{context}: {e}"))
 }
 
+/// Deserialise and validate a `WindConfig`. Validation happens here rather
+/// than inside the field so that a bad configuration is a JS exception at the
+/// call site, not a `NaN` that spreads silently through the visualization.
+fn parse_wind(value: &serde_json::Value) -> Result<WindConfig, JsValue> {
+    let cfg: WindConfig =
+        serde_json::from_value(value.clone()).map_err(|e| js_err("invalid wind", e))?;
+    cfg.validate().map_err(|e| js_err("invalid wind", e))?;
+    Ok(cfg)
+}
+
 /// The simulation handle JavaScript holds.
 #[wasm_bindgen]
 pub struct Sim {
@@ -47,11 +60,13 @@ impl Sim {
     /// Recognised keys, both optional:
     ///
     /// ```json
-    /// { "seed": 0, "parameters": { ... the full F7 catalogue ... } }
+    /// { "seed": 0,
+    ///   "parameters": { ... the full F7 catalogue ... },
+    ///   "wind": { ... the full WindConfig ... } }
     /// ```
     ///
-    /// `{}` yields the ILCA 7 defaults with seed 0. Scenario-shaped documents
-    /// (initial state, wind, overrides) arrive in section 09.
+    /// `{}` yields the ILCA 7 defaults, the default wind and seed 0.
+    /// Scenario-shaped documents arrive in section 09.
     #[wasm_bindgen(constructor)]
     pub fn new(config_json: &str) -> Result<Sim, JsValue> {
         let config: serde_json::Value =
@@ -70,17 +85,22 @@ impl Sim {
             .validate()
             .map_err(|e| js_err("invalid parameters", e))?;
 
+        let mut inner = Simulation::new(params, seed);
+        if let Some(w) = config.get("wind") {
+            inner.set_wind(parse_wind(w)?);
+        }
+
         Ok(Sim {
-            inner: Simulation::new(params, seed),
+            inner,
             built: env!("CARGO_PKG_VERSION").to_string(),
         })
     }
 
     /// Restart the simulation.
     ///
-    /// Recognised keys, both optional: `seed`, and `state` as the full
-    /// thirteen-field F3 record. `{}` restarts at rest at the origin with the
-    /// current seed.
+    /// Recognised keys, all optional: `seed`, `state` as the full
+    /// thirteen-field F3 record, and `wind` as a full `WindConfig`. `{}`
+    /// restarts at rest at the origin with the current seed and wind.
     pub fn reset(&mut self, scenario_json: &str) -> Result<(), JsValue> {
         let scenario: serde_json::Value =
             serde_json::from_str(scenario_json).map_err(|e| js_err("invalid scenario JSON", e))?;
@@ -96,6 +116,9 @@ impl Sim {
         };
 
         self.inner.reset(state, seed);
+        if let Some(w) = scenario.get("wind") {
+            self.inner.set_wind(parse_wind(w)?);
+        }
         Ok(())
     }
 
@@ -133,6 +156,67 @@ impl Sim {
     pub fn parameters_json(&self) -> Result<JsValue, JsValue> {
         let json =
             serde_json::to_string(self.inner.params()).map_err(|e| js_err("parameters_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    // --- wind (section 03) ------------------------------------------------
+
+    /// Fill `out` with `[wx, wy]` pairs for an `nx × ny` grid whose node
+    /// `(i, j)` sits at `(x0 + i·dx, y0 + j·dy)`, row-major.
+    ///
+    /// **One call per animation frame, for the whole grid** (brief §19). The
+    /// per-point `sample` is deliberately *not* exported to JavaScript: the
+    /// batched call is the only way across the boundary, which is what keeps
+    /// the visualization from making thousands of boundary crossings a frame
+    /// (brief §24).
+    ///
+    /// `out.len()` must be `2·nx·ny`.
+    #[allow(clippy::too_many_arguments)] // signature is normative, F8.2
+    pub fn sample_wind_grid(
+        &self,
+        x0: f64,
+        y0: f64,
+        dx: f64,
+        dy: f64,
+        nx: u32,
+        ny: u32,
+        t: f64,
+        out: &mut [f32],
+    ) {
+        self.inner
+            .wind()
+            .sample_grid(x0, y0, dx, dy, nx as usize, ny as usize, t, out);
+    }
+
+    /// True wind at the boat, for the HUD: `[wx, wy, speed, bearing_deg]`.
+    ///
+    /// The bearing is the meteorological FROM direction and comes from
+    /// `environment::wind_to_bearing`. It is returned here, rather than being
+    /// derived in TypeScript, because that conversion exists in exactly one
+    /// place (F6.1, F8) — a second implementation is how the from/toward flip
+    /// gets in.
+    pub fn wind_at_boat(&self) -> Box<[f64]> {
+        let w = self.inner.wind_at_boat();
+        let (speed, bearing_deg) = wind_to_bearing(w);
+        Box::new([w.x, w.y, speed, bearing_deg])
+    }
+
+    /// Replace the wind configuration while the simulation is running.
+    ///
+    /// The boat state, the parameters and the seed are untouched, so the mode
+    /// can be switched without a reload or a reset.
+    pub fn set_wind(&mut self, wind_json: &str) -> Result<(), JsValue> {
+        let value: serde_json::Value =
+            serde_json::from_str(wind_json).map_err(|e| js_err("invalid wind JSON", e))?;
+        self.inner.set_wind(parse_wind(&value)?);
+        Ok(())
+    }
+
+    /// The current wind configuration, as a JSON **string** (see
+    /// `parameters_json` for why a string).
+    pub fn wind_json(&self) -> Result<JsValue, JsValue> {
+        let json = serde_json::to_string(self.inner.wind().config())
+            .map_err(|e| js_err("wind_json", e))?;
         Ok(JsValue::from_str(&json))
     }
 

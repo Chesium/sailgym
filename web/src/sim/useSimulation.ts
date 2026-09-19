@@ -7,7 +7,10 @@
  * calls. Rendering reads the most recent snapshot.
  *
  * **This is the only file under `web/src/sim/` that may mention
- * `requestAnimationFrame`.** `clock.ts` contains none at all.
+ * `requestAnimationFrame`.** `clock.ts` contains none at all, and the deck.gl
+ * wind overlay does not open a second loop — it hangs off {@link FrameHook}
+ * below, so the visualization is always sampling the state the physics just
+ * produced.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -31,6 +34,17 @@ export interface WorldPoint {
   y: number
 }
 
+/**
+ * Called once per animation frame, after the physics has advanced and the
+ * snapshot has been read.
+ *
+ * Exists so the wind visualization can share the one frame loop (section 02
+ * handoff, item 6) instead of starting its own. It is handed the live `Sim`
+ * because the batched `sample_wind_grid` is the only sanctioned way to read
+ * the field (brief section 19); it must not be used for per-entity queries.
+ */
+export type FrameHook = (sim: SimHandle, snapshot: Snapshot, dtMs: number) => void
+
 export interface SimulationHandle {
   ready: boolean
   error: string | null
@@ -46,6 +60,16 @@ export interface SimulationHandle {
   reset(): void
   singleStep(): void
   setSpeed(s: SpeedMultiplier): void
+  /**
+   * Run an imperative call against the live `Sim`, or return `null` if the
+   * module is not ready yet.
+   *
+   * The escape hatch for the coarse-grained calls that are not part of the
+   * frame loop — switching the wind mode, editing a parameter. It keeps
+   * ownership of the `Sim` here, so nothing else has to decide when to free
+   * it.
+   */
+  withSim<T>(fn: (sim: SimHandle) => T): T | null
 }
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
@@ -54,7 +78,10 @@ const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.le
 const TRAJECTORY_INTERVAL_S = 0.2
 const TRAJECTORY_MAX_POINTS = 3000
 
-export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHandle {
+export function useSimulation(
+  input: InputConfig = DEFAULT_INPUT,
+  onFrame?: FrameHook,
+): SimulationHandle {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [version, setVersion] = useState('')
@@ -76,6 +103,9 @@ export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHan
   const lastTrackRef = useRef(-Infinity)
   const inputRef = useRef(input)
   inputRef.current = input
+  // Held in a ref so a new closure per frame does not restart the loop.
+  const frameHookRef = useRef<FrameHook | undefined>(onFrame)
+  frameHookRef.current = onFrame
 
   // --- module + simulation lifetime ---------------------------------------
   useEffect(() => {
@@ -124,6 +154,25 @@ export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHan
     }
     const held = heldRef.current
 
+    /**
+     * Push the currently held keys into the core.
+     *
+     * Called from the key handlers as well as from the frame loop. Doing it
+     * only in the frame loop leaves a race: a key press followed immediately
+     * by a single step advances the physics with the *previous* frame's
+     * controls, and how often that happens depends on the frame rate. It
+     * showed up as `determinism.spec.ts` sampling a rudder that had not moved
+     * yet, on a machine whose frames had become slow.
+     */
+    const applyControls = () => {
+      const sim = simRef.current
+      if (sim === null) {
+        return
+      }
+      const c = controlsFromInput(held, inputRef.current)
+      sim.set_controls(c.rudderRateCmd, c.sheetRateCmd, c.sheetRelease)
+    }
+
     const onKeyDown = (e: KeyboardEvent) => {
       const key = normaliseKey(e.key)
       const action = actionFor(key)
@@ -140,6 +189,8 @@ export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHan
         if (clock === null) {
           return
         }
+        // Before the step, never after it.
+        applyControls()
         if (action === 'reset') {
           clock.reset()
         } else if (action === 'pause') {
@@ -156,12 +207,17 @@ export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHan
         return
       }
       held.add(key)
+      applyControls()
     }
 
     const onKeyUp = (e: KeyboardEvent) => {
       held.delete(normaliseKey(e.key))
+      applyControls()
     }
-    const onBlur = () => held.clear()
+    const onBlur = () => {
+      held.clear()
+      applyControls()
+    }
 
     const pushSnapshot = () => {
       const sim = simRef.current
@@ -204,6 +260,7 @@ export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHan
       clock.tick(delta)
 
       const next = readSnapshot(sim.snapshot())
+      frameHookRef.current?.(sim, next, delta)
       setSnapshot(next)
       setClockState(clock.getState())
 
@@ -257,5 +314,9 @@ export function useSimulation(input: InputConfig = DEFAULT_INPUT): SimulationHan
       (s: SpeedMultiplier) => withClock((c) => c.setSpeed(s)),
       [withClock],
     ),
+    withSim: useCallback(<T,>(fn: (sim: SimHandle) => T): T | null => {
+      const sim = simRef.current
+      return sim === null ? null : fn(sim)
+    }, []),
   }
 }

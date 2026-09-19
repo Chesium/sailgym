@@ -9,6 +9,20 @@ import { defineConfig, devices } from '@playwright/test'
  * build the WASM package — that is gate step 6 (`scripts/build-wasm.*`),
  * which the gate chain always runs before step 8.
  */
+
+/**
+ * Headless Chromium defaults to SwiftShader, a software rasteriser. Section 03
+ * put a deck.gl canvas on the page, and rendering four thousand particles in
+ * software costs about 85 ms a frame — twelve frames a second, on every page,
+ * in every worker. Asking for the real GPU brings it back to the vsync limit
+ * and keeps the suite from starving the host (see the worker note below).
+ *
+ * On a machine or a CI container with no usable GPU these flags change
+ * nothing: Chromium falls back to SwiftShader exactly as before. Firefox has
+ * no equivalent switch and stays on its software path.
+ */
+const GPU = { args: ['--enable-gpu', '--use-angle=default', '--ignore-gpu-blocklist'] }
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -24,7 +38,15 @@ export default defineConfig({
   // measured 2x/1x ratio. Both are a starved host, not a slow app, so the cap
   // is the honest fix; neither the readiness timeout nor the ratio bounds were
   // touched.
-  workers: process.env.CI ? 2 : 4,
+  //
+  // Section 03 added a WebGL canvas to every page, and had to lower the cap
+  // again. Chromium and Edge get the real GPU (see `GPU` above) and cost
+  // little, but Firefox has no headless GPU path here and renders the particle
+  // field in software at roughly 80 ms a frame. Four such workers starved the
+  // host enough to fail the 2x/1x ratio and to leave a page having advanced no
+  // simulated time at all in half a second. Two workers, again without
+  // touching a single assertion.
+  workers: 2,
   reporter: process.env.CI ? 'line' : [['list']],
   timeout: 30_000,
   expect: { timeout: 5_000 },
@@ -35,9 +57,12 @@ export default defineConfig({
   },
 
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'], launchOptions: GPU } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'msedge', use: { ...devices['Desktop Edge'], channel: 'msedge' } },
+    {
+      name: 'msedge',
+      use: { ...devices['Desktop Edge'], channel: 'msedge', launchOptions: GPU },
+    },
   ],
 
   webServer: {

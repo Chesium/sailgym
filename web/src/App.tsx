@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   createCamera,
@@ -6,30 +6,80 @@ import {
   PIXELS_PER_METRE,
   MIN_ZOOM,
   MAX_ZOOM,
+  type Camera,
   type CameraMode,
   type Vec2,
 } from './render/Camera'
 import { BoatSvg } from './render/BoatSvg'
 import { useSimulation } from './sim/useSimulation'
 import { ClockControls } from './ui/ClockControls'
+import { WindReadout } from './ui/WindReadout'
+import { ArrowProbe, buildArrows, type ArrowField } from './wind/ArrowOverlay'
+import { DeckOverlay } from './wind/DeckOverlay'
+import { particleLayers } from './wind/WindLayer'
+import { useWindField } from './wind/useWindField'
 
 const VIEWPORT = { width: 780, height: 520 }
 
+/** The three F6.1 wind modes, as the scenario JSON spells them. */
+const WIND_MODES = ['uniform', 'spatial', 'gust'] as const
+type WindModeName = (typeof WIND_MODES)[number]
+
 /**
- * The M1 application: a steerable boat, a trajectory, two camera modes and the
- * full clock control set.
+ * The M2 application: the M1 boat, plus an animated deck.gl wind field driven
+ * by the same Rust field the simulation uses.
  *
  * `data-testid="wasm-status"` and `data-ready` are the contract frozen by
  * task 1.3 — do not rename them. `data-testid="snapshot"` carries the raw F8.3
  * values as attributes so the E2E suite can assert on numbers rather than
- * pixels (brief §42).
+ * pixels (brief §42); `data-testid="wind-stats"` does the same for the
+ * once-per-frame guarantee of brief §19 and for the frame timings section 03
+ * asks to be recorded.
  */
 export default function App() {
-  const sim = useSimulation()
+  const wind = useWindField()
+  const cameraRef = useRef<Camera | null>(null)
+
+  const onFrame = useCallback(
+    (sim: Parameters<typeof wind.onFrame>[0], snapshot: { t: number }) => {
+      const camera = cameraRef.current
+      if (camera !== null) {
+        wind.onFrame(sim, camera, snapshot.t)
+      }
+    },
+    [wind],
+  )
+
+  const sim = useSimulation(undefined, onFrame)
   const [mode, setMode] = useState<CameraMode>('northUp')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Vec2>({ x: 0, y: 0 })
+  const [windMode, setWindMode] = useState<WindModeName>('gust')
+  const [showArrows, setShowArrows] = useState(false)
   const baseCentre = useRef<Vec2>({ x: 0, y: 0 })
+
+  // Read the wind mode the core actually started with, and take the 128×128
+  // grid timing once, in this browser (task 3.3).
+  useEffect(() => {
+    if (!sim.ready) {
+      return
+    }
+    sim.withSim((s) => {
+      const cfg = JSON.parse(s.wind_json() as string) as { mode: WindModeName }
+      setWindMode(cfg.mode)
+      wind.benchmarkLargeGrid(s)
+    })
+    // `wind` is a stable handle of refs; re-running on it would re-benchmark.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim.ready])
+
+  const applyWindMode = (next: WindModeName) => {
+    sim.withSim((s) => {
+      const cfg = JSON.parse(s.wind_json() as string) as Record<string, unknown>
+      s.set_wind(JSON.stringify({ ...cfg, mode: next }))
+    })
+    setWindMode(next)
+  }
 
   const s = sim.snapshot
   const scale = PIXELS_PER_METRE * zoom
@@ -47,6 +97,7 @@ export default function App() {
     heading: s.psi,
     viewport: VIEWPORT,
   })
+  cameraRef.current = camera
 
   const hull = sim.params === null ? { loa: 1, beam: 1 } : sim.params.hull
   const rig =
@@ -58,6 +109,22 @@ export default function App() {
           rudderX: sim.params.rudder.pos_b.x,
           boardX: sim.params.board.pos_b.x,
         }
+
+  const grid = wind.grid()
+  const arrows: ArrowField | null =
+    showArrows && grid !== null ? buildArrows(grid, camera) : null
+  const layers =
+    grid === null
+      ? []
+      : [
+          ...particleLayers({
+            particles: wind.particles(),
+            heads: wind.heads(),
+            tails: wind.tails(),
+          }),
+          ...(arrows?.layers ?? []),
+        ]
+  const stats = wind.stats()
 
   return (
     <div style={{ font: '13px system-ui, sans-serif', padding: 12, display: 'grid', gap: 8 }}>
@@ -98,21 +165,61 @@ export default function App() {
         </button>
       </div>
 
-      <BoatSvg
-        camera={camera}
-        pose={{ x: s.x, y: s.y, psi: s.psi, beta: s.beta, deltaR: s.deltaR }}
-        hull={hull}
-        rig={rig}
-        trajectory={sim.trajectory}
-        onPan={(dxPixels, dyPixels) => {
-          const a = camera.screenToWorld({ x: 0, y: 0 })
-          const b = camera.screenToWorld({ x: dxPixels, y: dyPixels })
-          setPan((p) => ({ x: p.x - (b.x - a.x), y: p.y - (b.y - a.y) }))
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <label>
+          Wind:{' '}
+          <select
+            data-testid="wind-mode"
+            value={windMode}
+            onChange={(e) => applyWindMode(e.target.value as WindModeName)}
+          >
+            {WIND_MODES.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          data-testid="toggle-wind-arrows"
+          data-on={showArrows ? 'true' : 'false'}
+          onClick={() => setShowArrows((v) => !v)}
+        >
+          Arrows: {showArrows ? 'on' : 'off'}
+        </button>
+        <WindReadout wind={wind.windAtBoat()} />
+      </div>
+
+      <div
+        style={{
+          position: 'relative',
+          width: VIEWPORT.width,
+          height: VIEWPORT.height,
+          // The sea. It lives here rather than on the SVG because the wind
+          // canvas sits between the two.
+          background: '#eaf2f8',
         }}
-        onZoom={(factor) => {
-          setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)))
-        }}
-      />
+      >
+        {sim.ready && <DeckOverlay viewport={VIEWPORT} layers={layers} />}
+        <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
+          <BoatSvg
+            camera={camera}
+            pose={{ x: s.x, y: s.y, psi: s.psi, beta: s.beta, deltaR: s.deltaR }}
+            hull={hull}
+            rig={rig}
+            trajectory={sim.trajectory}
+            onPan={(dxPixels, dyPixels) => {
+              const a = camera.screenToWorld({ x: 0, y: 0 })
+              const b = camera.screenToWorld({ x: dxPixels, y: dyPixels })
+              setPan((p) => ({ x: p.x - (b.x - a.x), y: p.y - (b.y - a.y) }))
+            }}
+            onZoom={(factor) => {
+              setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)))
+            }}
+          />
+        </div>
+      </div>
 
       <div
         data-testid="snapshot"
@@ -135,6 +242,25 @@ export default function App() {
         {((s.psi * 180) / Math.PI).toFixed(1)}° · u {s.u.toFixed(2)} m/s · δr{' '}
         {((s.deltaR * 180) / Math.PI).toFixed(1)}°
       </div>
+
+      <div
+        data-testid="wind-stats"
+        data-frames={stats.frames}
+        data-grid-calls={stats.gridCalls}
+        data-grid-ms={stats.gridMs}
+        data-wind-ms={stats.windMs}
+        data-frame-ms={stats.frameMs}
+        data-benchmark-ms={stats.benchmarkMs ?? ''}
+        data-grid-nx={grid?.nx ?? 0}
+        data-grid-ny={grid?.ny ?? 0}
+        data-particles={wind.particles().count}
+        style={{ color: '#667' }}
+      >
+        wind grid {grid?.nx ?? 0}×{grid?.ny ?? 0} in {stats.gridMs.toFixed(2)} ms · frame{' '}
+        {stats.frameMs.toFixed(1)} ms · {wind.particles().count} particles
+      </div>
+
+      <ArrowProbe field={arrows} />
 
       <div style={{ color: '#667' }}>
         A / ← and D / → steer · Space eases the sheet · P pauses · . single-steps · R resets ·

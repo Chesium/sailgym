@@ -12,6 +12,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.4.0",
+    "@deck.gl/layers": "^9.4.0",
+    "@deck.gl/react": "^9.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
