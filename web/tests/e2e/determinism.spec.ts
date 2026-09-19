@@ -52,7 +52,10 @@ async function replay(page: Page): Promise<Record<string, number>[]> {
 
 test.describe('determinism', () => {
   test('the same scripted key sequence reproduces the same trajectory', async ({ page }) => {
-    await gotoApp(page)
+    // An initial speed, so the replay has a trajectory to reproduce: there is
+    // no sail until section 05 and the M1 placeholder force model was deleted
+    // in section 04.
+    await gotoApp(page, { scenario: 'coast' })
     // Pause first; `replay` resets and then expects a paused clock.
     await page.keyboard.press('p')
 

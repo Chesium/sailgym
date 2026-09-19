@@ -25,4 +25,8 @@ pub mod scenario;
 pub mod simulation;
 pub mod stability;
 pub mod state;
+/// Test-only helpers (section 04, task 4.1). Compiled only under `cfg(test)`
+/// or the `testkit` feature, so nothing here reaches the wasm build.
+#[cfg(any(test, feature = "testkit"))]
+pub mod testkit;
 pub mod vec;

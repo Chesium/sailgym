@@ -644,9 +644,6 @@ pub struct SimParams {
     /// KNOWN — brief §21 prefers RK2 midpoint. `Rk4` exists only as the
     /// section 10 convergence reference and is never the default.
     pub integrator: Integrator,
-    /// N. DEFERRED — thrust of the M1 scaffold force model (R4). **Deleted by
-    /// task 4.5 together with `forces/scaffold.rs`.** Not physics.
-    pub scaffold_thrust: f64,
 }
 
 impl Default for SimParams {
@@ -654,7 +651,6 @@ impl Default for SimParams {
         Self {
             dt: 0.005,
             integrator: Integrator::Rk2Midpoint,
-            scaffold_thrust: 120.0,
         }
     }
 }
@@ -663,7 +659,6 @@ impl SimParams {
     fn field_mut(&mut self, path: &str) -> Option<&mut f64> {
         match path {
             "dt" => Some(&mut self.dt),
-            "scaffold_thrust" => Some(&mut self.scaffold_thrust),
             _ => None,
         }
     }

@@ -9,7 +9,11 @@ import { expect, gotoApp, readSnapshot, test } from './fixtures'
  */
 test.describe('controls', () => {
   test('D steers the bow to starboard', async ({ page }) => {
-    await gotoApp(page)
+    // The `coast` scenario gives the boat an initial speed. From section 04 the
+    // rudder's authority comes from the water it moves through (F6.5), and the
+    // M1 placeholder force model that used to push the boat along is gone; a
+    // boat at rest cannot be steered, which is correct physics (brief §14).
+    await gotoApp(page, { scenario: 'coast' })
     await page.keyboard.down('d')
     await page.waitForTimeout(1200)
     const held = await readSnapshot(page)
@@ -20,7 +24,7 @@ test.describe('controls', () => {
   })
 
   test('A mirrors both signs', async ({ page }) => {
-    await gotoApp(page)
+    await gotoApp(page, { scenario: 'coast' })
     await page.keyboard.down('a')
     await page.waitForTimeout(1200)
     const held = await readSnapshot(page)

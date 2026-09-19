@@ -21,6 +21,25 @@ import { useWindField } from './wind/useWindField'
 
 const VIEWPORT = { width: 780, height: 520 }
 
+/**
+ * Test-only initial conditions, addressed by `?scenario=<name>`.
+ *
+ * The value is an initial surge speed in m/s — an initial condition, not a
+ * force and not an F7 parameter. It exists because there is no sail until
+ * section 05: after section 04 the boat cannot accelerate itself, so a browser
+ * test of steering, coasting or rudder self-centring has nothing to act on.
+ *
+ * Section 09 replaces this with the real scenario system (brief section 32),
+ * at which point `gotoApp(page, { scenario })` starts meaning what it says.
+ */
+const TEST_SCENARIOS: Record<string, number> = { coast: 4 }
+
+/** The initial surge speed the `?scenario=` query asks for, or 0. */
+function initialSurgeFromUrl(): number {
+  const name = new URLSearchParams(window.location.search).get('scenario')
+  return name === null ? 0 : (TEST_SCENARIOS[name] ?? 0)
+}
+
 /** The three F6.1 wind modes, as the scenario JSON spells them. */
 const WIND_MODES = ['uniform', 'spatial', 'gust'] as const
 type WindModeName = (typeof WIND_MODES)[number]
@@ -50,7 +69,7 @@ export default function App() {
     [wind],
   )
 
-  const sim = useSimulation(undefined, onFrame)
+  const sim = useSimulation(undefined, onFrame, initialSurgeFromUrl())
   const [mode, setMode] = useState<CameraMode>('northUp')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Vec2>({ x: 0, y: 0 })

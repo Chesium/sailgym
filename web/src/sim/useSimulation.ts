@@ -74,6 +74,31 @@ export interface SimulationHandle {
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
 
+/**
+ * A `Sim::reset` scenario document: the core's own initial state with the
+ * surge velocity `u` replaced.
+ *
+ * There is no sail until section 05, so after section 04 the boat cannot
+ * accelerate itself and a browser test of steering has nothing to steer. This
+ * is the sanctioned substitute — an initial condition, not a force — and it is
+ * deliberately built from `snapshot()` rather than written out here, so that
+ * every other field (notably `l_sheet`, which starts at `l_sheet_min`) keeps
+ * the value Rust chose. No physics and no parameter is duplicated in
+ * TypeScript (F8).
+ *
+ * Section 09 replaces this with the real scenario system (brief section 32).
+ */
+function surgeScenario(sim: SimHandle, u: number): string {
+  const values = sim.snapshot()
+  const state: Record<string, number> = {}
+  SNAPSHOT_FIELDS.forEach((name, i) => {
+    // `SNAPSHOT_FIELDS` is camel case; the Rust `BoatState` is snake case.
+    state[name.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`)] = values[i]
+  })
+  state.u = u
+  return JSON.stringify({ state })
+}
+
 /** Sim-seconds between recorded trajectory points, and how many to keep. */
 const TRAJECTORY_INTERVAL_S = 0.2
 const TRAJECTORY_MAX_POINTS = 3000
@@ -81,6 +106,7 @@ const TRAJECTORY_MAX_POINTS = 3000
 export function useSimulation(
   input: InputConfig = DEFAULT_INPUT,
   onFrame?: FrameHook,
+  initialSurge = 0,
 ): SimulationHandle {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -106,6 +132,10 @@ export function useSimulation(
   // Held in a ref so a new closure per frame does not restart the loop.
   const frameHookRef = useRef<FrameHook | undefined>(onFrame)
   frameHookRef.current = onFrame
+  // Read once, when the module loads; the simulation is not rebuilt if it
+  // changes afterwards.
+  const initialSurgeRef = useRef(initialSurge)
+  initialSurgeRef.current = initialSurge
 
   // --- module + simulation lifetime ---------------------------------------
   useEffect(() => {
@@ -120,12 +150,18 @@ export function useSimulation(
         setVersion(sim.version())
         setDt(sim.dt())
         setParams(JSON.parse(sim.parameters_json() as string) as RenderParams)
+
+        const surge = initialSurgeRef.current
+        const scenario = surge === 0 ? '{}' : surgeScenario(sim, surge)
+        if (scenario !== '{}') {
+          sim.reset(scenario)
+        }
         setSnapshot(readSnapshot(sim.snapshot()))
 
         clockRef.current = createClock(sim.dt(), {
           advance: (n) => sim.advance(n),
           reset: () => {
-            sim.reset('{}')
+            sim.reset(scenario)
             trackRef.current = []
             lastTrackRef.current = -Infinity
             setTrajectory([])

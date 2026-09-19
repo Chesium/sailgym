@@ -5,7 +5,9 @@ import { expect, gotoApp, test } from './fixtures'
  */
 test.describe('render', () => {
   test('the boat is drawn and moves while the simulation runs', async ({ page }) => {
-    await gotoApp(page)
+    // `coast` gives the boat the speed it needs to move at all: the M1
+    // placeholder thrust is gone (section 04) and the sail arrives in 05.
+    await gotoApp(page, { scenario: 'coast' })
     const hull = page.getByTestId('boat-hull')
     await expect(hull).toBeAttached()
 

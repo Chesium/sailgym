@@ -8,7 +8,7 @@
 use crate::dynamics::ForceModel;
 use crate::environment::wind::{ProceduralWind, WindConfig};
 use crate::environment::WindField;
-use crate::forces::ScaffoldForces;
+use crate::forces::PhysicalForces;
 use crate::parameters::{BoatParameters, ParamError};
 use crate::state::{BoatState, Controls};
 use crate::vec::Vec2;
@@ -25,14 +25,14 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    /// A simulation at rest at the origin, driven by the M1 placeholder
-    /// force model (R4 — replaced by section 04).
+    /// A simulation at rest at the origin, driven by the real force model
+    /// (F4.4, section 04).
     pub fn new(params: BoatParameters, seed: u64) -> Self {
         Self {
             state: Self::initial_state(&params),
             params,
             controls: Controls::default(),
-            force_model: Box::new(ScaffoldForces),
+            force_model: Box::new(PhysicalForces),
             wind: ProceduralWind::new(WindConfig::default(), seed),
             seed,
             steps: 0,
