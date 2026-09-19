@@ -16,7 +16,8 @@
     "@deck.gl/layers": "^9.4.0",
     "@deck.gl/react": "^9.4.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

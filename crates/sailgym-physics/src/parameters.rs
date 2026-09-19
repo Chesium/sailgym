@@ -25,6 +25,7 @@
 //! `rudder.pos_b.*` and `sheet.block_pos_b.*`.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use crate::integrator::Integrator;
 use crate::vec::Vec3;
@@ -828,6 +829,190 @@ impl BoatParameters {
     }
 }
 
+// ---------------------------------------------------------------------------
+// The editable catalogue, derived from this file's own source (section 08)
+// ---------------------------------------------------------------------------
+
+/// One editable leaf of the catalogue: its dotted path, its F7 tag, its unit
+/// and its documentation.
+///
+/// **Nothing here is hand-written.** [`catalogue`] parses the struct
+/// declarations and the doc comments of this very file, so a parameter added
+/// above appears in the panel (brief §31) with its tag the moment it compiles,
+/// and one deleted disappears. That is the whole point: a second, hand-kept
+/// list of parameter names is precisely the kind of duplication that goes
+/// stale, and the panel's job is to be a faithful view of `parameters.rs`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct ParamMeta {
+    /// The dotted path `set_path`/`get_path` accept.
+    pub path: String,
+    /// `KNOWN`, `ASSUMED`, `TUNABLE`, `DEFERRED`, or empty if the doc comment
+    /// carries none (which `every_parameter_field_is_tagged` forbids).
+    pub tag: String,
+    /// The unit as the doc comment states it — `m`, `kg·m²`, `rad/s`,
+    /// `dimensionless` — or empty for a dimensionless flag.
+    pub unit: String,
+    /// The field's whole doc comment, for the control's tooltip.
+    pub doc: String,
+    /// `f64` or `bool`. `sim.integrator` is neither and is not addressable
+    /// (section 02 handoff §2.8), so it is absent.
+    pub kind: String,
+    /// Whether editing this path invalidates simulation continuity, matching
+    /// what [`BoatParameters::set_path`] returns.
+    pub reset_required: bool,
+}
+
+/// The four F7 tags, in no particular order.
+const PARAM_TAGS: [&str; 4] = ["KNOWN", "ASSUMED", "TUNABLE", "DEFERRED"];
+
+/// Longest a leading phrase may be before it stops being a unit and starts
+/// being prose. `N·s²/m²` and `m, in B` are units; a sentence is not.
+const MAX_UNIT_CHARS: usize = 24;
+
+/// One field as it is written in the source.
+struct SourceField {
+    name: String,
+    ty: String,
+    doc: String,
+    flatten: bool,
+}
+
+/// Every `pub struct` in this file, with its fields in declaration order.
+fn source_structs(src: &str) -> BTreeMap<String, Vec<SourceField>> {
+    let mut out: BTreeMap<String, Vec<SourceField>> = BTreeMap::new();
+    let mut open: Option<(String, Vec<SourceField>)> = None;
+    let mut doc = String::new();
+    let mut flatten = false;
+
+    for line in src.lines() {
+        let t = line.trim();
+        let Some((_, fields)) = open.as_mut() else {
+            if let Some(name) = t
+                .strip_prefix("pub struct ")
+                .and_then(|r| r.strip_suffix(" {"))
+            {
+                open = Some((name.to_string(), Vec::new()));
+                doc.clear();
+                flatten = false;
+            }
+            continue;
+        };
+        // Struct bodies in this file contain no nested braces, so a `}` in
+        // column 0 closes the declaration.
+        if line == "}" {
+            let (name, fields) = open.take().expect("a declaration is open");
+            out.insert(name, fields);
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("///") {
+            doc.push_str(rest.trim());
+            doc.push(' ');
+            continue;
+        }
+        if t.starts_with("#[") {
+            flatten |= t.contains("flatten");
+            continue;
+        }
+        if let Some((name, ty)) = t
+            .strip_prefix("pub ")
+            .and_then(|d| d.trim_end_matches(',').split_once(": "))
+        {
+            fields.push(SourceField {
+                name: name.to_string(),
+                ty: ty.to_string(),
+                doc: doc.trim().to_string(),
+                flatten,
+            });
+        }
+        doc.clear();
+        flatten = false;
+    }
+    out
+}
+
+/// Split a doc comment into `(tag, unit)`. The tag is the first of the four
+/// F7 words to appear; the unit is the phrase in front of it, when that phrase
+/// is short enough to be a unit rather than a sentence.
+fn tag_and_unit(doc: &str) -> (String, String) {
+    let at = PARAM_TAGS
+        .iter()
+        .filter_map(|tag| doc.find(tag).map(|i| (i, *tag)))
+        .min_by_key(|(i, _)| *i);
+    let (tag_at, tag) = match at {
+        Some((i, tag)) => (i, tag.to_string()),
+        None => (doc.len(), String::new()),
+    };
+    let lead = doc[..tag_at].trim().trim_end_matches('.').trim();
+    // A unit is what stands before the first sentence break. Anything longer
+    // is prose, and prose is not a unit.
+    let candidate = lead.split_once(". ").map_or(lead, |(head, _)| head).trim();
+    let unit = if candidate.chars().count() <= MAX_UNIT_CHARS {
+        candidate.to_string()
+    } else {
+        String::new()
+    };
+    (tag, unit)
+}
+
+fn leaf(path: String, field: &SourceField, kind: &str) -> ParamMeta {
+    let (tag, unit) = tag_and_unit(&field.doc);
+    ParamMeta {
+        reset_required: path.starts_with("sim."),
+        path,
+        tag,
+        unit,
+        doc: field.doc.clone(),
+        kind: kind.to_string(),
+    }
+}
+
+fn walk(
+    structs: &BTreeMap<String, Vec<SourceField>>,
+    ty: &str,
+    prefix: &str,
+    out: &mut Vec<ParamMeta>,
+) {
+    let Some(fields) = structs.get(ty) else {
+        return;
+    };
+    for field in fields {
+        let own = format!("{prefix}{}", field.name);
+        match field.ty.as_str() {
+            "f64" => out.push(leaf(own, field, "f64")),
+            "bool" => out.push(leaf(own, field, "bool")),
+            "Vec3" => {
+                for c in ["x", "y", "z"] {
+                    out.push(leaf(format!("{own}.{c}"), field, "f64"));
+                }
+            }
+            // Not a scalar, so `set_path` has never accepted it.
+            "Integrator" => {}
+            group => {
+                // `#[serde(flatten)]` puts the child's fields at the parent's
+                // level in the JSON, and F7's own naming follows the JSON —
+                // `sail.area`, not `sail.section.area` (section 02 §2.8).
+                let next = if field.flatten {
+                    prefix.to_string()
+                } else {
+                    format!("{own}.")
+                };
+                walk(structs, group, &next, out);
+            }
+        }
+    }
+}
+
+/// Every editable leaf of the F7 catalogue, in declaration order.
+///
+/// The paths are exactly those [`BoatParameters::set_path`] accepts;
+/// `catalogue_agrees_with_set_path` proves it in both directions.
+pub fn catalogue() -> Vec<ParamMeta> {
+    let structs = source_structs(include_str!("parameters.rs"));
+    let mut out = Vec::new();
+    walk(&structs, "BoatParameters", "", &mut out);
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -940,46 +1125,166 @@ mod tests {
         assert_eq!(back, p);
     }
 
+    /// The derived catalogue and the dotted-path table describe the same set.
+    ///
+    /// This is what lets the parameter panel be generated rather than written
+    /// (brief §31, task 8.5): a path the panel offers must be one the core
+    /// accepts, and a path the core accepts must be one the panel offers.
+    #[test]
+    fn catalogue_agrees_with_set_path() {
+        let meta = catalogue();
+        let mut p = BoatParameters::ilca7();
+
+        // Forwards: every catalogued path resolves, round-trips, and reports
+        // the reset flag the metadata promised.
+        for m in &meta {
+            let before = p
+                .get_path(&m.path)
+                .unwrap_or_else(|e| panic!("{}: {e}", m.path));
+            let probe = if m.kind == "bool" { 0.0 } else { before + 1.0 };
+            let reset = p
+                .set_path(&m.path, probe)
+                .unwrap_or_else(|e| panic!("{}: {e}", m.path));
+            assert_eq!(reset, m.reset_required, "reset flag for {}", m.path);
+            assert_eq!(p.get_path(&m.path), Ok(probe), "round trip for {}", m.path);
+            p.set_path(&m.path, before).expect("restore");
+            assert!(m.kind == "f64" || m.kind == "bool", "kind for {}", m.path);
+            assert!(
+                PARAM_TAGS.contains(&m.tag.as_str()),
+                "untagged catalogue entry: {} ({:?})",
+                m.path,
+                m.doc
+            );
+        }
+
+        // Backwards: the paths the rest of the crate already relies on are all
+        // present, and so is every group.
+        let paths: Vec<&str> = meta.iter().map(|m| m.path.as_str()).collect();
+        for path in SAMPLE_PATHS.iter().chain([&SELF_CENTRE_PATH]) {
+            assert!(paths.contains(path), "catalogue is missing {path}");
+        }
+        for group in [
+            "hull.",
+            "inertia.",
+            "resistance.",
+            "sail.",
+            "board.",
+            "rudder.",
+            "sheet.",
+            "stability.",
+            "sim.",
+        ] {
+            assert!(
+                paths.iter().any(|p| p.starts_with(group)),
+                "catalogue is missing the {group} group"
+            );
+        }
+
+        // `sim.integrator` is not a scalar and `set_path` rejects it, so the
+        // panel must not offer it (section 02 handoff §2.8).
+        assert!(!paths.contains(&"sim.integrator"));
+
+        // Same floor as `every_parameter_field_is_tagged`: the whole F7
+        // catalogue, not a subset of it.
+        assert!(meta.len() >= 55, "only {} catalogued leaves", meta.len());
+    }
+
+    /// Units and tags are read off the doc comments, not invented.
+    #[test]
+    fn catalogue_reads_units_and_tags_from_the_doc_comments() {
+        let meta = catalogue();
+        let by = |path: &str| {
+            meta.iter()
+                .find(|m| m.path == path)
+                .unwrap_or_else(|| panic!("no {path}"))
+                .clone()
+        };
+        assert_eq!(
+            (by("hull.loa").tag.as_str(), by("hull.loa").unit.as_str()),
+            ("KNOWN", "m")
+        );
+        assert_eq!(by("inertia.i_zz").unit, "kg·m²");
+        assert_eq!(by("resistance.x_uu").unit, "N·s²/m²");
+        assert_eq!(by("resistance.x_uu").tag, "TUNABLE");
+        assert_eq!(by("sheet.k_sheet").unit, "N/m");
+        assert_eq!(by("rudder.delta_r_rate_max").unit, "rad/s");
+        assert_eq!(by("hull.sailor_pos_b.y").unit, "m, in B");
+        assert_eq!(by("sail.alpha_camber").tag, "DEFERRED");
+        assert_eq!(by("sim.dt").tag, "TUNABLE");
+        assert!(by("sim.dt").reset_required);
+        assert!(!by("sail.area").reset_required);
+        // A doc comment that is prose rather than a unit yields no unit.
+        assert_eq!(by(SELF_CENTRE_PATH).kind, "bool");
+        assert_eq!(by(SELF_CENTRE_PATH).unit, "");
+        assert_eq!(by(SELF_CENTRE_PATH).tag, "TUNABLE");
+        // Vector parameters expand into their three components, in order.
+        let block: Vec<&str> = meta
+            .iter()
+            .map(|m| m.path.as_str())
+            .filter(|p| p.starts_with("sheet.block_pos_b."))
+            .collect();
+        assert_eq!(
+            block,
+            [
+                "sheet.block_pos_b.x",
+                "sheet.block_pos_b.y",
+                "sheet.block_pos_b.z"
+            ]
+        );
+    }
+
     /// Every scalar parameter field carries one of the four F7 tags.
     ///
     /// A "parameter field" is a `pub name: T,` declaration whose type is a
     /// leaf (`f64`, `bool`, `Vec3`, `Integrator`); container fields such as
     /// `pub hull: HullParams` group the catalogue and carry no tag of their
     /// own.
+    ///
+    /// Scoped to the structs [`catalogue`] actually reaches from
+    /// `BoatParameters`. `ParamMeta` and the serde helper live in this file
+    /// too and are not parameters; scanning the file as a whole would demand
+    /// an F7 tag on `ParamMeta::reset_required`, which has no physical
+    /// meaning. Reusing the same parser the catalogue uses also means this
+    /// test fails if that parser ever stops seeing a field.
     #[test]
     fn every_parameter_field_is_tagged() {
-        const TAGS: [&str; 4] = ["KNOWN", "ASSUMED", "TUNABLE", "DEFERRED"];
         const LEAF_TYPES: [&str; 4] = ["f64", "bool", "Vec3", "Integrator"];
 
-        let src = include_str!("parameters.rs");
-        let mut doc = String::new();
-        let mut fields = 0usize;
-        let mut tagged = 0usize;
-
-        for line in src.lines() {
-            let t = line.trim();
-            if let Some(rest) = t.strip_prefix("///") {
-                doc.push_str(rest);
-                doc.push('\n');
+        let structs = source_structs(include_str!("parameters.rs"));
+        let mut reachable: std::collections::BTreeSet<String> = Default::default();
+        let mut queue = vec!["BoatParameters".to_string()];
+        while let Some(name) = queue.pop() {
+            let Some(fields) = structs.get(&name) else {
+                continue;
+            };
+            if !reachable.insert(name) {
                 continue;
             }
-            // Attributes sit between the doc comment and the field.
-            if t.starts_with("#[") {
-                continue;
-            }
-            if let Some(decl) = t.strip_prefix("pub ") {
-                if let Some(ty) = decl.strip_suffix(',').and_then(|d| d.split_once(": ")) {
-                    if !decl.contains('(') && LEAF_TYPES.contains(&ty.1) {
-                        fields += 1;
-                        assert!(
-                            TAGS.iter().any(|tag| doc.contains(tag)),
-                            "untagged parameter field: {t}"
-                        );
-                        tagged += 1;
-                    }
+            for f in fields {
+                if structs.contains_key(&f.ty) {
+                    queue.push(f.ty.clone());
                 }
             }
-            doc.clear();
+        }
+        assert!(
+            reachable.contains("FoilSection") && reachable.contains("StabilityParams"),
+            "the walk must reach the flattened and the nested groups: {reachable:?}"
+        );
+
+        let mut fields = 0usize;
+        let mut tagged = 0usize;
+        for name in &reachable {
+            for f in &structs[name] {
+                if LEAF_TYPES.contains(&f.ty.as_str()) {
+                    fields += 1;
+                    assert!(
+                        PARAM_TAGS.iter().any(|tag| f.doc.contains(tag)),
+                        "untagged parameter field: {name}.{}",
+                        f.name
+                    );
+                    tagged += 1;
+                }
+            }
         }
 
         assert_eq!(fields, tagged);

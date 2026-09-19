@@ -9,6 +9,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use sailgym_wasm::Sim;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -68,4 +69,52 @@ fn controls_steer_the_boat() {
     sim.set_controls(1.0, 0.0, false);
     sim.advance(100);
     assert!(sim.snapshot()[10] > 0.0);
+}
+
+/// Task 8.1: the diagnostics record crosses the boundary and survives
+/// `JSON.parse` in the browser that will draw it.
+#[wasm_bindgen_test]
+fn diagnostics_serialise_and_round_trip_through_json_parse() {
+    // The default wind is a 5 m/s westerly (section 03), so the sail is
+    // loaded and none of the fields below is a structural zero.
+    let mut sim = Sim::new("{}").expect("`{}` must construct a Sim");
+    sim.set_controls(0.3, -1.0, false);
+    sim.advance(400);
+
+    let text = sim
+        .diagnostics()
+        .expect("diagnostics must serialise")
+        .as_string()
+        .expect("diagnostics() returns a JSON string");
+
+    let parsed = js_sys::JSON::parse(&text).expect("the browser must parse it");
+    let object: &js_sys::Object = parsed.unchecked_ref();
+    let key = |k: &str| js_sys::Reflect::get(object, &JsValue::from_str(k)).expect("key");
+
+    // A nested record, a vector, a load and a scalar: one of each shape.
+    assert!(key("capsize").is_object());
+    assert!(key("apparent_wind_body").is_object());
+    assert!(key("sail").is_object());
+    assert!(key("t").as_f64().expect("t is a number") > 0.0);
+
+    // The record the page draws is the record the core published.
+    let re_encoded = js_sys::JSON::stringify(&parsed)
+        .expect("re-encodable")
+        .as_string()
+        .expect("a string");
+    assert_eq!(
+        js_sys::JSON::parse(&re_encoded)
+            .map(|v| js_sys::JSON::stringify(&v).unwrap().as_string().unwrap())
+            .unwrap(),
+        re_encoded
+    );
+
+    // The parameter catalogue crosses the same way (task 8.5).
+    let meta = sim
+        .parameter_meta_json()
+        .expect("the catalogue must serialise")
+        .as_string()
+        .expect("parameter_meta_json returns a JSON string");
+    let entries: js_sys::Array = js_sys::JSON::parse(&meta).expect("parses").unchecked_into();
+    assert!(entries.length() >= 55, "{} entries", entries.length());
 }

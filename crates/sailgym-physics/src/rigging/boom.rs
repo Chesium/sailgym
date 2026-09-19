@@ -3,7 +3,9 @@
 use crate::parameters::BoatParameters;
 use crate::state::BoatState;
 
-#[derive(Clone, Copy, Debug, Default)]
+/// `Serialize` is for the section 08 diagnostics record (brief §30 asks for
+/// the boom's moments to be inspectable); the force path never serialises.
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Serialize)]
 pub struct BoomMoments {
     pub aero: f64,
     pub sheet: f64,

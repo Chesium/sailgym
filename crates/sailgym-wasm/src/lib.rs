@@ -4,9 +4,10 @@
 //! `sailgym-physics` (F8). This file only marshals strings and flat buffers
 //! across the boundary. The method set is the subset of F8.2 that exists at
 //! this milestone — `new`, `reset`, `set_controls`, `advance`, `snapshot`,
-//! `set_parameter`, `parameters_json`, plus the section 03 wind methods
-//! `sample_wind_grid`, `wind_at_boat`, `set_wind` and `wind_json`; the rest
-//! arrive with the sections that specify them.
+//! `set_parameter`, `parameters_json`, `parameter_meta_json`, `diagnostics`,
+//! plus the section 03 wind methods `sample_wind_grid`, `wind_at_boat`,
+//! `set_wind` and `wind_json`; the rest arrive with the sections that specify
+//! them.
 //!
 //! The API is coarse-grained by construction (brief §24): per-force-component
 //! and per-entity calls are forbidden.
@@ -156,6 +157,13 @@ impl Sim {
             .map_err(|e| js_err("set_parameter", e))
     }
 
+    /// Restore `BoatParameters::ilca7()` — the panel's "Reset to ILCA
+    /// defaults" (brief §31). The boat state, the clock and the wind are
+    /// untouched; only the catalogue moves.
+    pub fn reset_parameters(&mut self) {
+        self.inner.reset_parameters();
+    }
+
     /// The whole F7 catalogue, as a JSON **string**.
     ///
     /// A string rather than a structured object keeps this crate free of
@@ -163,6 +171,25 @@ impl Sim {
     pub fn parameters_json(&self) -> Result<JsValue, JsValue> {
         let json =
             serde_json::to_string(self.inner.params()).map_err(|e| js_err("parameters_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// The catalogue's **metadata** — one record per editable leaf, with its
+    /// dotted path, F7 tag, unit and doc comment — as a JSON string.
+    ///
+    /// A sibling of `parameters_json` rather than a key inside it, for two
+    /// reasons. The values change on every edit and this does not, so the
+    /// panel fetches it once and re-reads only the values; and three callers
+    /// (`useSimulation`, `sheet.spec.ts`, the `wasm-bindgen-test` in
+    /// `boundary.rs`) already parse `parameters_json()` as the plain
+    /// `BoatParameters` tree, which it stays. Still coarse-grained
+    /// (brief §24): the whole catalogue in one call, never a field at a time.
+    ///
+    /// The records are derived from `parameters.rs`'s own source, so the
+    /// parameter panel is generated rather than written (brief §31).
+    pub fn parameter_meta_json(&self) -> Result<JsValue, JsValue> {
+        let json = serde_json::to_string(&sailgym_physics::parameters::catalogue())
+            .map_err(|e| js_err("parameter_meta_json", e))?;
         Ok(JsValue::from_str(&json))
     }
 

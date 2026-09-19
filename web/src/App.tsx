@@ -11,12 +11,19 @@ import {
   type Vec2,
 } from './render/Camera'
 import { BoatSvg } from './render/BoatSvg'
+import { ForceOverlay, OverlayControls, OverlayLegend } from './render/ForceOverlay'
 import { HeelIndicator, HeelProbe } from './render/HeelIndicator'
 import { DEFAULT_INPUT } from './sim/controls'
 import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetInputState } from './sim/sheetInput'
 import { useSimulation } from './sim/useSimulation'
+import { Charts, useChartSampler } from './ui/Charts'
 import { ClockControls } from './ui/ClockControls'
+import { DebugPanel } from './ui/DebugPanel'
 import { Hud } from './ui/Hud'
+import { Layout } from './ui/Layout'
+import { ModeSwitch } from './ui/ModeSwitch'
+import { ParameterPanel } from './ui/ParameterPanel'
+import { useUiStore } from './ui/store'
 import { WindReadout } from './ui/WindReadout'
 import { ArrowProbe, buildArrows, type ArrowField } from './wind/ArrowOverlay'
 import { DeckOverlay } from './wind/DeckOverlay'
@@ -35,8 +42,14 @@ const WIND_MODES = ['uniform', 'spatial', 'gust'] as const
 type WindModeName = (typeof WIND_MODES)[number]
 
 /**
- * The M2 application: the M1 boat, plus an animated deck.gl wind field driven
- * by the same Rust field the simulation uses.
+ * The application: the boat, the deck.gl wind field, and — in Debug Mode —
+ * brief §30's instrumentation and brief §31's parameter panel.
+ *
+ * Composition only. Every number displayed comes from the core through
+ * `useSimulation`; nothing here computes a physical quantity (F8). The two
+ * arrangements live in `ui/Layout.tsx` and the mode in the `zustand` UI store,
+ * so switching modes mounts and unmounts components and touches nothing else —
+ * in particular it never goes near the clock or the one animation frame loop.
  *
  * `data-testid="wasm-status"` and `data-ready` are the contract frozen by
  * task 1.3 — do not rename them. `data-testid="snapshot"` carries the raw F8.3
@@ -60,6 +73,8 @@ export default function App() {
   )
 
   const sim = useSimulation(undefined, onFrame, scenarioFromUrl())
+  const ui = useUiStore()
+  const charts = useChartSampler(sim.diagnostics, ui.sampleHz)
   const [mode, setMode] = useState<CameraMode>('northUp')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Vec2>({ x: 0, y: 0 })
@@ -144,126 +159,183 @@ export default function App() {
         ]
   const stats = wind.stats()
 
-  return (
-    <div style={{ font: '13px system-ui, sans-serif', padding: 12, display: 'grid', gap: 8 }}>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <strong>sailgym</strong>
-        <div data-testid="wasm-status" data-ready={sim.ready ? 'true' : 'false'}>
-          {sim.error !== null
-            ? `wasm failed to load: ${sim.error}`
-            : sim.ready
-              ? `sailgym ${sim.version}`
-              : 'loading sailgym…'}
-        </div>
-        <ClockControls
-          state={sim.clockState}
-          onToggleRunning={sim.toggleRunning}
-          onReset={sim.reset}
-          onSingleStep={sim.singleStep}
-          onSetSpeed={sim.setSpeed}
-        />
-        <button
-          type="button"
-          data-testid="camera-mode"
-          data-mode={mode}
-          onClick={() => setMode((m) => (m === 'follow' ? 'northUp' : 'follow'))}
-        >
-          Camera: {mode}
-        </button>
-        <button
-          type="button"
-          data-testid="camera-reset"
-          onClick={() => {
-            setZoom(1)
-            setPan({ x: 0, y: 0 })
-            baseCentre.current = { x: s.x, y: s.y }
-          }}
-        >
-          Reset camera
-        </button>
+  const header = (
+    <>
+      <strong>sailgym</strong>
+      <div data-testid="wasm-status" data-ready={sim.ready ? 'true' : 'false'}>
+        {sim.error !== null
+          ? `wasm failed to load: ${sim.error}`
+          : sim.ready
+            ? `sailgym ${sim.version}`
+            : 'loading sailgym…'}
       </div>
-
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <label>
-          Wind:{' '}
-          <select
-            data-testid="wind-mode"
-            value={windMode}
-            onChange={(e) => applyWindMode(e.target.value as WindModeName)}
-          >
-            {WIND_MODES.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          data-testid="toggle-wind-arrows"
-          data-on={showArrows ? 'true' : 'false'}
-          onClick={() => setShowArrows((v) => !v)}
-        >
-          Arrows: {showArrows ? 'on' : 'off'}
-        </button>
-        <WindReadout wind={wind.windAtBoat()} />
-        <Hud diagnostics={sim.diagnostics} />
-      </div>
-
-      <div
-        style={{
-          position: 'relative',
-          width: VIEWPORT.width,
-          height: VIEWPORT.height,
-          // The sea. It lives here rather than on the SVG because the wind
-          // canvas sits between the two.
-          background: '#eaf2f8',
+      <ModeSwitch />
+      <ClockControls
+        state={sim.clockState}
+        onToggleRunning={sim.toggleRunning}
+        onReset={sim.reset}
+        onSingleStep={sim.singleStep}
+        onSetSpeed={sim.setSpeed}
+      />
+      <button
+        type="button"
+        data-testid="camera-mode"
+        data-mode={mode}
+        onClick={() => setMode((m) => (m === 'follow' ? 'northUp' : 'follow'))}
+      >
+        Camera: {mode}
+      </button>
+      <button
+        type="button"
+        data-testid="camera-reset"
+        onClick={() => {
+          setZoom(1)
+          setPan({ x: 0, y: 0 })
+          baseCentre.current = { x: s.x, y: s.y }
         }}
       >
-        {sim.ready && <DeckOverlay viewport={VIEWPORT} layers={layers} />}
-        <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
-          <BoatSvg
-            camera={camera}
-            pose={{ x: s.x, y: s.y, psi: s.psi, beta: s.beta, deltaR: s.deltaR }}
-            alpha={sim.diagnostics?.alpha_sail ?? 0}
-            hull={hull}
-            rig={rig}
-            sheet={sheetRig}
-            lSheet={s.lSheet}
-            ropeLength={sim.diagnostics?.rope_length ?? 0}
-            trajectory={sim.trajectory}
-            onSheet={(ev) => {
-              const [next, rate] = reduceSheetInput(sheetInput.current, ev, DEFAULT_INPUT)
-              sheetInput.current = next
-              sim.setSheetRate(rate)
-            }}
-            onPan={(dxPixels, dyPixels) => {
-              const a = camera.screenToWorld({ x: 0, y: 0 })
-              const b = camera.screenToWorld({ x: dxPixels, y: dyPixels })
-              setPan((p) => ({ x: p.x - (b.x - a.x), y: p.y - (b.y - a.y) }))
-            }}
-            onZoom={(factor) => {
-              setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)))
-            }}
-          />
-        </div>
-      </div>
+        Reset camera
+      </button>
+      <label>
+        Wind:{' '}
+        <select
+          data-testid="wind-mode"
+          value={windMode}
+          onChange={(e) => applyWindMode(e.target.value as WindModeName)}
+        >
+          {WIND_MODES.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        data-testid="toggle-wind-arrows"
+        data-on={showArrows ? 'true' : 'false'}
+        onClick={() => setShowArrows((v) => !v)}
+      >
+        Arrows: {showArrows ? 'on' : 'off'}
+      </button>
+    </>
+  )
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        {/* brief §26: top-down geometry cannot show roll, so heel gets its own
-            stern view. `φ` comes from the snapshot, the capsize report from the
-            diagnostics; both are the core's numbers (F8).
+  // brief §29's seven, and only those. The wind readout is handed in rather
+  // than rendered inside the HUD: it belongs to the wind layer.
+  const readouts = (
+    <Hud diagnostics={sim.diagnostics} snapshot={s} wind={<WindReadout wind={wind.windAtBoat()} />} />
+  )
 
-            It sits **below** the world view on purpose. The section 02-06 specs
-            drive the mainsheet with absolute page coordinates, so anything
-            added above the boat moves the target out from under them. */}
-        <HeelIndicator
-          phi={s.phi}
-          capsized={sim.diagnostics?.capsize.capsized ?? false}
-          maxHeel={sim.diagnostics?.capsize.max_heel ?? 0}
+  const world = (
+    <div
+      style={{
+        position: 'relative',
+        width: VIEWPORT.width,
+        height: VIEWPORT.height,
+        // The sea. It lives here rather than on the SVG because the wind
+        // canvas sits between the two.
+        background: '#eaf2f8',
+      }}
+    >
+      {sim.ready && <DeckOverlay viewport={VIEWPORT} layers={layers} />}
+      <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
+        <BoatSvg
+          camera={camera}
+          pose={{ x: s.x, y: s.y, psi: s.psi, beta: s.beta, deltaR: s.deltaR }}
+          alpha={sim.diagnostics?.alpha_sail ?? 0}
+          hull={hull}
+          rig={rig}
+          sheet={sheetRig}
+          lSheet={s.lSheet}
+          ropeLength={sim.diagnostics?.sheet_rope_length ?? 0}
+          trajectory={sim.trajectory}
+          onSheet={(ev) => {
+            const [next, rate] = reduceSheetInput(sheetInput.current, ev, DEFAULT_INPUT)
+            sheetInput.current = next
+            sim.setSheetRate(rate)
+          }}
+          onPan={(dxPixels, dyPixels) => {
+            const a = camera.screenToWorld({ x: 0, y: 0 })
+            const b = camera.screenToWorld({ x: dxPixels, y: dyPixels })
+            setPan((p) => ({ x: p.x - (b.x - a.x), y: p.y - (b.y - a.y) }))
+          }}
+          onZoom={(factor) => {
+            setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)))
+          }}
         />
       </div>
+      {/* Over the boat, and only in Debug Mode. `pointerEvents: none` inside,
+          so the mainsheet drag and the camera pan still reach the SVG. */}
+      {ui.mode === 'debug' && (
+        <ForceOverlay
+          camera={camera}
+          pose={{ x: s.x, y: s.y, psi: s.psi }}
+          diagnostics={sim.diagnostics}
+          enabled={ui.overlays}
+          newtonsPerPixel={ui.newtonsPerPixel}
+          auto={ui.autoScale}
+        />
+      )}
+    </div>
+  )
 
+  const debug = (
+    <>
+      <OverlayControls
+        enabled={ui.overlays}
+        onToggle={ui.setOverlay}
+        onAll={ui.setAllOverlays}
+        newtonsPerPixel={ui.newtonsPerPixel}
+        onNewtonsPerPixel={ui.setNewtonsPerPixel}
+        auto={ui.autoScale}
+        onAuto={ui.setAutoScale}
+      />
+      <OverlayLegend
+        diagnostics={sim.diagnostics}
+        enabled={ui.overlays}
+        newtonsPerPixel={ui.newtonsPerPixel}
+        auto={ui.autoScale}
+      />
+      <Charts
+        data={charts}
+        enabled={ui.charts}
+        onToggle={ui.setChart}
+        sampleHz={ui.sampleHz}
+        onSampleHz={ui.setSampleHz}
+      />
+      <ParameterPanel
+        withSim={sim.withSim}
+        ready={sim.ready}
+        open={ui.parametersOpen}
+        onOpenChange={ui.setParametersOpen}
+        resetRequired={ui.resetRequired}
+        onResetRequired={ui.setResetRequired}
+        onReset={sim.reset}
+      />
+      <DebugPanel diagnostics={sim.diagnostics} />
+    </>
+  )
+
+  const instruments = (
+    <>
+      {/* brief §26: top-down geometry cannot show roll, so heel gets its own
+          stern view. `φ` comes from the snapshot, the capsize report from the
+          diagnostics; both are the core's numbers (F8).
+
+          It sits **below** the world view on purpose. The section 02-06 specs
+          drive the mainsheet with absolute page coordinates, so anything
+          added above the boat moves the target out from under them. */}
+      <HeelIndicator
+        phi={s.phi}
+        capsized={sim.diagnostics?.capsize.capsized ?? false}
+        maxHeel={sim.diagnostics?.capsize.max_heel ?? 0}
+      />
+    </>
+  )
+
+  const footer = (
+    <>
       <div
         data-testid="snapshot"
         data-dt={sim.dt}
@@ -281,9 +353,9 @@ export default function App() {
         data-delta-r={s.deltaR}
         data-l-sheet={s.lSheet}
         data-sheet-tension={sim.diagnostics?.sheet_tension ?? 0}
-        data-rope-length={sim.diagnostics?.rope_length ?? 0}
+        data-rope-length={sim.diagnostics?.sheet_rope_length ?? 0}
         data-gz={sim.diagnostics?.gz ?? 0}
-        data-k-restore={sim.diagnostics?.k_restore ?? 0}
+        data-k-restore={sim.diagnostics?.righting_moment ?? 0}
         data-capsized={sim.diagnostics?.capsize.capsized ? 'true' : 'false'}
         data-max-heel={sim.diagnostics?.capsize.max_heel ?? 0}
       >
@@ -314,9 +386,21 @@ export default function App() {
 
       <div style={{ color: '#667' }}>
         A / ← and D / → steer · <strong>drag down to haul the mainsheet in, drag up to
-        ease</strong> · Space releases the sheet · P pauses · . single-steps · R resets · wheel
-        zooms · middle-drag or Shift+drag pans
+        ease</strong> · Space releases the sheet · P pauses · . single-steps · R resets · M
+        switches mode · wheel zooms · middle-drag or Shift+drag pans
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <Layout
+      mode={ui.mode}
+      header={header}
+      readouts={readouts}
+      world={world}
+      instruments={instruments}
+      debug={debug}
+      footer={footer}
+    />
   )
 }

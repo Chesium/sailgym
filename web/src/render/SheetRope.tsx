@@ -3,7 +3,7 @@
  * (brief §12: "the displayed rope should visibly correspond to sheet state").
  *
  * Two lengths decide what is drawn, and both come from the core: `ℓ(β)`, the
- * geometric rope path, arrives in the diagnostics record as `rope_length`, and
+ * geometric rope path, arrives in the diagnostics record as `sheet_rope_length`, and
  * `L`, the available sheet, is `lSheet` in the F8.3 snapshot. Taut when
  * `e = ℓ − L > 0`; otherwise there is `L − ℓ` of rope to hang, and the path
  * bows by a fixed fraction of it.
@@ -30,7 +30,7 @@ export interface SheetRopeProps {
   beta: number
   /** m, available sheet length `L` — snapshot field `lSheet` */
   lSheet: number
-  /** m, geometric rope path `ℓ(β)` — diagnostics field `rope_length` */
+  /** m, geometric rope path `ℓ(β)` — diagnostics field `sheet_rope_length` */
   ropeLength: number
 }
 

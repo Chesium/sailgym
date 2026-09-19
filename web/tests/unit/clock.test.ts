@@ -96,5 +96,26 @@ describe('clock', () => {
 
   it('rejects a non-positive timestep', () => {
     expect(() => createClock(0, makeSink())).toThrow(/dt must be positive/)
+    expect(() => clock.setDt(0)).toThrow(/dt must be positive/)
+    expect(() => clock.setDt(-1)).toThrow(/dt must be positive/)
+  })
+
+  it('adopts a new timestep, so a live `sim.dt` edit reaches the clock', () => {
+    // `sim.dt` is live-editable (brief §31) and reset-required (F8.2);
+    // section 08 calls `setDt` from the reset path. One second of wall time at
+    // 1x must still be one second of simulated time afterwards, which means
+    // half as many steps at twice the timestep.
+    feed(clock, 1000)
+    const atDefault = sink.steps
+    expect(atDefault).toBeGreaterThan(0)
+
+    clock.reset()
+    clock.setDt(DT * 2)
+    feed(clock, 1000)
+    // ±1 step, the same tolerance the 1x and 4x cases above use: whole steps
+    // are issued per frame and the remainder is carried, not banked.
+    expect(Math.abs(sink.steps - atDefault / 2)).toBeLessThanOrEqual(1)
+    // One whole timestep of slack, for the same reason.
+    expect(Math.abs(clock.getState().simTime - 1)).toBeLessThanOrEqual(2 * DT)
   })
 })

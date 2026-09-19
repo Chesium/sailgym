@@ -96,6 +96,10 @@ pub struct ForceBreakdown {
     /// m, `e = ℓ − L`. Negative when the rope is slack.
     pub sheet_extension: f64,
     pub m_beta: f64,
+    /// The four F6.9 boom moments, kept apart rather than only summed: brief
+    /// §30 asks for the boom's loading to be inspectable, and `m_beta` is
+    /// `boom.total()`.
+    pub boom: BoomMoments,
     pub k_restore: f64,
     pub gz: f64,
     /// Apparent wind at the CG, in `B`.
@@ -267,6 +271,7 @@ pub fn evaluate(
         rope_length: sheet.rope_length,
         sheet_extension: sheet.extension,
         m_beta: boom.total(),
+        boom,
         k_restore,
         gz,
         aw_boat: apparent_wind_cg(st, wind_world),

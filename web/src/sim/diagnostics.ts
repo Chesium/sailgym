@@ -1,44 +1,116 @@
 import type { SimHandle } from './loadWasm'
 
-/** Current-snapshot record; Rust owns all derived physical quantities. */
+/**
+ * The TypeScript mirror of `crates/sailgym-physics/src/diagnostics.rs`.
+ *
+ * The two field lists must match exactly, in both directions:
+ * `tests/unit/diagnostics.test.ts` parses both files and compares them, so a
+ * field added in Rust and forgotten here is a failing test rather than a
+ * silently missing readout (task 8.1).
+ *
+ * Rust owns every derived physical quantity. Nothing in this file computes
+ * one, and nothing may (F8) — the only conversions on this side of the
+ * boundary are radians → degrees for display, in `units.ts`.
+ *
+ * The helper shapes below are written on one line each on purpose: the
+ * parity tests read top-level `  name:` declarations out of the `Diagnostics`
+ * interface, and a multi-line helper would look like one of its fields.
+ */
+export interface DiagVec2 { x: number; y: number }
+export interface DiagVec3 { x: number; y: number; z: number }
+/** `dynamics::Load` — a force in `B` and the point it acts at, in `B`. */
+export interface DiagLoad { f: DiagVec3; r: DiagVec3 }
+/** `rigging::boom::BoomMoments` — the four F6.9 terms about `+z_B`. */
+export interface DiagBoomMoments { aero: number; sheet: number; damping: number; limit: number }
+/** `stability::capsize::CapsizeState` (F6.10). Informational; nothing acts on it. */
+export interface DiagCapsize { capsized: boolean; since: number; max_heel: number }
+
+/** Everything brief §30 asks to be inspectable, for one published state. */
 export interface Diagnostics {
   t: number
   steps: number
-  apparent_wind_body: { x: number; y: number; z: number }
+
+  /** m/s, true wind at the boat in the world frame — the direction the air blows *toward*. */
+  true_wind_world: DiagVec2
+  /** m/s, the same vector in the horizontal body frame `H`. */
+  true_wind_body: DiagVec2
+  /** m/s, apparent wind at the CG, in `B` (F6.2). */
+  apparent_wind_body: DiagVec3
   apparent_wind_speed: number
+  /** rad, FROM angle off the bow, positive to starboard. */
   apparent_wind_angle: number
+
+  /** m/s, `(u, v)`: surge forward, sway to port (F3). */
+  velocity_body: DiagVec2
   speed_over_ground: number
+  /** rad, direction of travel in the world frame, CCW from world `+x`. */
+  course_over_ground: number
+  /** m/s², `(u̇, v̇)` (F4.2). */
+  acceleration_body: DiagVec2
+  yaw_rate: number
+  roll_rate: number
+  /** rad, drift angle; positive when the boat slides to starboard. */
+  leeway_angle: number
+
+  sail: DiagLoad
+  board: DiagLoad
+  rudder: DiagLoad
+  hull: DiagLoad
+  /** The pull on the boom at `P_b` (F6.8). */
+  sheet: DiagLoad
+  /** The reaction `−F_b` on the hull at the block `P_k` (F6.8). */
+  sheet_hull: DiagLoad
+  /** N, `(ΣX, ΣY)` in `H`. */
+  total_force_h: DiagVec2
+
+  /** N·m, `ΣN`. */
+  yaw_moment: number
+  /** N·m, everything in `ΣK` that is not the hydrostatic righting. */
+  heeling_moment: number
+  /** N·m, `K_restore = −Δ·g·GZ(φ)`; negative for starboard-down heel. */
+  righting_moment: number
+  boom_moment: DiagBoomMoments
+
+  sail_ce_b: DiagVec3
+  board_centre_b: DiagVec3
+  rudder_centre_b: DiagVec3
+  sheet_attach_b: DiagVec3
+  sheet_block_b: DiagVec3
+
   alpha_sail: number
   cl_sail: number
   cd_sail: number
+  alpha_board: number
+  cl_board: number
+  cd_board: number
+  alpha_rudder: number
+  cl_rudder: number
+  cd_rudder: number
+
+  /** rad, boom angle, positive to starboard (F2.1). */
+  beta: number
+  beta_dot: number
   /** N, mainsheet tension; never negative (brief §11). */
   sheet_tension: number
   /** m, geometric rope path length `ℓ(β)` (F6.8). */
-  rope_length: number
+  sheet_rope_length: number
   /** m, `e = ℓ − L`; negative when the rope is slack. */
   sheet_extension: number
-  /** rad, roll. Not wrapped (F3): an inversion reads past `±π`. */
-  heel: number
+
   /** m, the righting arm `GZ(φ)` (F6.7). */
   gz: number
-  /** N·m, `K_restore = −Δ·g·GZ(φ)`; negative for starboard-down heel. */
-  k_restore: number
-  /**
-   * The capsize report (F6.10), `stability::capsize::CapsizeState` as the
-   * diagnostics JSON carries it. Informational; nothing acts on it.
-   *
-   * Written inline rather than as a named interface so that this file's
-   * top-level field list stays exactly the Rust record's — which is what
-   * `tests/unit/sail.test.ts` compares across the boundary.
-   */
-  capsize: {
-    /** `|φ| > phi_capsize` held for `t_capsize`. */
-    capsized: boolean
-    /** s, when the current capsize's threshold crossing happened. */
-    since: number
-    /** rad, the largest `|φ|` since the last reset; monotone in an episode. */
-    max_heel: number
-  }
+  /** deg, roll. Not wrapped (F3): an inversion reads past `±180°`. */
+  heel_deg: number
+  capsize: DiagCapsize
+
+  /** J, translational + rotational + boom kinetic energy. */
+  energy_kinetic: number
+  /** J, `Δ·g·∫₀^φ GZ`. */
+  energy_roll_potential: number
+  /** J, `½k_sheet·max(0, e)²`. */
+  energy_sheet_elastic: number
+  /** R6: the hull resistance shown is an extrapolation above ≈ 5 m/s. */
+  hull_model_warning: boolean
 }
 
 /** The capsize report on its own, for components that only need it. */

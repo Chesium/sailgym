@@ -11,7 +11,10 @@ use crate::vec::Vec3;
 
 /// A force and its application point, expressed in the boat-fixed frame `B`
 /// (F4.4).
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+///
+/// `Serialize` is for the section 08 diagnostics record only; nothing in the
+/// force path reads or writes JSON.
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Serialize)]
 pub struct Load {
     /// N, force in `B`.
     pub f: Vec3,

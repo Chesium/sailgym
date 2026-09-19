@@ -7,9 +7,10 @@
 
 use crate::environment::wind::{ProceduralWind, WindConfig};
 use crate::environment::WindField;
-use crate::forces::WindForces;
+use crate::forces::{evaluate, ForceBreakdown, WindForces};
 use crate::parameters::{BoatParameters, ParamError};
 use crate::stability::capsize::CapsizeState;
+use crate::stability::hydrostatics::GzCurve;
 use crate::state::{BoatState, Controls};
 use crate::vec::Vec2;
 
@@ -22,13 +23,22 @@ pub struct Simulation {
     seed: u64,
     steps: u64,
     capsize: CapsizeState,
+    /// The force evaluation at the **published** state — the one the next
+    /// step's first stage will consume, bit for bit.
+    ///
+    /// `diagnostics::diagnostics` reads this rather than calling `evaluate`
+    /// itself (task 8.1): the displayed forces must be the forces that move
+    /// the boat, not a second evaluation that could drift if an argument were
+    /// ever passed differently. It is refreshed by every method that can
+    /// change it and by nothing else — see [`Simulation::refresh_forces`].
+    forces: ForceBreakdown,
 }
 
 impl Simulation {
     /// A simulation at rest at the origin, driven by the real force model
     /// (F4.4, section 04).
     pub fn new(params: BoatParameters, seed: u64) -> Self {
-        Self {
+        let mut sim = Self {
             state: Self::initial_state(&params),
             params,
             controls: Controls::default(),
@@ -36,7 +46,28 @@ impl Simulation {
             seed,
             steps: 0,
             capsize: CapsizeState::default(),
-        }
+            forces: ForceBreakdown::default(),
+        };
+        sim.refresh_forces();
+        sim
+    }
+
+    /// Re-evaluate the force breakdown at the published state.
+    ///
+    /// `evaluate` is a pure function of `(state, controls, parameters, field,
+    /// t)`, so this is exactly the breakdown the next integration step's first
+    /// stage computes. Called from every method that can change one of those
+    /// five arguments, and from nowhere else; it never touches the state, so
+    /// it cannot perturb a trajectory.
+    fn refresh_forces(&mut self) {
+        let f = evaluate(
+            &self.state,
+            &self.controls,
+            &self.params,
+            &self.wind,
+            self.state.t,
+        );
+        self.forces = f;
     }
 
     /// The state a fresh or reset simulation starts from: at rest at the
@@ -61,6 +92,7 @@ impl Simulation {
         // a reset with the same seed reproduce the old one bit for bit
         // (brief §34).
         self.wind = ProceduralWind::new(*self.wind.config(), seed);
+        self.refresh_forces();
     }
 
     /// The wind field. Section 03 samples it for the visualization and the
@@ -76,6 +108,7 @@ impl Simulation {
     /// wind is environment, not boat (F7).
     pub fn set_wind(&mut self, cfg: WindConfig) {
         self.wind = ProceduralWind::new(cfg, self.seed);
+        self.refresh_forces();
     }
 
     /// True wind at the boat's position and simulation time, world frame.
@@ -85,6 +118,7 @@ impl Simulation {
 
     pub fn set_controls(&mut self, c: Controls) {
         self.controls = c;
+        self.refresh_forces();
     }
 
     /// Advance exactly `n` fixed steps of `params.sim.dt`. Returns the number
@@ -110,6 +144,11 @@ impl Simulation {
             // Nothing reads it back — see `stability::capsize`.
             self.capsize.observe(&self.state, &self.params);
         }
+        // Once per call, not once per step: the cached breakdown depends only
+        // on the *final* state, so this is identical to refreshing inside the
+        // loop and costs one evaluation instead of `n`. `advance(n)` therefore
+        // still equals `n` calls to `advance(1)` in every observable (F9.7).
+        self.refresh_forces();
         n
     }
 
@@ -131,6 +170,13 @@ impl Simulation {
         &self.capsize
     }
 
+    /// The force breakdown at the published state (task 8.1). This is the
+    /// evaluation the next step's first stage consumes; the diagnostics
+    /// record publishes it unchanged.
+    pub fn forces(&self) -> &ForceBreakdown {
+        &self.forces
+    }
+
     /// The seed every procedural source in the simulation derives from
     /// (F9.2). The wind field is the first consumer.
     pub fn seed(&self) -> u64 {
@@ -142,10 +188,44 @@ impl Simulation {
         self.steps
     }
 
+    /// Restore the whole catalogue, for the panel's "Reset to ILCA defaults"
+    /// (brief §31).
+    ///
+    /// The defaults live in `BoatParameters::ilca7()` and are fetched from
+    /// there, never rebuilt from a copy the browser kept: a run started from a
+    /// scenario with non-default parameters must still reset to the *ILCA*,
+    /// not to whatever it happened to load with, and no F7 value may be
+    /// duplicated in TypeScript (F7, F8).
+    pub fn reset_parameters(&mut self) {
+        self.params = BoatParameters::ilca7();
+        self.refresh_forces();
+    }
+
     /// Live parameter editing (F8.2, brief §31). Returns whether the change
     /// requires a reset.
+    ///
+    /// The edit is applied to a **copy** and only committed once the whole
+    /// catalogue still validates and the F6.7 `GZ` curve still fits. That
+    /// check is not decoration: `BoatParameters::set_path` has never
+    /// validated, `GzCurve::from_params` (which the equations of motion use)
+    /// cannot fail, and a `stability` group that `fit` rejects yields the zero
+    /// curve — a boat with no righting arm at all, silently (section 07
+    /// handoff §8.3). A rejected edit leaves the running simulation exactly as
+    /// it was and hands the caller the reason, which brief §31 requires the
+    /// panel to show.
     pub fn set_parameter(&mut self, path: &str, value: f64) -> Result<bool, ParamError> {
-        self.params.set_path(path, value)
+        let mut probe = self.params;
+        let reset_required = probe.set_path(path, value)?;
+        probe.validate()?;
+        GzCurve::fit(
+            probe.stability.gm,
+            probe.stability.phi_peak,
+            probe.stability.gz_max,
+            probe.stability.phi_vanish,
+        )?;
+        self.params = probe;
+        self.refresh_forces();
+        Ok(reset_required)
     }
 }
 

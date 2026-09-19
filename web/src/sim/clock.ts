@@ -37,6 +37,17 @@ export interface Clock {
   /** Exactly one dt, and only while paused. */
   singleStep(): void
   setSpeed(s: SpeedMultiplier): void
+  /**
+   * Adopt a new fixed timestep.
+   *
+   * `sim.dt` is a live-editable parameter (F7, brief §31) and `set_parameter`
+   * reports the edit as reset-required (F8.2) precisely because it changes
+   * what every step means. The core picks the new value up on its next step;
+   * without this the browser clock would go on converting wall time with the
+   * old one, and 1× would stop being real time. Section 08 calls it from the
+   * reset path, which is where a reset-required edit is made good.
+   */
+  setDt(dt: number): void
   /** Called once per animation frame. Returns the physics steps issued. */
   tick(wallDeltaMs: number): number
   /** Current clock state, for rendering the controls. */
@@ -59,6 +70,7 @@ export function createClock(dt: number, sink: ClockSink): Clock {
   if (!(dt > 0)) {
     throw new Error(`clock: dt must be positive, got ${dt}`)
   }
+  // Reassignable, for `setDt`; every read below goes through this binding.
 
   let running = true
   let speed: SpeedMultiplier = 1
@@ -100,6 +112,15 @@ export function createClock(dt: number, sink: ClockSink): Clock {
     },
     setSpeed(s: SpeedMultiplier) {
       speed = s
+    },
+    setDt(next: number) {
+      if (!(next > 0)) {
+        throw new Error(`clock: dt must be positive, got ${next}`)
+      }
+      dt = next
+      // The unspent fraction was measured in the old timestep and means
+      // nothing in the new one.
+      accumulator = 0
     },
     tick(wallDeltaMs: number): number {
       if (!running || !Number.isFinite(wallDeltaMs) || wallDeltaMs <= 0) {

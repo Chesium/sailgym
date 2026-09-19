@@ -34,7 +34,7 @@ export interface BoatSvgProps {
   sheet: SheetRigDims
   /** m, available sheet length `L` (snapshot `lSheet`). */
   lSheet: number
-  /** m, geometric rope path `ℓ(β)` (diagnostics `rope_length`). */
+  /** m, geometric rope path `ℓ(β)` (diagnostics `sheet_rope_length`). */
   ropeLength: number
   trajectory: readonly Vec2[]
   /** Drag with the middle button or Shift+drag. Left-drag is the mainsheet

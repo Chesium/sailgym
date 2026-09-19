@@ -5,15 +5,22 @@
 //! `NaN`, which is what keeps the zero-flow foil behaviour of F5.3 total.
 
 use crate::foil::EPS_FLOW;
+use serde::Serialize;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+// `Serialize` only, and only so the section 08 diagnostics record can publish
+// a vector without a `serialize_with` shim per field (section 02 handoff
+// §2.10 named this as the clean fix). The emitted shape is `{x, y, z}`, which
+// is exactly what `parameters::vec3_serde` already produces, so no JSON
+// document changes. Nothing here deserialises: the physics core still takes
+// its vectors from `parameters.rs` and `state.rs`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize)]
 pub struct Vec2 {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,

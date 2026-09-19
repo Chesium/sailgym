@@ -89,7 +89,7 @@ export interface SimulationHandle {
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
 
 /** The `?scenario=` fixtures, replaced by the scenario system in section 09. */
-const FIXTURES = ['coast', 'free_sail', 'sheet', 'capsize', 'knockdown'] as const
+const FIXTURES = ['coast', 'free_sail', 'sheet', 'capsize', 'knockdown', 'fast'] as const
 
 /** Minimal M3/M4/M5/M6 fixtures, replaced by the scenario system in section 09. */
 function initialScenario(sim: SimHandle, name: string): string {
@@ -104,6 +104,12 @@ function initialScenario(sim: SimHandle, name: string): string {
   const sheet = (JSON.parse(sim.parameters_json() as string) as RenderParams).sheet
   if (name === 'coast') {
     state.u = 4
+    wind.speed = 0
+  } else if (name === 'fast') {
+    // Above `diagnostics::HULL_MODEL_VALID_TO`, so the debug panel's R6
+    // warning is on at t = 0 and switches itself off as the hull drags the
+    // boat back below the limit. An initial condition, not a coefficient.
+    state.u = 6.5
     wind.speed = 0
   } else if (name === 'sheet') {
     // Part-eased, so a haul has room to shorten the sheet and a release has
@@ -207,6 +213,13 @@ export function useSimulation(
           advance: (n) => sim.advance(n),
           reset: () => {
             sim.reset(scenario)
+            // `sim.dt` is live-editable (brief §31) and `set_parameter`
+            // reports such an edit as reset-required (F8.2): this is the
+            // point at which the browser clock has to adopt it, or it goes on
+            // converting wall time with the timestep the page loaded with.
+            const nextDt = sim.dt()
+            clockRef.current?.setDt(nextDt)
+            setDt(nextDt)
             trackRef.current = []
             lastTrackRef.current = -Infinity
             setTrajectory([])

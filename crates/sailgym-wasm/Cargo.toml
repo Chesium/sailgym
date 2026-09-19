@@ -19,3 +19,9 @@ serde_json = { workspace = true }
 # `cargo build --workspace` and `cargo clippy --all-targets` run on the host.
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
+# `js-sys` is a **dev**-dependency: task 8.1's boundary test asserts that the
+# diagnostics record round-trips through the browser's own `JSON.parse`, which
+# needs `js_sys::JSON`. The shipped crate still marshals nothing but strings
+# and flat buffers, and `cargo tree -p sailgym-wasm` shows no js-sys in the
+# default feature set.
+js-sys = "0.3"

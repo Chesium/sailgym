@@ -16,7 +16,7 @@ importers:
         version: 9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1)))
       '@deck.gl/layers':
         specifier: ^9.4.0
-        version: 9.4.0(@deck.gl/core@9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))))(@loaders.gl/core@4.4.5)(@luma.gl/core@9.4.1)(@luma.gl/engine@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1)))
+        version: 9.4.0(@deck.gl/core@9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))))(@loaders.gl/core@4.5.1)(@luma.gl/core@9.4.1)(@luma.gl/engine@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1)))
       '@deck.gl/react':
         specifier: ^9.4.0
         version: 9.4.0(@deck.gl/core@9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))))(@deck.gl/widgets@9.4.0(@deck.gl/core@9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))))(@luma.gl/core@9.4.1))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -26,6 +26,9 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
+      zustand:
+        specifier: ^5.0.15
+        version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
       '@playwright/test':
         specifier: ^1.63.0
@@ -349,9 +352,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@loaders.gl/core@4.4.5':
-    resolution: {integrity: sha512-hlpE200MinDAyU0kMjEM4yk+0TDxiB9nT+GcwOCrXc7buE0e0YwTn+Ynz2Q85dwDKvJZw3kNHTTBGvQwq9533A==}
-
   '@loaders.gl/core@4.5.1':
     resolution: {integrity: sha512-FFYcHvIrdtdsn5459bf829ERY7Xp8Gh6vdLC4vL21A4OBBqKbPuGT+fA9KO3O/3zR2fM9C/adzmoxcN3BZ9fvw==}
 
@@ -360,32 +360,16 @@ packages:
     peerDependencies:
       '@loaders.gl/core': ~4.4.0
 
-  '@loaders.gl/loader-utils@4.4.5':
-    resolution: {integrity: sha512-c4h2RUMEru+hbfvgZEIy5cLQKyQka2TPQZW/2Wy+yIPr3FU7RKwfp+vLwIfir6Xkdn2zniWyWretZwE02aY/Ug==}
-
   '@loaders.gl/loader-utils@4.5.1':
     resolution: {integrity: sha512-rHeG4Jz/qWJ3GrT3R00Y1y8menGCgqNUsAkDnWgbtQdHe3vXpC1KhDiQVEK+YZyD/MeeJyryAEhoTWImXsiSyg==}
-
-  '@loaders.gl/schema-utils@4.4.5':
-    resolution: {integrity: sha512-vi6AROLWvoLIN609tVmchwotTaHK5rHv8SWjoVUWLhPCXmIc9npz0rCl7NJScCgr7UjYifZG1rWOnrAxaYTlyA==}
-    peerDependencies:
-      '@loaders.gl/core': ~4.4.0
 
   '@loaders.gl/schema-utils@4.5.1':
     resolution: {integrity: sha512-VyWWAdlP2+3RfCN0pIe8vllNgSb2zJzoqgO9xxDozOe0eu6+SGLST945L6gPcngyJ0FRKy5W0/aV9OUnjCsPOQ==}
     peerDependencies:
       '@loaders.gl/core': ~4.4.0
 
-  '@loaders.gl/schema@4.4.5':
-    resolution: {integrity: sha512-q2XNquegw+hX+ZEshacKYL/+FKBUIS5FHA+2Ft3JWmcNiR6umGnYCdXQhDcFCqAm8Ks87fMCV+z/zTloxaIZgQ==}
-
   '@loaders.gl/schema@4.5.1':
     resolution: {integrity: sha512-qrMqcwIHQRCfAx/zkujuI8ZfiwaOXvh82y5OXVfPkGtAw5EhLBM3fQxqdNOpfVhy0m4GCC6QvlXyurJXcx++yQ==}
-
-  '@loaders.gl/worker-utils@4.4.5':
-    resolution: {integrity: sha512-ZQDoM6f/HpZ3Lzj6vjtPHXSvi+cUK0QG7yJz+MKWAokmeWa98WMZwswS8zkn/qNkY95rLcxh66N4Sl96+7hqAQ==}
-    peerDependencies:
-      '@loaders.gl/core': ~4.4.0
 
   '@loaders.gl/worker-utils@4.5.1':
     resolution: {integrity: sha512-xs6bqDMQhkU1OK9X0SKuJvx1tQCUm4GzKeNcM/cIN3HMgzPN/P6qhbkoMfIFZGKZwIOdw0sDQAOj2hSuAEoh4w==}
@@ -1305,6 +1289,24 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
+  zustand@5.0.15:
+    resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
 snapshots:
 
   '@babel/code-frame@7.29.7':
@@ -1441,11 +1443,11 @@ snapshots:
     transitivePeerDependencies:
       - '@luma.gl/webgpu'
 
-  '@deck.gl/layers@9.4.0(@deck.gl/core@9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))))(@loaders.gl/core@4.4.5)(@luma.gl/core@9.4.1)(@luma.gl/engine@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1)))':
+  '@deck.gl/layers@9.4.0(@deck.gl/core@9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))))(@loaders.gl/core@4.5.1)(@luma.gl/core@9.4.1)(@luma.gl/engine@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1)))':
     dependencies:
       '@deck.gl/core': 9.4.0(@luma.gl/webgpu@9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1)))
-      '@loaders.gl/core': 4.4.5
-      '@loaders.gl/images': 4.5.1(@loaders.gl/core@4.4.5)
+      '@loaders.gl/core': 4.5.1
+      '@loaders.gl/images': 4.5.1(@loaders.gl/core@4.5.1)
       '@loaders.gl/schema': 4.5.1
       '@luma.gl/core': 9.4.1
       '@luma.gl/engine': 9.4.1(@luma.gl/core@9.4.1)(@luma.gl/shadertools@9.4.1(@luma.gl/core@9.4.1))
@@ -1581,14 +1583,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@loaders.gl/core@4.4.5':
-    dependencies:
-      '@loaders.gl/loader-utils': 4.4.5(@loaders.gl/core@4.4.5)
-      '@loaders.gl/schema': 4.4.5
-      '@loaders.gl/schema-utils': 4.4.5(@loaders.gl/core@4.4.5)
-      '@loaders.gl/worker-utils': 4.4.5(@loaders.gl/core@4.4.5)
-      '@probe.gl/log': 4.1.2
-
   '@loaders.gl/core@4.5.1':
     dependencies:
       '@loaders.gl/loader-utils': 4.5.1(@loaders.gl/core@4.5.1)
@@ -1597,33 +1591,10 @@ snapshots:
       '@loaders.gl/worker-utils': 4.5.1(@loaders.gl/core@4.5.1)
       '@probe.gl/log': 4.1.2
 
-  '@loaders.gl/images@4.5.1(@loaders.gl/core@4.4.5)':
-    dependencies:
-      '@loaders.gl/core': 4.4.5
-      '@loaders.gl/loader-utils': 4.5.1(@loaders.gl/core@4.4.5)
-
   '@loaders.gl/images@4.5.1(@loaders.gl/core@4.5.1)':
     dependencies:
       '@loaders.gl/core': 4.5.1
       '@loaders.gl/loader-utils': 4.5.1(@loaders.gl/core@4.5.1)
-
-  '@loaders.gl/loader-utils@4.4.5(@loaders.gl/core@4.4.5)':
-    dependencies:
-      '@loaders.gl/schema': 4.4.5
-      '@loaders.gl/worker-utils': 4.4.5(@loaders.gl/core@4.4.5)
-      '@probe.gl/log': 4.1.2
-      '@probe.gl/stats': 4.1.2
-    transitivePeerDependencies:
-      - '@loaders.gl/core'
-
-  '@loaders.gl/loader-utils@4.5.1(@loaders.gl/core@4.4.5)':
-    dependencies:
-      '@loaders.gl/schema': 4.5.1
-      '@loaders.gl/worker-utils': 4.5.1(@loaders.gl/core@4.4.5)
-      '@probe.gl/log': 4.1.2
-      '@probe.gl/stats': 4.1.2
-    transitivePeerDependencies:
-      - '@loaders.gl/core'
 
   '@loaders.gl/loader-utils@4.5.1(@loaders.gl/core@4.5.1)':
     dependencies:
@@ -1634,14 +1605,6 @@ snapshots:
     transitivePeerDependencies:
       - '@loaders.gl/core'
 
-  '@loaders.gl/schema-utils@4.4.5(@loaders.gl/core@4.4.5)':
-    dependencies:
-      '@loaders.gl/core': 4.4.5
-      '@loaders.gl/schema': 4.4.5
-      '@math.gl/types': 4.1.0
-      '@types/geojson': 7946.0.16
-      apache-arrow: 21.2.0
-
   '@loaders.gl/schema-utils@4.5.1(@loaders.gl/core@4.5.1)':
     dependencies:
       '@loaders.gl/core': 4.5.1
@@ -1650,23 +1613,10 @@ snapshots:
       '@types/geojson': 7946.0.16
       apache-arrow: 21.2.0
 
-  '@loaders.gl/schema@4.4.5':
-    dependencies:
-      '@types/geojson': 7946.0.16
-      apache-arrow: 21.2.0
-
   '@loaders.gl/schema@4.5.1':
     dependencies:
       '@types/geojson': 7946.0.16
       apache-arrow: 21.2.0
-
-  '@loaders.gl/worker-utils@4.4.5(@loaders.gl/core@4.4.5)':
-    dependencies:
-      '@loaders.gl/core': 4.4.5
-
-  '@loaders.gl/worker-utils@4.5.1(@loaders.gl/core@4.4.5)':
-    dependencies:
-      '@loaders.gl/core': 4.4.5
 
   '@loaders.gl/worker-utils@4.5.1(@loaders.gl/core@4.5.1)':
     dependencies:
@@ -2368,3 +2318,8 @@ snapshots:
       stackback: 0.0.2
 
   yallist@3.1.1: {}
+
+  zustand@5.0.15(@types/react@19.3.0)(react@19.3.0):
+    optionalDependencies:
+      '@types/react': 19.3.0
+      react: 19.3.0
