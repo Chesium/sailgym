@@ -28,6 +28,12 @@ export interface RenderParams {
   sail: { boom_length: number; mast_pos_b: { x: number; y: number; z: number } }
   rudder: { pos_b: { x: number; y: number; z: number } }
   board: { pos_b: { x: number; y: number; z: number } }
+  sheet: {
+    d_sheet: number
+    block_pos_b: { x: number; y: number; z: number }
+    l_sheet_min: number
+    l_sheet_max: number
+  }
 }
 
 export interface WorldPoint {
@@ -63,6 +69,12 @@ export interface SimulationHandle {
   singleStep(): void
   setSpeed(s: SpeedMultiplier): void
   /**
+   * The mainsheet rate command, `[−1, 1]`, `−1` = haul (F3). Held until it is
+   * set again: the mouse reducer in `sheetInput.ts` produces it, and the next
+   * `set_controls` — from the frame loop or from a key event — carries it.
+   */
+  setSheetRate(rate: number): void
+  /**
    * Run an imperative call against the live `Sim`, or return `null` if the
    * module is not ready yet.
    *
@@ -76,21 +88,35 @@ export interface SimulationHandle {
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
 
-/** Minimal M3/M4 fixtures, replaced by the scenario system in section 09. */
+/** Minimal M3/M4/M5 fixtures, replaced by the scenario system in section 09. */
 function initialScenario(sim: SimHandle, name: string): string {
-  if (name !== 'coast' && name !== 'free_sail') return '{}'
+  if (name !== 'coast' && name !== 'free_sail' && name !== 'sheet') return '{}'
   const values = sim.snapshot()
   const state: Record<string, number> = {}
   SNAPSHOT_FIELDS.forEach((field, i) => {
     state[field.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`)] = values[i]
   })
   const wind = JSON.parse(sim.wind_json() as string) as Record<string, unknown>
+  // The sheet limits come from the core, never from a literal here (F7, F8).
+  const sheet = (JSON.parse(sim.parameters_json() as string) as RenderParams).sheet
   if (name === 'coast') {
     state.u = 4
     wind.speed = 0
+  } else if (name === 'sheet') {
+    // Part-eased, so a haul has room to shorten the sheet and a release has
+    // room to pay it out. Light wind: there is no righting moment until
+    // section 07, so a long run at full power would lie the boat down.
+    wind.speed = 4
+    wind.bearing_deg = 0
+    state.l_sheet = (sheet.l_sheet_min + sheet.l_sheet_max) / 2
   } else {
     wind.speed = 5
     wind.bearing_deg = 0
+    // `free_sail` means a free boom. Since section 06 the sheet is a real
+    // rope and the default state is hauled hard in, which would pin the boom
+    // on the centreline; fully eased, the rope is slack over the whole boom
+    // range and contributes nothing.
+    state.l_sheet = sheet.l_sheet_max
   }
   wind.mode = 'uniform'
   return JSON.stringify({ state, wind })
@@ -127,6 +153,7 @@ export function useSimulation(
   const lastTrackRef = useRef(-Infinity)
   const inputRef = useRef(input)
   inputRef.current = input
+  const sheetRateRef = useRef(0)
   // Held in a ref so a new closure per frame does not restart the loop.
   const frameHookRef = useRef<FrameHook | undefined>(onFrame)
   frameHookRef.current = onFrame
@@ -203,7 +230,7 @@ export function useSimulation(
       if (sim === null) {
         return
       }
-      const c = controlsFromInput(held, inputRef.current)
+      const c = controlsFromInput(held, inputRef.current, sheetRateRef.current)
       sim.set_controls(c.rudderRateCmd, c.sheetRateCmd, c.sheetRelease)
     }
 
@@ -290,7 +317,7 @@ export function useSimulation(
       const delta = previous === null ? 0 : now - previous
       previous = now
 
-      const c = controlsFromInput(heldRef.current, inputRef.current)
+      const c = controlsFromInput(heldRef.current, inputRef.current, sheetRateRef.current)
       sim.set_controls(c.rudderRateCmd, c.sheetRateCmd, c.sheetRelease)
       clock.tick(delta)
 
@@ -352,6 +379,17 @@ export function useSimulation(
       (s: SpeedMultiplier) => withClock((c) => c.setSpeed(s)),
       [withClock],
     ),
+    setSheetRate: useCallback((rate: number) => {
+      sheetRateRef.current = rate
+      const sim = simRef.current
+      if (sim !== null) {
+        // Push it immediately rather than waiting for the next frame: a drag
+        // followed at once by a single step would otherwise advance on the
+        // previous command, exactly as the keyboard path found in section 02.
+        const c = controlsFromInput(heldRef.current, inputRef.current, rate)
+        sim.set_controls(c.rudderRateCmd, c.sheetRateCmd, c.sheetRelease)
+      }
+    }, []),
     withSim: useCallback(<T,>(fn: (sim: SimHandle) => T): T | null => {
       const sim = simRef.current
       return sim === null ? null : fn(sim)

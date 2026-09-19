@@ -10,8 +10,10 @@ import {
   type RigDims,
 } from './geometry'
 import { sailShape } from './SailShape'
+import { SheetRope, type SheetRigDims } from './SheetRope'
 import { radiansToDegrees } from '../sim/units'
 import { Trajectory } from './Trajectory'
+import type { SheetEvent } from '../sim/sheetInput'
 
 /** Boat pose, straight off the snapshot. */
 export interface BoatPose {
@@ -28,10 +30,19 @@ export interface BoatSvgProps {
   alpha: number
   hull: HullDims
   rig: RigDims
+  /** Mainsheet geometry and lengths; the rope is drawn from these. */
+  sheet: SheetRigDims
+  /** m, available sheet length `L` (snapshot `lSheet`). */
+  lSheet: number
+  /** m, geometric rope path `ℓ(β)` (diagnostics `rope_length`). */
+  ropeLength: number
   trajectory: readonly Vec2[]
-  /** Drag with the middle button or Shift+drag. Left-drag is reserved for the
-   *  mainsheet in section 06 and is deliberately unbound (brief §27). */
+  /** Drag with the middle button or Shift+drag. Left-drag is the mainsheet
+   *  (brief §27); both pointer paths are fed to `onSheet` below, which decides
+   *  which is which. */
   onPan: (dxPixels: number, dyPixels: number) => void
+  /** Raw pointer events for the mainsheet reducer (section 06, task 6.3). */
+  onSheet: (ev: SheetEvent) => void
   /** Wheel zoom; `factor` multiplies the current zoom. */
   onZoom: (factor: number) => void
 }
@@ -45,8 +56,12 @@ export function BoatSvg({
   alpha,
   hull,
   rig,
+  sheet,
+  lSheet,
+  ropeLength,
   trajectory,
   onPan,
+  onSheet,
   onZoom,
 }: BoatSvgProps) {
   const dragging = useRef<{ x: number; y: number } | null>(null)
@@ -76,14 +91,17 @@ export function BoatSvg({
       // it completely. The sea colour moved to the wrapper in `App.tsx`.
       style={{ display: 'block', background: 'transparent', touchAction: 'none' }}
       onPointerDown={(e) => {
-        // Middle button, or Shift + any button. Plain left-drag stays free.
+        // Middle button, or Shift + any button, pans. A plain left-drag is the
+        // mainsheet. Both go to `onSheet`, whose reducer ignores the camera's.
+        onSheet({ type: 'down', y: e.clientY, button: e.button, shiftKey: e.shiftKey })
+        e.currentTarget.setPointerCapture(e.pointerId)
         if (e.button === 1 || e.shiftKey) {
           e.preventDefault()
           dragging.current = { x: e.clientX, y: e.clientY }
-          e.currentTarget.setPointerCapture(e.pointerId)
         }
       }}
       onPointerMove={(e) => {
+        onSheet({ type: 'move', y: e.clientY, button: e.button, shiftKey: e.shiftKey })
         const from = dragging.current
         if (from === null) {
           return
@@ -92,10 +110,15 @@ export function BoatSvg({
         dragging.current = { x: e.clientX, y: e.clientY }
       }}
       onPointerUp={(e) => {
-        if (dragging.current !== null) {
-          dragging.current = null
+        onSheet({ type: 'up', y: e.clientY, button: e.button, shiftKey: e.shiftKey })
+        dragging.current = null
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
         }
+      }}
+      onPointerCancel={(e) => {
+        onSheet({ type: 'cancel', y: e.clientY })
+        dragging.current = null
       }}
       onWheel={(e) => {
         onZoom(Math.exp(-e.deltaY / 500))
@@ -173,6 +196,7 @@ export function BoatSvg({
           vectorEffect="non-scaling-stroke"
         />
         </g>
+        <SheetRope rig={sheet} beta={pose.beta} lSheet={lSheet} ropeLength={ropeLength} />
         <circle data-testid="boat-mast" cx={rig.mastX} cy={0} r={0.12} fill="#2b3a45" />
         <line
           data-testid="boat-rudder"

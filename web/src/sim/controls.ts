@@ -26,9 +26,9 @@ export interface InputConfig {
   rudderKeyRate: number
   /** commands smaller than this are treated as neutral */
   rudderDeadZone: number
-  /** normalised sheet command per pixel of vertical drag — section 06 */
+  /** normalised sheet command per pixel of vertical drag (section 06) */
   sheetDragGain: number
-  /** invert the vertical sheet drag — section 06 */
+  /** invert the vertical sheet drag; the default is drag down = haul in */
   sheetInvert: boolean
 }
 
@@ -52,11 +52,16 @@ export const NEUTRAL_CONTROLS: Controls = {
  * `D`/`ArrowRight` produce a **positive** command, which per F2.2 deflects the
  * rudder so the bow turns to starboard. Holding both directions cancels.
  *
- * `sheetRateCmd` stays 0 at M1: the mainsheet is a mouse-drag interaction and
- * arrives with the physical sheet in section 06. `Space` (release) works now
- * because it is a key, and the Rust core already integrates `l_sheet`.
+ * `sheetRateCmd` is a mouse-drag command (brief §12), so it is not derived
+ * from the held keys: `sheetInput.reduceSheetInput` produces it and it is
+ * passed straight through here. `Space` (release) is a key and overrides it
+ * inside the Rust core, which is the only place that precedence is written.
  */
-export function controlsFromInput(held: ReadonlySet<string>, cfg: InputConfig): Controls {
+export function controlsFromInput(
+  held: ReadonlySet<string>,
+  cfg: InputConfig,
+  sheetRateCmd = 0,
+): Controls {
   let rudder = 0
   let release = false
 
@@ -82,7 +87,7 @@ export function controlsFromInput(held: ReadonlySet<string>, cfg: InputConfig): 
 
   return {
     rudderRateCmd: Math.max(-1, Math.min(1, rudder)),
-    sheetRateCmd: 0,
+    sheetRateCmd: Math.max(-1, Math.min(1, sheetRateCmd)),
     sheetRelease: release,
   }
 }

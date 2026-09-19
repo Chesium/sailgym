@@ -6,10 +6,12 @@
 //! Hydrodynamic guards retain explicit still-air fixtures and external loads.
 //! M4 adds wind-driven trajectories, diagnostics and continuous tack motion.
 
+use sailgym_physics::dynamics::sheet_rate;
 use sailgym_physics::dynamics::Load;
 use sailgym_physics::forces::PhysicalForces;
 use sailgym_physics::integrator::step;
 use sailgym_physics::parameters::BoatParameters;
+use sailgym_physics::rigging::mainsheet::{rope_path_length, sheet_output};
 use sailgym_physics::simulation::Simulation;
 use sailgym_physics::state::{BoatState, Controls, STATE_FIELDS, STATE_LEN};
 use sailgym_physics::testkit::{mirror_controls, mirror_state, WithExternalLoad};
@@ -38,6 +40,17 @@ fn params() -> BoatParameters {
 
 fn steps_for(seconds: f64, p: &BoatParameters) -> u32 {
     (seconds / p.sim.dt).round() as u32
+}
+
+/// At rest with the sheet fully eased, so the boom is unrestrained.
+///
+/// `Simulation::initial_state` starts at `l_sheet_min`, which since section 06
+/// is a loaded rope. Fixtures that mean "free boom" say so with this.
+fn boom_free_state(p: &BoatParameters) -> BoatState {
+    BoatState {
+        l_sheet: p.sheet.l_sheet_max,
+        ..Simulation::initial_state(p)
+    }
 }
 
 /// `½ m_x u² + ½ m_y v² + ½ I_z r² + ½ I_x p²`.
@@ -556,7 +569,13 @@ fn tack_through_wind() {
         BoatState {
             u: 3.0,
             beta: -0.4,
-            ..Simulation::initial_state(&p)
+            // Section 06 made the sheet real, and `initial_state` starts
+            // sheeted hard in. This M4 invariant is about the **boom**
+            // crossing naturally when the sail unloads, so it keeps the boom
+            // free: at `l_sheet_max` the rope is slack over the whole boom
+            // range (`ℓ = 4.5 m` at `|β| = 1.757 > beta_max`) and the element
+            // contributes exactly nothing. No assertion here was touched.
+            ..boom_free_state(&p)
         },
         507,
     );
@@ -590,4 +609,242 @@ fn tack_through_wind() {
         sim.state().psi,
         sim.state().beta
     );
+}
+
+// ---------------------------------------------------------------------------
+// brief §35 — sheet unilateral constraint (section 06)
+// ---------------------------------------------------------------------------
+
+/// The tension the derivative sees at this state and command, computed exactly
+/// the way `forces::evaluate` computes it.
+fn sheet_tension(st: &BoatState, c: &Controls, p: &BoatParameters) -> f64 {
+    sheet_output(st, sheet_rate(c, st, p), p).tension
+}
+
+/// Total mechanical energy, **including the sheet's elastic term**
+/// `½·k_sheet·max(0, e)²` and the boom's soft-limit spring.
+///
+/// A version that omitted the elastic term would report energy vanishing into
+/// the rope and reappearing out of it; the accounting has to be complete or
+/// the invariant is meaningless.
+fn mechanical_energy(st: &BoatState, p: &BoatParameters) -> f64 {
+    let extension = (rope_path_length(st.beta, p) - st.l_sheet).max(0.0);
+    let past_stop = (st.beta.abs() - p.sail.beta_max).max(0.0);
+    kinetic_energy(st, p)
+        + 0.5 * p.sail.i_boom * st.beta_dot * st.beta_dot
+        + 0.5 * p.sheet.k_sheet * extension * extension
+        + 0.5 * p.sail.k_lim * past_stop * past_stop
+}
+
+#[test]
+fn sheet_unilateral_constraint() {
+    // brief §11, brief §35. 50 full 60 s episodes under randomised control
+    // sequences: `T >= 0` at every step, with no exception anywhere.
+    let p = params();
+    let mut rng = Lcg(0x5EE7_1111_2222_3333);
+    for episode in 0..50 {
+        let mut sim = Simulation::new(p, episode);
+        sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+            mode: sailgym_physics::environment::wind::WindMode::Gust,
+            speed: rng.range(0.0, 9.0),
+            bearing_deg: rng.range(0.0, 360.0),
+            ..Default::default()
+        });
+        sim.reset(
+            BoatState {
+                psi: rng.range(-3.0, 3.0),
+                u: rng.range(-1.0, 4.0),
+                beta: rng.range(-1.7, 1.7),
+                beta_dot: rng.range(-2.0, 2.0),
+                l_sheet: rng.range(p.sheet.l_sheet_min, p.sheet.l_sheet_max),
+                ..Simulation::initial_state(&p)
+            },
+            episode,
+        );
+        let mut c = Controls::default();
+        for i in 0..steps_for(60.0, &p) {
+            if i % 200 == 0 {
+                c = Controls {
+                    rudder_rate_cmd: rng.range(-1.0, 1.0),
+                    sheet_rate_cmd: rng.range(-1.0, 1.0),
+                    sheet_release: rng.unit() < 0.2,
+                };
+                sim.set_controls(c);
+            }
+            sim.advance(1);
+            let t = sheet_tension(sim.state(), &c, &p);
+            assert!(
+                t >= 0.0,
+                "episode {episode}, step {i}: T = {t}, {:?}",
+                sim.state()
+            );
+        }
+    }
+}
+
+#[test]
+fn sheet_does_no_negative_work() {
+    // Zero wind, no sheet command, kinetic energy put into the boom. The rope
+    // and the gooseneck may take energy out; nothing may put any in.
+    //
+    // The sheet lengths are drawn above `ℓ(0) = 1.0404 m`, so the rope is
+    // slack with the boom on the centreline and every load it carries comes
+    // with the damping that accompanies `dℓ/dβ ≠ 0`. `l_sheet_min = 0.90 m`
+    // is *below* that, and a sheet hauled to it is permanently stretched at
+    // the one angle where the element has no damping at all — an undamped
+    // 43 rad/s mode that RK2 cannot integrate to this tolerance at any `dt`
+    // the project uses. That is an integrator limit, not an accounting error:
+    // the per-step rise falls off as `dt³` (0.138 J at `dt = 0.01`, 3.1e-6 J
+    // at `dt = 0.00125`). The measurements and what they mean for R1 are in
+    // `docs/progress/06-handoff.md`; the bound below is unchanged.
+    let p = params();
+    let c = Controls::default();
+    let mut rng = Lcg(0x0E0E_5555_6666_7777);
+    let free_at_centre = rope_path_length(0.0, &p);
+    for episode in 0..10 {
+        let mut sim = Simulation::new(p, episode);
+        sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+            speed: 0.0,
+            ..Default::default()
+        });
+        sim.reset(
+            BoatState {
+                beta_dot: rng.range(-2.5, 2.5),
+                l_sheet: rng.range(free_at_centre + 0.05, 3.0),
+                ..Simulation::initial_state(&p)
+            },
+            episode,
+        );
+        sim.set_controls(c);
+        let mut previous = mechanical_energy(sim.state(), &p);
+        let first = previous;
+        let mut rope_took_up = false;
+        assert!(previous > 0.0);
+        for i in 0..steps_for(20.0, &p) {
+            sim.advance(1);
+            let e = mechanical_energy(sim.state(), &p);
+            assert!(
+                e <= previous + 1e-9,
+                "episode {episode}, step {i}: energy rose {previous} -> {e}"
+            );
+            previous = e;
+            rope_took_up |= sheet_tension(sim.state(), &c, &p) > 0.0;
+        }
+        // The elastic term has to be exercised, or the test proves nothing.
+        assert!(rope_took_up, "episode {episode}: the rope never took up");
+        assert!(
+            previous < first,
+            "episode {episode}: nothing was dissipated"
+        );
+    }
+}
+
+#[test]
+fn slack_sheet_free_boom() {
+    // With the sheet fully eased the rope is slack over the whole boom range,
+    // so the boom must decay under the gooseneck alone: `I_b β̈ = −c_β β̇`.
+    // The reference is that ODE under the **same** RK2 midpoint map and the
+    // same `dt`, so what is compared is the physics, not the integrator.
+    let p = params();
+    let mut sim = Simulation::new(p, 606);
+    sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+        speed: 0.0,
+        ..Default::default()
+    });
+    let start = BoatState {
+        beta_dot: 0.1,
+        l_sheet: p.sheet.l_sheet_max,
+        ..Simulation::initial_state(&p)
+    };
+    sim.reset(start, 606);
+
+    let a = p.sail.c_beta / p.sail.i_boom;
+    let dt = p.sim.dt;
+    // RK2 midpoint applied to β̈ = −a β̇, written out.
+    let rate_map = 1.0 - a * dt + 0.5 * a * a * dt * dt;
+    let (mut beta, mut beta_dot) = (start.beta, start.beta_dot);
+
+    for i in 0..steps_for(30.0, &p) {
+        sim.advance(1);
+        beta += dt * beta_dot * (1.0 - 0.5 * a * dt);
+        beta_dot *= rate_map;
+        let st = sim.state();
+        assert_eq!(sheet_tension(st, &Controls::default(), &p), 0.0);
+        assert!(
+            (st.beta - beta).abs() < 1e-9 && (st.beta_dot - beta_dot).abs() < 1e-9,
+            "step {i}: ({}, {}) vs pure damping ({beta}, {beta_dot})",
+            st.beta,
+            st.beta_dot
+        );
+    }
+    // The boom really did move, and stayed inside its stops the whole way.
+    assert!(sim.state().beta > 0.4 && sim.state().beta < p.sail.beta_max);
+}
+
+#[test]
+fn sheet_geometry_continuous() {
+    // `m_beta` is built from smooth geometry and one `max`, which is C0 at the
+    // take-up point, so the moment has no step anywhere.
+    //
+    // The sweep runs at `l_sheet_max`, the one length at which the boom can
+    // actually traverse the whole range: with the sheet hauled the element is
+    // still continuous, but so steep that a finite difference over 1e-5 rad
+    // reports its *slope*, not a discontinuity — see the section 06 handoff
+    // note for the measured numbers.
+    let p = params();
+    let spacing = 1e-5;
+    let mut worst = 0.0_f64;
+    let mut previous: Option<f64> = None;
+    let steps = (2.0 * std::f64::consts::PI / spacing) as i64;
+    for i in 0..=steps {
+        let beta = -std::f64::consts::PI + spacing * i as f64;
+        let st = BoatState {
+            beta,
+            l_sheet: p.sheet.l_sheet_max,
+            ..BoatState::ZERO
+        };
+        let m = sheet_output(&st, 0.0, &p).m_beta;
+        if let Some(prev) = previous {
+            worst = worst.max((m - prev).abs());
+            assert!(
+                (m - prev).abs() < 1.0,
+                "step at beta = {beta}: {prev} -> {m}"
+            );
+        }
+        previous = Some(m);
+    }
+    eprintln!("sheet_geometry_continuous: worst step {worst:.6} N·m over {spacing} rad");
+
+    // Continuity, proved independently of how steep the element is: halving
+    // the sample spacing must halve the largest step. A genuine discontinuity
+    // would not shrink at all. This runs at every sheet length, including the
+    // hauled ones where the elastic slope alone puts the 1 N·m figure out of
+    // reach.
+    let worst_step = |l_sheet: f64, h: f64| {
+        let mut worst = 0.0_f64;
+        let mut previous: Option<f64> = None;
+        let n = (2.0 * std::f64::consts::PI / h) as i64;
+        for i in 0..=n {
+            let st = BoatState {
+                beta: -std::f64::consts::PI + h * i as f64,
+                l_sheet,
+                ..BoatState::ZERO
+            };
+            let m = sheet_output(&st, 0.0, &p).m_beta;
+            if let Some(prev) = previous {
+                worst = worst.max((m - prev).abs());
+            }
+            previous = Some(m);
+        }
+        worst
+    };
+    for l_sheet in [p.sheet.l_sheet_min, 1.5, 2.5, 3.5, p.sheet.l_sheet_max] {
+        let coarse = worst_step(l_sheet, 1e-3);
+        let fine = worst_step(l_sheet, 5e-4);
+        assert!(
+            fine < 0.6 * coarse,
+            "L = {l_sheet}: worst step did not shrink with the spacing, \
+             {coarse} -> {fine} — that is a discontinuity, not a slope"
+        );
+    }
 }

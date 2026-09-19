@@ -102,9 +102,16 @@ fn rudder_rate(st: &BoatState, c: &Controls, p: &BoatParameters) -> f64 {
     limit_rate(st.delta_r, raw, -p.rudder.delta_r_max, p.rudder.delta_r_max)
 }
 
-/// `L̇` (F4.3). `+` eases (pays out), `−` hauls; Space overrides the analogue
-/// command with the release rate (brief §12).
-fn sheet_rate(st: &BoatState, c: &Controls, p: &BoatParameters) -> f64 {
+/// `L̇` (F4.3), the commanded payout rate in m/s. `+` eases (pays out), `−`
+/// hauls; `sheet_release` (Space) overrides the analogue command with
+/// `sheet_release_rate` (brief §12). The rate is zeroed when `L` is already
+/// outside `[l_sheet_min, l_sheet_max]` and the command would push it further
+/// out, so the clamp lives **inside** the derivative (F4.3).
+///
+/// Public because `forces::evaluate` must feed the mainsheet element exactly
+/// the `L̇` this derivative evaluation integrates; recomputing it anywhere
+/// else is how the damping term drifts between RK2 stages.
+pub fn sheet_rate(c: &Controls, st: &BoatState, p: &BoatParameters) -> f64 {
     let raw = if c.sheet_release {
         p.sheet.sheet_release_rate
     } else {
@@ -162,7 +169,7 @@ pub fn derivative(
 
         // F4.3 actuators
         delta_r: rudder_rate(st, c, p),
-        l_sheet: sheet_rate(st, c, p),
+        l_sheet: sheet_rate(c, st, p),
 
         t: 1.0,
     }

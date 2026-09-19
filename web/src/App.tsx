@@ -11,6 +11,8 @@ import {
   type Vec2,
 } from './render/Camera'
 import { BoatSvg } from './render/BoatSvg'
+import { DEFAULT_INPUT } from './sim/controls'
+import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetInputState } from './sim/sheetInput'
 import { useSimulation } from './sim/useSimulation'
 import { ClockControls } from './ui/ClockControls'
 import { Hud } from './ui/Hud'
@@ -61,6 +63,7 @@ export default function App() {
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Vec2>({ x: 0, y: 0 })
   const [windMode, setWindMode] = useState<WindModeName>('gust')
+  const sheetInput = useRef<SheetInputState>(IDLE_SHEET_INPUT)
   const [showArrows, setShowArrows] = useState(false)
   const baseCentre = useRef<Vec2>({ x: 0, y: 0 })
 
@@ -114,6 +117,14 @@ export default function App() {
           boomLength: sim.params.sail.boom_length,
           rudderX: sim.params.rudder.pos_b.x,
           boardX: sim.params.board.pos_b.x,
+        }
+  const sheetRig =
+    sim.params === null
+      ? { mastX: 0, dSheet: 0, block: { x: 0, y: 0 } }
+      : {
+          mastX: sim.params.sail.mast_pos_b.x,
+          dSheet: sim.params.sheet.d_sheet,
+          block: { x: sim.params.sheet.block_pos_b.x, y: sim.params.sheet.block_pos_b.y },
         }
 
   const grid = wind.grid()
@@ -216,7 +227,15 @@ export default function App() {
             alpha={sim.diagnostics?.alpha_sail ?? 0}
             hull={hull}
             rig={rig}
+            sheet={sheetRig}
+            lSheet={s.lSheet}
+            ropeLength={sim.diagnostics?.rope_length ?? 0}
             trajectory={sim.trajectory}
+            onSheet={(ev) => {
+              const [next, rate] = reduceSheetInput(sheetInput.current, ev, DEFAULT_INPUT)
+              sheetInput.current = next
+              sim.setSheetRate(rate)
+            }}
             onPan={(dxPixels, dyPixels) => {
               const a = camera.screenToWorld({ x: 0, y: 0 })
               const b = camera.screenToWorld({ x: dxPixels, y: dyPixels })
@@ -245,6 +264,8 @@ export default function App() {
         data-beta-dot={s.betaDot}
         data-delta-r={s.deltaR}
         data-l-sheet={s.lSheet}
+        data-sheet-tension={sim.diagnostics?.sheet_tension ?? 0}
+        data-rope-length={sim.diagnostics?.rope_length ?? 0}
       >
         t {s.t.toFixed(3)} s · x {s.x.toFixed(2)} m · y {s.y.toFixed(2)} m · ψ{' '}
         {((s.psi * 180) / Math.PI).toFixed(1)}° · u {s.u.toFixed(2)} m/s · δr{' '}
@@ -271,8 +292,9 @@ export default function App() {
       <ArrowProbe field={arrows} />
 
       <div style={{ color: '#667' }}>
-        A / ← and D / → steer · Space eases the sheet · P pauses · . single-steps · R resets ·
-        wheel zooms · middle-drag or Shift+drag pans
+        A / ← and D / → steer · <strong>drag down to haul the mainsheet in, drag up to
+        ease</strong> · Space releases the sheet · P pauses · . single-steps · R resets · wheel
+        zooms · middle-drag or Shift+drag pans
       </div>
     </div>
   )

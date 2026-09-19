@@ -1,6 +1,6 @@
 import type { SimHandle } from './loadWasm'
 
-/** Current-snapshot M4 record; Rust owns all derived physical quantities. */
+/** Current-snapshot record; Rust owns all derived physical quantities. */
 export interface Diagnostics {
   t: number
   steps: number
@@ -11,6 +11,12 @@ export interface Diagnostics {
   alpha_sail: number
   cl_sail: number
   cd_sail: number
+  /** N, mainsheet tension; never negative (brief §11). */
+  sheet_tension: number
+  /** m, geometric rope path length `ℓ(β)` (F6.8). */
+  rope_length: number
+  /** m, `e = ℓ − L`; negative when the rope is slack. */
+  sheet_extension: number
 }
 
 export function readDiagnostics(sim: SimHandle): Diagnostics {

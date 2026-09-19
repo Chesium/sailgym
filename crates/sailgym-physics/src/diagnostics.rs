@@ -1,4 +1,4 @@
-//! Current-state M4 diagnostics. Section 08 extends this record for debugging.
+//! Current-state diagnostics. Section 08 extends this record for debugging.
 //! Evaluated from the same state, controls, parameters and field as the EOM;
 //! these describe the published snapshot, not the RK2 midpoint of the last step.
 
@@ -21,6 +21,15 @@ pub struct Diagnostics {
     pub alpha_sail: f64,
     pub cl_sail: f64,
     pub cd_sail: f64,
+    /// N, mainsheet tension, `≥ 0` always (F6.8, brief §11).
+    pub sheet_tension: f64,
+    /// m, `ℓ(β)` — the geometric rope path length. The renderer draws the rope
+    /// from this and `l_sheet`, so no rope geometry is re-derived in
+    /// TypeScript (F8).
+    pub rope_length: f64,
+    /// m, `e = ℓ − L`. Negative when the rope is slack; the renderer's sag is
+    /// `max(0, −e)`.
+    pub sheet_extension: f64,
 }
 
 fn serialize_vec3<S: Serializer>(v: &Vec3, s: S) -> Result<S::Ok, S::Error> {
@@ -49,6 +58,9 @@ pub fn diagnostics(sim: &Simulation) -> Diagnostics {
         alpha_sail: f.alpha_sail,
         cl_sail: f.cl_sail,
         cd_sail: f.cd_sail,
+        sheet_tension: f.sheet_tension,
+        rope_length: f.rope_length,
+        sheet_extension: f.sheet_extension,
     }
 }
 

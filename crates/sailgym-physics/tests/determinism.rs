@@ -5,6 +5,7 @@
 //! start. Every test here must keep passing for the life of the project.
 
 use std::collections::BTreeMap;
+use std::f64::consts::PI;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -303,5 +304,53 @@ fn sheet_length_clamped() {
             "episode {i}: l_sheet rose to {}",
             e.max_l_sheet
         );
+    }
+}
+
+/// A `BoatState` must survive the JSON round trip **bit for bit**.
+///
+/// `Sim::reset` takes its initial state as JSON (F8.2), and section 09 records
+/// and replays through the same representation, so anything lost here is lost
+/// from brief §34's determinism guarantee.
+///
+/// This is not automatic. `serde_json`'s default float parser is off by up to
+/// one ULP on ordinary values — `-0.010181931919188581` parses one ULP away
+/// from what `str::parse::<f64>()` gives — and the workspace therefore enables
+/// its `float_roundtrip` feature. Without that feature this test fails, which
+/// is the point of having it: a state that came back one ULP out produced a
+/// visibly different apparent wind through the cancellation in `A_B.x`, and
+/// that is how the defect was found (section 06 handoff).
+#[test]
+fn state_json_round_trips_bitwise() {
+    let p = BoatParameters::ilca7();
+    let mut rng = Lcg(0x3501_1234_5678_9abc);
+    for case in 0..2_000 {
+        let before = BoatState {
+            x: rng.range(-500.0, 500.0),
+            y: rng.range(-500.0, 500.0),
+            psi: rng.range(-PI, PI),
+            phi: rng.range(-PI, PI),
+            u: rng.range(-8.0, 8.0),
+            v: rng.range(-3.0, 3.0),
+            r: rng.range(-2.0, 2.0),
+            p: rng.range(-2.0, 2.0),
+            beta: rng.range(-PI, PI),
+            beta_dot: rng.range(-5.0, 5.0),
+            delta_r: rng.range(-p.rudder.delta_r_max, p.rudder.delta_r_max),
+            l_sheet: rng.range(p.sheet.l_sheet_min, p.sheet.l_sheet_max),
+            t: rng.range(0.0, 600.0),
+        };
+        let json = serde_json::to_string(&before).unwrap();
+        let after: BoatState = serde_json::from_str(&json).unwrap();
+        let (a, b) = (before.to_array(), after.to_array());
+        for (k, name) in STATE_FIELDS.iter().enumerate() {
+            assert_eq!(
+                a[k].to_bits(),
+                b[k].to_bits(),
+                "case {case}, field {name}: {} -> {} via {json}",
+                a[k],
+                b[k]
+            );
+        }
     }
 }

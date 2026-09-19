@@ -27,12 +27,31 @@
 //!
 //! ## Deferred loads
 //!
-//! Mainsheet (section 06) and hydrostatic righting (section 07) contribute zero. They are summed anyway, at their
-//! final position in the order, so that landing them changes a value and not
+//! Hydrostatic righting (section 07) contributes zero. It is summed anyway, at
+//! its final position in the order, so that landing it changes a value and not
 //! the arithmetic structure.
+//!
+//! ## The mainsheet is a null force system on the hull — by construction
+//!
+//! Slot 5 sums **both** ends of the rope (F6.8): `F_b` on the boom at `P_b`
+//! and its reaction `−F_b` on the hull at the block `P_k`. The two are equal,
+//! opposite and **collinear** — `F_b` points along `P_k − P_b` — so their
+//! resultant force and their resultant moment both vanish identically, and the
+//! sheet's whole contribution to `ΣX, ΣY, ΣN, ΣK` is zero to rounding.
+//!
+//! That is the correct answer, not an accident. `P_b` and `P_k` are both fixed
+//! to the boat for a given `β`, so a rigid motion of the boat cannot change
+//! the rope path length: the rope can do no work on the hull degrees of
+//! freedom, and its only generalised force is on `β`, where it is
+//! `−T·dℓ/dβ = M_β`. Summing the boom end alone would leave a spurious force
+//! and couple on the hull — that is the Newton's-third-law violation F6.8
+//! warns about, and `sheet_does_no_negative_work` (invariants) is what catches
+//! it: the orphaned couple pumps energy into roll. The sheet reaches heel the
+//! way a real one does, through the boom angle it controls and the sail force
+//! that follows.
 
 use crate::aero::{apparent::apparent_wind_cg, sail::sail_load};
-use crate::dynamics::{ForceModel, Generalized, Load};
+use crate::dynamics::{sheet_rate, ForceModel, Generalized, Load};
 use crate::environment::WindField;
 use crate::frames::world_to_body;
 use crate::hydro::centerboard::centerboard_load;
@@ -40,6 +59,7 @@ use crate::hydro::hull::hull_loads;
 use crate::hydro::rudder::rudder_load;
 use crate::parameters::BoatParameters;
 use crate::rigging::boom::{boom_passive_moments, BoomMoments};
+use crate::rigging::mainsheet::sheet_output;
 use crate::state::{BoatState, Controls};
 use crate::vec::{Vec2, Vec3};
 
@@ -58,7 +78,14 @@ pub struct ForceBreakdown {
     pub alpha_rudder: f64,
     pub cl_sail: f64,
     pub cd_sail: f64,
+    /// Reaction on the hull at the block, `−F_b` applied at `P_k` (F6.8).
+    pub sheet_hull: Load,
     pub sheet_tension: f64,
+    /// m, `ℓ(β)` — the geometric rope path length. The renderer draws the rope
+    /// from this and `l_sheet`; nothing is re-derived in TypeScript (F8).
+    pub rope_length: f64,
+    /// m, `e = ℓ − L`. Negative when the rope is slack.
+    pub sheet_extension: f64,
     pub m_beta: f64,
     pub k_restore: f64,
     pub gz: f64,
@@ -129,7 +156,7 @@ impl ForceModel for WindForces<'_> {
 /// The six additions below are in the F9.4 order and must not be reordered.
 pub fn evaluate(
     st: &BoatState,
-    _c: &Controls,
+    c: &Controls,
     p: &BoatParameters,
     w: &dyn WindField,
     t: f64,
@@ -167,18 +194,37 @@ pub fn evaluate(
     // 4. sail
     let sail = sail_load(st, wind_world, p);
     total.add(sail.load, st.phi);
+
+    // 5. mainsheet — both the pull on the boom and its reaction on the hull at
+    //    the block (F6.8); see the module note on why their sum vanishes.
+    //
+    //    `L̇` comes from `dynamics::sheet_rate`, the same pure function the
+    //    derivative integrates, so the damping term `ė` is consistent across
+    //    every RK2 stage.
+    //
+    //    The pair is accumulated on its own before it joins the running total.
+    //    `(0 + a) + (−a)` is exactly zero in IEEE arithmetic, while
+    //    `(S + a) − a` is not `S` in general — summing the two ends straight
+    //    into `total` would leave a heel- and yaw-dependent rounding residue
+    //    on top of the hull terms, which `damping_survives_inversion` compares
+    //    bit for bit. Nothing is cancelled by hand: both ends still go through
+    //    `Generalized::add` with the F6.4 heel geometry.
+    let sheet = sheet_output(st, sheet_rate(c, st, p), p);
+    let mut sheet_total = Generalized::default();
+    sheet_total.add(sheet.boom_load, st.phi);
+    sheet_total.add(sheet.hull_load, st.phi);
+    total.x += sheet_total.x;
+    total.y += sheet_total.y;
+    total.n += sheet_total.n;
+    total.k += sheet_total.k;
+
     let (damping, limit) = boom_passive_moments(st, p);
     let boom = BoomMoments {
         aero: sail.m_beta,
-        sheet: 0.0,
+        sheet: sheet.m_beta,
         damping,
         limit,
     };
-
-    // 5. mainsheet — zero until section 06. Both the pull on the boom and its
-    //    reaction on the hull at the block land here (F6.8).
-    let sheet = Load::default();
-    total.add(sheet, st.phi);
 
     // 6. roll/hydrostatics — zero until section 07 (F6.7).
     let k_restore = 0.0;
@@ -189,14 +235,17 @@ pub fn evaluate(
         board: board.load,
         rudder: rudder.load,
         hull: hull.load,
-        sheet,
+        sheet: sheet.boom_load,
+        sheet_hull: sheet.hull_load,
         total,
         alpha_sail: sail.alpha,
         alpha_board: board.alpha,
         alpha_rudder: rudder.alpha,
         cl_sail: sail.cl,
         cd_sail: sail.cd,
-        sheet_tension: 0.0,
+        sheet_tension: sheet.tension,
+        rope_length: sheet.rope_length,
+        sheet_extension: sheet.extension,
         m_beta: boom.total(),
         k_restore,
         gz: 0.0,
@@ -395,8 +444,17 @@ mod tests {
         assert!(breezy.sail.f.length() > 0.0);
         assert!(breezy.m_beta < 0.0);
         assert_ne!(calm.total, breezy.total);
-        assert_eq!(breezy.sheet, Load::default());
         assert_eq!(breezy.k_restore, 0.0);
+
+        // The sheet is live from section 06. The default state is sheeted
+        // hard in, so the rope is loaded — and its two ends cancel exactly in
+        // the generalised sum (see the module note).
+        assert!(breezy.sheet_tension > 0.0);
+        assert_eq!(breezy.sheet.f, -breezy.sheet_hull.f);
+        let mut sheet_total = Generalized::default();
+        sheet_total.add(breezy.sheet, st.phi);
+        sheet_total.add(breezy.sheet_hull, st.phi);
+        assert_eq!(sheet_total, Generalized::default());
     }
 }
 
@@ -418,9 +476,22 @@ mod sail_integrated {
         sim
     }
 
+    /// A fully eased sheet: `L = l_sheet_max` is longer than `ℓ(β)` over the
+    /// whole boom range, so the rope is slack and the element contributes
+    /// nothing. Section 05's free-boom fixtures need it now that the sheet is
+    /// live — `Simulation::initial_state` starts sheeted hard in.
+    fn boom_free(p: &BoatParameters) -> BoatState {
+        BoatState {
+            l_sheet: p.sheet.l_sheet_max,
+            ..Simulation::initial_state(p)
+        }
+    }
+
     #[test]
     fn boom_swings_free_without_sheet() {
-        let mut sim = beam_sim(BoatParameters::ilca7(), 5.0);
+        let p = BoatParameters::ilca7();
+        let mut sim = beam_sim(p, 5.0);
+        sim.reset(boom_free(&p), 5);
         let mut reached = false;
         for _ in 0..2000 {
             sim.advance(1);
@@ -438,7 +509,7 @@ mod sail_integrated {
         sim.reset(
             BoatState {
                 beta: -1.0,
-                ..Simulation::initial_state(&p)
+                ..boom_free(&p)
             },
             5,
         );
@@ -487,6 +558,307 @@ mod sail_integrated {
                 assert!(
                     st.is_finite() && energy.is_finite() && energy < 100_000.0,
                     "episode {episode}: energy={energy}, {st:?}"
+                );
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod sheet_integrated {
+    use super::*;
+    use crate::dynamics::sheet_rate;
+    use crate::environment::wind::{WindConfig, WindMode};
+    use crate::rigging::mainsheet::sheet_output;
+    use crate::simulation::Simulation;
+    use crate::testkit::uniform_wind;
+
+    /// Deterministic test-local generator; see the note in `state.rs`.
+    struct Lcg(u64);
+
+    impl Lcg {
+        fn unit(&mut self) -> f64 {
+            self.0 = self
+                .0
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            ((self.0 >> 11) as f64) / ((1u64 << 53) as f64)
+        }
+
+        fn range(&mut self, lo: f64, hi: f64) -> f64 {
+            lo + self.unit() * (hi - lo)
+        }
+    }
+
+    /// Wind on the starboard beam: `bearing_deg = 180` blows toward `+y`, and
+    /// with `psi = 0` (`+y` to port) that puts the wind on the starboard side,
+    /// so the boom blows out to port and `beta < 0` (F2.1).
+    fn beam_sim(params: BoatParameters, speed: f64) -> Simulation {
+        let mut sim = Simulation::new(params, 6);
+        sim.set_wind(WindConfig {
+            mode: WindMode::Uniform,
+            speed,
+            bearing_deg: 180.0,
+            ..Default::default()
+        });
+        sim
+    }
+
+    /// The tension the derivative sees at this state and command, computed
+    /// exactly the way `evaluate` computes it.
+    fn tension(st: &BoatState, c: &Controls, p: &BoatParameters) -> f64 {
+        sheet_output(st, sheet_rate(c, st, p), p).tension
+    }
+
+    fn haul() -> Controls {
+        Controls {
+            sheet_rate_cmd: -1.0,
+            ..Controls::default()
+        }
+    }
+
+    #[test]
+    fn hauling_restrains_boom() {
+        // brief §46 steps 4-6: haul, and the sheet holds the boom in.
+        let p = BoatParameters::ilca7();
+        let mut sim = beam_sim(p, 5.0);
+        sim.reset(
+            BoatState {
+                beta: -1.4,
+                l_sheet: p.sheet.l_sheet_max,
+                ..Simulation::initial_state(&p)
+            },
+            6,
+        );
+        // Settle with the sheet fully eased: the boom blows out to leeward and
+        // the rope is slack the whole time.
+        for _ in 0..(2.0 / p.sim.dt) as u32 {
+            sim.advance(1);
+        }
+        let eased = sim.state().beta;
+        assert!(eased < -1.5, "boom did not blow out: {eased}");
+        assert_eq!(tension(sim.state(), &Controls::default(), &p), 0.0);
+
+        // Haul. The first half second is rope take-up, during which the rope
+        // rings between taut and slack; after that it stays loaded and the
+        // boom comes in without ever going back out.
+        let c = haul();
+        sim.set_controls(c);
+        for _ in 0..(0.5 / p.sim.dt) as u32 {
+            sim.advance(1);
+        }
+        let mut previous = sim.state().beta.abs();
+        let mut steps = 0u32;
+        let mut min_tension = f64::INFINITY;
+        while sim.state().beta < -0.05 {
+            sim.advance(1);
+            let st = *sim.state();
+            let t = tension(&st, &c, &p);
+            min_tension = min_tension.min(t);
+            assert!(t > 0.0, "step {steps}: rope went slack while hauling");
+            assert!(
+                st.beta.abs() <= previous,
+                "step {steps}: |beta| rose {previous} -> {}",
+                st.beta.abs()
+            );
+            previous = st.beta.abs();
+            steps += 1;
+            assert!(steps < 4000, "the boom never came in");
+        }
+        assert!(steps > 100, "the haul was over too fast to mean anything");
+        assert!(min_tension > 0.0);
+        assert!(
+            sim.state().l_sheet < p.sheet.l_sheet_max,
+            "the sheet was never hauled"
+        );
+    }
+
+    #[test]
+    fn release_depowers() {
+        // brief §46 steps 11-14: release, tension drops, the boom swings out,
+        // the sail depowers. No branch anywhere says "if released, depower".
+        let p = BoatParameters::ilca7();
+        let speed = 6.0;
+        let wind = uniform_wind(speed, 180.0);
+        let mut sim = beam_sim(p, speed);
+        sim.reset(Simulation::initial_state(&p), 6);
+
+        // Hauled and powered: sheeted hard in, the sail loaded, the rope taut
+        // and a heeling moment on the boat.
+        let hauled = haul();
+        sim.set_controls(hauled);
+        for _ in 0..(0.3 / p.sim.dt) as u32 {
+            sim.advance(1);
+        }
+        let before = *sim.state();
+        let powered = evaluate(&before, &hauled, &p, &wind, before.t);
+        assert_eq!(before.l_sheet, p.sheet.l_sheet_min);
+        assert!(tension(&before, &hauled, &p) > 0.0);
+        assert!(
+            before.beta.abs() < 0.1,
+            "boom not sheeted in: {}",
+            before.beta
+        );
+        // Heeling: the sail's own roll moment, and the boat already rolling.
+        let mut heeling = Generalized::default();
+        heeling.add(powered.sail, before.phi);
+        assert!(
+            heeling.k < -100.0,
+            "sail is not heeling the boat: {heeling:?}"
+        );
+        assert!(before.p < 0.0, "boat is not rolling to port");
+
+        let released = Controls {
+            sheet_release: true,
+            ..Controls::default()
+        };
+        sim.set_controls(released);
+        let start = before.t;
+        let mut slack_at = None;
+        let mut out_at = None;
+        for _ in 0..(3.0 / p.sim.dt) as u32 {
+            sim.advance(1);
+            let st = *sim.state();
+            if slack_at.is_none() && tension(&st, &released, &p) == 0.0 {
+                slack_at = Some(st.t - start);
+            }
+            if out_at.is_none() && st.beta.abs() > 1.0 {
+                out_at = Some(st.t - start);
+            }
+        }
+        assert!(slack_at.is_some(), "the sheet never went slack");
+        assert!(out_at.is_some(), "the boom never swung out past 1 rad");
+
+        let after = *sim.state();
+        let depowered = evaluate(&after, &released, &p, &wind, after.t);
+        assert!(
+            depowered.sail.f.length() < 0.5 * powered.sail.f.length(),
+            "sail did not depower: {} -> {}",
+            powered.sail.f.length(),
+            depowered.sail.f.length()
+        );
+    }
+
+    #[test]
+    fn clamp_respected() {
+        let p = BoatParameters::ilca7();
+        let mut rng = Lcg(0xC1A3_0000_2222_3333);
+        for episode in 0..200 {
+            let mut sim = beam_sim(p, rng.range(0.0, 8.0));
+            sim.reset(
+                BoatState {
+                    beta: rng.range(-1.7, 1.7),
+                    l_sheet: rng.range(p.sheet.l_sheet_min, p.sheet.l_sheet_max),
+                    ..Simulation::initial_state(&p)
+                },
+                episode,
+            );
+            for chunk in 0..20 {
+                sim.set_controls(Controls {
+                    sheet_rate_cmd: rng.range(-1.5, 1.5),
+                    sheet_release: rng.unit() < 0.25,
+                    ..Controls::default()
+                });
+                for _ in 0..50 {
+                    sim.advance(1);
+                    let l = sim.state().l_sheet;
+                    assert!(
+                        l >= p.sheet.l_sheet_min && l <= p.sheet.l_sheet_max,
+                        "episode {episode}, chunk {chunk}: l_sheet = {l}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rate_command_not_angle_command() {
+        // The sheet commands `L̇`, never an angle (brief §12). Two runs with
+        // the *identical* constant haul command: the commanded length history
+        // is bit-identical, and the boom angle is not, because the boom
+        // answers the wind.
+        let p = BoatParameters::ilca7();
+        let c = Controls {
+            sheet_rate_cmd: -0.05,
+            ..Controls::default()
+        };
+        let run = |speed: f64| {
+            let mut sim = beam_sim(p, speed);
+            sim.reset(
+                BoatState {
+                    l_sheet: p.sheet.l_sheet_max,
+                    ..Simulation::initial_state(&p)
+                },
+                6,
+            );
+            // At rest the apparent wind is the true wind (F6.2), so doubling
+            // one doubles the other.
+            let apparent = apparent_wind_cg(
+                sim.state(),
+                uniform_wind(speed, 180.0).sample(0.0, 0.0, 0.0),
+            )
+            .length();
+            sim.set_controls(c);
+            for _ in 0..(2.0 / p.sim.dt) as u32 {
+                sim.advance(1);
+            }
+            (apparent, *sim.state())
+        };
+        let (aw_slow, slow) = run(3.0);
+        let (aw_fast, fast) = run(6.0);
+
+        assert!(
+            (aw_fast - 2.0 * aw_slow).abs() < 1e-12,
+            "{aw_slow} -> {aw_fast}"
+        );
+        // A length rate knows nothing about the wind: same command, same L(t).
+        assert_eq!(slow.l_sheet.to_bits(), fast.l_sheet.to_bits());
+        assert!(slow.l_sheet < p.sheet.l_sheet_max);
+        // The boom angle does. An angle command could not do this.
+        assert!(
+            (fast.beta - slow.beta).abs() > 0.1,
+            "beta(2 s) barely moved with the wind: {} vs {}",
+            slow.beta,
+            fast.beta
+        );
+    }
+
+    /// **R1 gate (F11).** 60 s of a hauled beam reach over the 3x3 grid of
+    /// timestep and sheet stiffness the section PRD names. The measured table
+    /// is in `docs/progress/06-handoff.md`; run with `--nocapture` to
+    /// reproduce it.
+    #[test]
+    fn sheet_stiffness_stability() {
+        let base = BoatParameters::ilca7();
+        for dt in [0.01, 0.005, 0.0025] {
+            for k_sheet in [1.0e4, 2.0e4, 3.0e4] {
+                let mut p = base;
+                p.sim.dt = dt;
+                p.sheet.k_sheet = k_sheet;
+                let mut sim = beam_sim(p, 5.0);
+                sim.reset(Simulation::initial_state(&p), 6);
+                sim.set_controls(haul());
+                let mut peak_rate = 0.0_f64;
+                let mut peak_tension = 0.0_f64;
+                for _ in 0..(60.0 / dt) as u32 {
+                    sim.advance(1);
+                    let st = *sim.state();
+                    assert!(
+                        st.is_finite(),
+                        "dt = {dt}, k_sheet = {k_sheet}: state left the reals at t = {}",
+                        st.t
+                    );
+                    peak_rate = peak_rate.max(st.beta_dot.abs());
+                    peak_tension = peak_tension.max(tension(&st, &haul(), &p));
+                }
+                eprintln!(
+                    "R1 dt={dt} k_sheet={k_sheet:e}: peak |beta_dot| = {peak_rate:.3} rad/s, \
+                     peak T = {peak_tension:.0} N, final beta = {:.4}",
+                    sim.state().beta
+                );
+                assert!(
+                    peak_rate < 50.0,
+                    "dt = {dt}, k_sheet = {k_sheet}: peak |beta_dot| = {peak_rate}"
                 );
             }
         }
