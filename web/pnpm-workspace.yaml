@@ -1,0 +1,10 @@
+# pnpm 12 refuses to install (exit 1) until every dependency carrying an install
+# script is explicitly allowed or denied, and it no longer reads these settings
+# from package.json. Both entries below are transitive dependencies of the
+# F12-pinned Vite plugin stack, not direct choices of ours.
+allowBuilds:
+  # esbuild's install script links the platform binary it needs to run at all.
+  esbuild: true
+  # @swc/core (via vite-plugin-top-level-await) only probes for a native binding
+  # that pnpm has already installed as an optional platform package.
+  '@swc/core': false

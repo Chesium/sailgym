@@ -1,0 +1,17 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Generated WASM package (built by scripts/build-wasm.*)
+web/src/wasm/
+
+# Node / web
+node_modules/
+web/dist/
+web/.vite/
+
+# Playwright
+web/test-results/
+web/playwright-report/
+web/blob-report/
+web/.playwright/

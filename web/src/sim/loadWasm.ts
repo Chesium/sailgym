@@ -1,0 +1,54 @@
+/**
+ * The single entry point through which the browser reaches the Rust core.
+ *
+ * Nothing in `web/` implements physics (F8, brief §23): this module only
+ * instantiates the `wasm-pack --target web` bundle produced by
+ * `scripts/build-wasm.*` into `web/src/wasm/` (a generated, gitignored
+ * directory) and hands back the constructors declared by F8.2.
+ */
+import init, { Sim } from '../wasm/sailgym_wasm.js'
+
+/** The subset of the F8.2 `Sim` surface that section 01 implements. */
+export interface SimHandle {
+  advance(n: number): number
+  snapshot(): Float64Array
+  version(): string
+  free(): void
+}
+
+export interface WasmModule {
+  Sim: new (configJson: string) => SimHandle
+}
+
+/**
+ * The in-flight (or settled) initialisation. Caching the *promise* rather than
+ * the resolved value means concurrent callers share one `init()` and every
+ * caller observes the identical `WasmModule` object.
+ */
+let pending: Promise<WasmModule> | null = null
+
+/** The one module object every successful `loadWasm()` call resolves to. */
+const moduleExports: WasmModule = { Sim }
+
+/**
+ * Idempotent: repeated calls return the same initialised module object
+ * (`===`), and concurrent calls share a single `init()`.
+ *
+ * A failed initialisation clears the cache so a later call may retry; the
+ * identity guarantee only ever concerns the success path.
+ */
+export async function loadWasm(): Promise<WasmModule> {
+  if (pending === null) {
+    const started = init().then(() => moduleExports)
+    // Do not poison the cache forever on a transient failure. The caller still
+    // receives `started` and owns its rejection, so this handler adds no
+    // unhandled rejection of its own.
+    started.catch(() => {
+      if (pending === started) {
+        pending = null
+      }
+    })
+    pending = started
+  }
+  return pending
+}
