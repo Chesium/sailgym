@@ -1,67 +1,337 @@
 # sailgym
 
-A browser sailing simulator. The physics is written from scratch in Rust,
-compiled to WebAssembly, and driven by a React/TypeScript front end.
+A browser sailing simulator for an ILCA 7 / Laser Standard dinghy, in which the
+sailing behaviour is not scripted — it falls out of the forces.
 
-Status: **M0 — skeleton.** The workspace, the WASM boundary, the web app and the
-browser test harness are in place. There is no boat and no physics yet; that
-starts at section 02.
+The physics is written from scratch in Rust, compiled to WebAssembly, and driven
+by a React/TypeScript front end. You steer with the tiller and trim with the
+mainsheet, and that is all you control. The boom angle, the heel, the leeway,
+the tack, the gybe and the capsize are consequences.
 
-## Prerequisites
+`docs/brief.md` is the specification this was built to, and it is worth reading
+if you want to know why anything here is the way it is. §1 states the purpose;
+what follows is what the code actually does.
 
-- Rust stable, with the `wasm32-unknown-unknown` target and the `rustfmt` and
-  `clippy` components (`rust-toolchain.toml` pins these).
-- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) — `cargo install wasm-pack`
-- Node and [`pnpm`](https://pnpm.io/)
-- PowerShell 7 (`pwsh`) on Windows; `bash` elsewhere
-- Playwright browsers: `pnpm --dir web exec playwright install chromium firefox`
-  (the `msedge` project uses the Microsoft Edge installed on the machine)
+**Status: prototype complete (M9).** All ten milestones have landed, the full
+test gate is green, and `docs/acceptance.md` walks the brief's fourteen success
+criteria one by one with an honest verdict on each.
 
-## Getting started
+---
+
+## What it simulates
+
+A reduced **4-DOF marine dynamics model** — surge, sway, yaw and roll (brief §6)
+— plus the boom as a dynamic degree of freedom of its own, and the mainsheet as
+a rope that can pull but never push.
+
+| Subsystem | What it does |
+|---|---|
+| **Wind field** | Uniform, spatially varying, or gusty. Procedural, divergence-free, and deterministic from a seed. The visualization samples the *same* field the physics does. |
+| **Apparent wind** | Built from the true wind, the boat's velocity and its rotation at the sail's centre of effort — so the sail unloads correctly during a fast tack. |
+| **Sail** | A continuous lift/drag model defined over the whole ±180°, covering attached flow, stall, deep stall and reversed loading. Applied at a centre of effort, so the yaw moment, the heeling moment and the boom torque all come out of the geometry. |
+| **Boom** | `I_b β̈ = M_aero + M_sheet + M_damping + M_limits`. There is no `portTack`/`starboardTack` state anywhere in the codebase. |
+| **Mainsheet** | A unilateral tension element: `T = max(0, k·e + c·ė)`. It generates boom torque through rope geometry; the boom angle is never assigned. |
+| **Centreboard & rudder** | Finite lifting surfaces in water, using each surface's own local flow. Leeway resistance, yaw damping, speed-dependent rudder authority and rudder stall all emerge; none is coded as a special case. |
+| **Hull** | A reduced empirical resistance model, linear plus quadratic, parameterised so towing-tank data can replace it. |
+| **Roll & capsize** | A nonlinear righting arm `GZ(φ)` with a peak, a vanishing angle and negative stability beyond it. The boat can pass dynamically through 90° of heel; `capsized` is *reported*, never acted on. |
+
+The same physics crate runs natively with no browser at all, at roughly
+**3 500× real time** on a modern laptop.
+
+### What it is not
+
+**This prototype does not claim quantitative ILCA accuracy**, and brief §36 says
+so explicitly. Most coefficients are physically motivated estimates rather than
+measurements. Every one of them is tagged KNOWN / ASSUMED / TUNABLE / DEFERRED
+in `docs/parameters.md`, which also lists what is most wrong today and what
+would have to be measured to fix it.
+
+Deliberately out of scope (brief §44): currents, waves, heave and pitch, sail
+cloth, mast bend, traveler and vang, hiking or any sailor movement, multiple
+boats, shorelines, and RL training.
+
+---
+
+## Quick start
+
+### Prerequisites
+
+| | |
+|---|---|
+| Rust | stable, with the `wasm32-unknown-unknown` target and the `rustfmt` and `clippy` components — `rust-toolchain.toml` pins all of it, so `rustup` will do the right thing on first build |
+| [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) | `cargo install wasm-pack` |
+| Node + [`pnpm`](https://pnpm.io/) | any recent version |
+| Shell | PowerShell 7 (`pwsh`) on Windows, `bash` elsewhere |
+| Browsers | `pnpm --dir web exec playwright install chromium firefox` — the `msedge` test project uses whatever Edge is installed on the machine |
+
+### Build and run
 
 ```sh
 pnpm --dir web install
-pwsh scripts/build-wasm.ps1     # or: scripts/build-wasm.sh
-pnpm --dir web dev              # http://localhost:5173
+scripts/build-wasm.sh          # or: pwsh scripts/build-wasm.ps1
+pnpm --dir web dev             # http://localhost:5173
 ```
 
-`web/src/wasm/` is generated by the build script and is not committed.
+`web/src/wasm/` is generated by the build script and is not committed. Re-run
+the build script whenever you change anything under `crates/`; the Vite dev
+server picks up the new package on reload.
 
-## The gate
+For a production build, `pnpm --dir web build` then `pnpm --dir web preview`.
+
+---
+
+## Operating it
+
+### Controls
+
+| Input | Effect |
+|---|---|
+| `A` / `←` and `D` / `→` | Tiller. These command a rudder **rate**, not an angle; released, the tiller returns to neutral. |
+| **Drag down / drag up** on the boat | Haul in / ease the mainsheet. The drag commands a payout rate and holds it while the button is down, so you can haul and hold. |
+| `Space` | Release the sheet — let it run. |
+| `P` | Pause / resume. |
+| `.` | Single physics step while paused. |
+| `R` | Reset to the current scenario's initial condition. |
+| `M` | Switch between Sail Mode and Debug Mode. |
+| Wheel | Zoom. |
+| Middle-drag, or `Shift`+drag | Pan. A plain left-drag is always the mainsheet. |
+
+Clock speeds of 0.25×, 1×, 2× and 4× are in the header, along with the camera
+mode (follow / north-up), the wind mode and the scenario picker.
+
+### The two modes
+
+**Sail Mode** is the default and shows seven readouts — wind, boat speed,
+heading, heel, rudder, sheet and capsize state — and nothing else.
+
+**Debug Mode** (`M`) adds brief §30's whole instrumentation list: sixteen
+toggleable force and moment overlays drawn at their application points, eight
+time-series charts, a numeric readout of all fifty diagnostic fields, and a
+collapsible parameter panel.
+
+The panel is generated from the Rust catalogue, so every parameter the core has
+appears in it with its unit and its provenance tag, and editing one takes effect
+on the next physics step. Edits are validated in Rust before they are committed:
+a value that would produce an unphysical righting curve is refused with a
+message rather than silently accepted. **Reset to ILCA defaults** restores the
+whole catalogue.
+
+### Scenarios
+
+Six ship with the app (brief §32), and none of them scripts an outcome — they
+set an initial condition and a wind field, and what happens next is up to you:
+
+| Scenario | Set up for |
+|---|---|
+| `beam_reach_capsize` | Beam-on wind with the sheet hard in. Oversheeting, and going over. |
+| `sheet_release_recovery` | Byte-identical to the above. The only difference is what the sailor does. |
+| `close_hauled` | Steady upwind sailing. |
+| `tack` | Poised to tack through the wind. |
+| `gybe` | Downwind, for controlled and uncontrolled gybe experiments. |
+| `free_sail` | The sandbox, and the default on load. |
+
+Pick one from the header, or load it directly: `?scenario=close_hauled`. The URL
+keeps the scenario across a reload, so a link reproduces a run.
+
+There is one other URL parameter, `?renderHz=20`, which throttles *drawing*
+while leaving the physics on wall-clock time. It exists so the test suite can
+measure that the two really are independent; it is also a fair way to see it
+for yourself.
+
+### Recording and replay
+
+Record an episode at 5, 10, 20 or 50 Hz, then scrub it on a timeline, step it
+frame by frame, or play it back at five speeds. Replay consumes the **stored**
+trajectory rather than recomputing it.
+
+Episodes save as JSON (readable) or as a binary `SGEP` file (compact), and both
+re-import through the same control. The format is versioned and is intended to
+become the RL episode-inspection interface (brief §33, §45).
+
+One known limitation: during a replay the world view, the snapshot readouts and
+the heel indicator follow the episode, but the Debug-Mode diagnostics panel
+keeps describing the (paused) live simulation. The timeline says so on screen.
+
+### Try the primary demonstration
+
+This is brief §46, and it is the thing the whole prototype exists to make
+possible. It takes about a minute:
+
+1. Load `beam_reach_capsize`. The wind field should be visibly moving.
+2. Drag down on the boat to haul the mainsheet in, and hold it there.
+3. Watch the heel build. Around ten seconds in, the boat goes over — and the
+   capsize readout flips.
+4. Press `R`, and this time release the sheet with `Space` as the heel passes
+   about 45°.
+5. Watch the order of what happens: the tension drops, *then* the boom swings
+   out, *then* the heeling moment collapses, *then* the sail force falls, and
+   only then does the boat come back up.
+
+Nothing in the codebase says that releasing the sheet causes a recovery — there
+is a test, `no_shortcuts::no_release_recovery_rule`, whose job is to keep it
+that way. The ordering above is asserted automatically in three browsers by
+`web/tests/e2e/demonstrations.spec.ts`.
+
+---
+
+## Testing
+
+### The gate
 
 One command runs everything, in order, failing fast:
 
 ```sh
-pwsh scripts/check.ps1          # Windows (primary)
-scripts/check.sh                # Linux / CI
+scripts/check.sh               # Linux / CI
+pwsh scripts/check.ps1         # Windows
 ```
 
-It runs formatting, lints, the Rust unit / invariant / regression tests, the
-WASM build, the TypeScript typecheck and the Playwright E2E suite across Chrome,
-Edge and Firefox. Any single step can be run on its own:
+Eight steps, each of which proves something specific:
+
+| # | Step | Proves |
+|---|---|---|
+| 1 | `cargo fmt --check` | Source is canonically formatted, so diffs are semantic. |
+| 2 | `cargo clippy --all-targets -- -D warnings` | No lint regressions, tests and benches included. |
+| 3 | `cargo test -p sailgym-physics` | The physics core is correct **and builds on the host with no WASM toolchain**. |
+| 4 | `--test invariants --test no_shortcuts --test convergence --test symmetry --test provenance` | The physical invariants hold, no prohibited shortcut has crept in, the integrator converges, symmetry holds across a 96-case sweep, and no coefficient has drifted from the catalogue. |
+| 5 | `--test regression` | Six recorded scenarios still reproduce bit-for-bit. |
+| 6 | `wasm-pack build …` | The Rust core still compiles to WASM and the JS glue regenerates. |
+| 7 | `pnpm --dir web typecheck` | The TypeScript side still matches the WASM surface. |
+| 8 | `pnpm --dir web test:e2e` | 243 tests in Chrome, Edge and Firefox, with no console or page errors. |
+
+The full chain takes about **9½ minutes**, nearly all of it step 8. Any single
+step runs on its own:
 
 ```sh
-pwsh scripts/check.ps1 -Step 3
 scripts/check.sh 3
+pwsh scripts/check.ps1 -Step 3
 ```
 
-CI runs the same script on `ubuntu-latest`.
+### The fast subset
+
+While working, use:
+
+```sh
+scripts/check.sh --fast        # pwsh scripts/check.ps1 -Fast
+```
+
+Same eight steps, with step 8 restricted to Chromium and to the specs not tagged
+`@slow` — the browser performance measurement and the three brief §46
+demonstrations, which are about half the suite's wall time and cannot be made
+quick without making them mean less. **About two and a half minutes.**
+
+`--fast` is not the gate. The full chain is what has to be green before a change
+lands, and it is what CI runs on `ubuntu-latest`.
+
+### Not in the gate, but worth running
+
+```sh
+pnpm --dir web test:unit       # 97 vitest unit tests
+pnpm --dir web build           # the production bundle — the gate only builds dev
+```
+
+### If you change a coefficient
+
+The project takes brief §43 seriously: physics coefficients must not be silently
+tuned to make a scenario look better. Two things enforce it, and both will stop
+you:
+
+- `provenance::shipped_values_match_the_f7_table` parses the parameter tables
+  out of `docs/00-foundations.md` and compares every numeric row against what
+  the code actually ships. A coefficient cannot move unless the normative
+  document moves with it.
+- `tests/regression.rs` compares six recorded 30-second trajectories. A **0.1 %**
+  change to one hull coefficient fails all six within a fifth of a second of
+  simulated time.
+
+If a change is genuine, record the reason, the source and the assumption — in
+the `parameters.rs` doc comment and in `docs/parameters.md` — and regenerate the
+goldens afterwards:
+
+```sh
+cargo run -p sailgym-bench --bin gen_golden      # refuses on a dirty physics tree
+SAILGYM_UPDATE_DOCS=1 cargo test -p sailgym-physics --test provenance docs_match_source
+```
+
+---
+
+## Running headless
+
+The physics crate has no browser dependency, which is what makes the native
+simulator — and later RL work — possible (brief §45).
+
+```sh
+# Throughput and a per-subsystem breakdown, for one scenario or all six
+cargo run --release -p sailgym-bench --bin bench -- --scenario close_hauled --seconds 600
+cargo run --release -p sailgym-bench --bin bench -- --all
+
+# The time-step convergence study; --write regenerates docs/convergence.md
+cargo run --release -p sailgym-bench --bin convergence
+
+# Wind-field sampling and raw step-rate microbenchmarks
+cargo run --release -p sailgym-bench --bin sailgym-bench
+```
+
+Always build `--release`: a debug build measures the optimiser rather than the
+code, and the binaries say so on stderr if you forget.
+
+---
 
 ## Documentation
 
-- `docs/brief.md` — the specification brief; authoritative on scope.
-- `docs/00-foundations.md` — normative conventions, frames, sign conventions,
-  equations, parameters and the WASM surface.
-- `docs/01-skeleton.md` … `docs/10-hardening.md` — one executable PRD per milestone.
-- `docs/progress/` — per-section handoff notes.
-- `CLAUDE.md` — entry point for coding agents.
+| File | What it is |
+|---|---|
+| `docs/brief.md` | The original specification. **Authoritative on scope.** |
+| `docs/00-foundations.md` | Normative: frames, sign conventions, equations, the parameter catalogue, the WASM surface. Nothing may redefine it. |
+| `docs/acceptance.md` | The brief's fourteen success criteria, with evidence and a verdict on each. **Start here for the honest state of things.** |
+| `docs/parameters.md` | Every parameter, its value, its provenance tag and its rationale — plus what is most wrong with them today. |
+| `docs/invariants.md` | Every physical invariant, its test, its tolerance, and why that tolerance is the right number. |
+| `docs/convergence.md` | The time-step convergence study. |
+| `docs/performance.md` | Every performance figure, with the machine that produced it. |
+| `docs/01-skeleton.md` … `docs/10-hardening.md` | One executable PRD per milestone. |
+| `docs/progress/` | A handoff note per milestone: what landed, what deviated, what fired. |
+| `CLAUDE.md` | Entry point for coding agents. |
+
+---
 
 ## Layout
 
 ```
 crates/sailgym-physics/   pure Rust core; all physics tests live here
 crates/sailgym-wasm/      thin wasm_bindgen wrapper
-crates/sailgym-bench/     native headless benchmark / golden-trajectory generator
+crates/sailgym-bench/     native headless benchmarks and the golden generator
 web/                      Vite + React + TypeScript app and Playwright specs
+scenarios/                the six scenario documents
 scripts/                  build-wasm.(ps1|sh), check.(ps1|sh)
+docs/                     brief, foundations, PRDs, measurements, progress notes
 ```
+
+Two boundaries are load-bearing and are mechanically enforced:
+
+- **No physical equation is implemented in TypeScript** (brief §23). Rust owns
+  every derived quantity; the browser gets them through one coarse-grained
+  diagnostics record per frame. `provenance::no_physics_in_typescript` scans
+  every hand-written source file for a density, a `g` or a `½ρV²`.
+- **No numeric physical literal lives outside the parameter catalogue** — every
+  coefficient is in one place, named, tagged and editable at runtime.
+  `provenance::no_stray_constants` is what keeps it that way.
+
+---
+
+## Known limits
+
+Recorded here rather than left to be discovered. All three are physical
+judgements that need a human decision, and all three are written up in full in
+`docs/progress/`:
+
+1. **The boat cannot be inverted.** With the shipped stability parameters, the
+   righting arm regains positive stability past about 82° of heel, so the boat
+   lies down at ≈ 86° and stays there at any wind speed. A smaller metacentric
+   height would fix it — and would invalidate all six golden trajectories, which
+   is why it has not been changed unilaterally.
+2. **A fully hauled mainsheet is pre-tensioned.** The minimum sheet length is
+   shorter than the shortest geometric rope path, so hauling right in leaves
+   about 2.8 kN of permanent tension and no sheet damping at the centreline.
+3. **The hull model has no planing regime**, so above about 5 m/s it
+   over-predicts resistance. The simulator says so itself: the debug panel
+   raises a warning whenever the boat is above that speed, because any number it
+   reports up there is an extrapolation rather than a prediction.
