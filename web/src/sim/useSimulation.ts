@@ -88,9 +88,12 @@ export interface SimulationHandle {
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
 
-/** Minimal M3/M4/M5 fixtures, replaced by the scenario system in section 09. */
+/** The `?scenario=` fixtures, replaced by the scenario system in section 09. */
+const FIXTURES = ['coast', 'free_sail', 'sheet', 'capsize', 'knockdown'] as const
+
+/** Minimal M3/M4/M5/M6 fixtures, replaced by the scenario system in section 09. */
 function initialScenario(sim: SimHandle, name: string): string {
-  if (name !== 'coast' && name !== 'free_sail' && name !== 'sheet') return '{}'
+  if (!(FIXTURES as readonly string[]).includes(name)) return '{}'
   const values = sim.snapshot()
   const state: Record<string, number> = {}
   SNAPSHOT_FIELDS.forEach((field, i) => {
@@ -109,6 +112,23 @@ function initialScenario(sim: SimHandle, name: string): string {
     wind.speed = 4
     wind.bearing_deg = 0
     state.l_sheet = (sheet.l_sheet_min + sheet.l_sheet_max) / 2
+  } else if (name === 'capsize') {
+    // brief §46's `beam_reach_capsize`: a northerly on the port beam with the
+    // sheet hard in, which is where the boat starts. 7 m/s is just over the
+    // measured threshold — 6.90 m/s recovers, 6.95 m/s goes over (see
+    // `docs/progress/07-handoff.md`) — so this is a capsize the boat is
+    // *driven* into, not one it is placed in.
+    wind.speed = 7
+    wind.bearing_deg = 0
+  } else if (name === 'knockdown') {
+    // Already on its ear and still rolling: the state a gust and a wave leave
+    // the boat in. It carries `φ` past 100° in the first fifth of a second and
+    // then falls back, which is what the heel indicator has to render. The
+    // roll rate is an initial condition, not a force.
+    wind.speed = 8
+    wind.bearing_deg = 0
+    state.phi = 1.5
+    state.p = 8
   } else {
     wind.speed = 5
     wind.bearing_deg = 0

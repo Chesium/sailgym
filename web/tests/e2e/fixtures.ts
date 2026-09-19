@@ -70,6 +70,19 @@ export async function gotoApp(page: Page, opts?: { scenario?: string }): Promise
     timeout: 5_000,
   })
 
+  // Give the page keyboard focus before any spec starts typing.
+  //
+  // The key listeners are on `window` (`sim/useSimulation.ts`), so
+  // `page.keyboard` only reaches them while the document holds focus, and
+  // nothing established it. The first key press of a spec was therefore
+  // swallowed about once in three full-suite runs — section 05's **defect B**,
+  // diagnosed there, re-confirmed in section 06, and observed again in section
+  // 07 as `determinism.spec.ts` finding `clock-pause` still running after
+  // pressing `p`. The click is on the outer padding of the page body: there is
+  // no control there, and the sheet reducer only sees pointer events on the
+  // boat SVG.
+  await page.locator('body').click({ position: { x: 2, y: 2 } })
+
   expect(log, 'the app must load with no console errors and no page errors').toEqual([])
 }
 

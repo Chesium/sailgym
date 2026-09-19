@@ -4,6 +4,7 @@
 
 use crate::forces::evaluate;
 use crate::simulation::Simulation;
+use crate::stability::capsize::CapsizeState;
 use crate::vec::Vec3;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
@@ -30,6 +31,17 @@ pub struct Diagnostics {
     /// m, `e = ℓ − L`. Negative when the rope is slack; the renderer's sag is
     /// `max(0, −e)`.
     pub sheet_extension: f64,
+    /// rad, roll. **Not wrapped** (F3): it may exceed `±π` after an inversion,
+    /// and the heel indicator is required to show that.
+    pub heel: f64,
+    /// m, the righting arm `GZ(φ)` at the published state (F6.7).
+    pub gz: f64,
+    /// N·m, `K_restore = −Δ·g·GZ(φ)`. Negative for starboard-down heel.
+    pub k_restore: f64,
+    /// The capsize report (F6.10) — informational, read by nothing in the
+    /// physics. Nested rather than flattened, so the JSON shape and the Rust
+    /// record have the same field list; `sail.test.ts` compares the two.
+    pub capsize: CapsizeState,
 }
 
 fn serialize_vec3<S: Serializer>(v: &Vec3, s: S) -> Result<S::Ok, S::Error> {
@@ -61,6 +73,10 @@ pub fn diagnostics(sim: &Simulation) -> Diagnostics {
         sheet_tension: f.sheet_tension,
         rope_length: f.rope_length,
         sheet_extension: f.sheet_extension,
+        heel: st.phi,
+        gz: f.gz,
+        k_restore: f.k_restore,
+        capsize: *sim.capsize(),
     }
 }
 

@@ -25,11 +25,19 @@
 //! so an accidental reorder shows up in review rather than in a golden-file
 //! mismatch three sections later.
 //!
-//! ## Deferred loads
+//! ## The two halves of the roll moment
 //!
-//! Hydrostatic righting (section 07) contributes zero. It is summed anyway, at
-//! its final position in the order, so that landing it changes a value and not
-//! the arithmetic structure.
+//! `ΣK` is assembled from every load like any other generalised force: the
+//! sail, the board, the rudder and the sheet all reach it through
+//! `Generalized::add`, which is where the F6.4 heel geometry lives. Two terms
+//! are not loads and are added directly:
+//!
+//! * slot 1 carries the F6.6 hull roll damping, `K_hull`;
+//! * slot 6 carries the F6.7 hydrostatic righting, `K_restore = −Δ·g·GZ(φ)`.
+//!
+//! `stability::roll::roll_moments` reports those two together for the
+//! free-decay tests and the debug panel. **Nothing sums both of its fields
+//! into `ΣK`** — that would double the hull's roll damping.
 //!
 //! ## The mainsheet is a null force system on the hull — by construction
 //!
@@ -60,6 +68,7 @@ use crate::hydro::rudder::rudder_load;
 use crate::parameters::BoatParameters;
 use crate::rigging::boom::{boom_passive_moments, BoomMoments};
 use crate::rigging::mainsheet::sheet_output;
+use crate::stability::hydrostatics::{righting_moment, GzCurve};
 use crate::state::{BoatState, Controls};
 use crate::vec::{Vec2, Vec3};
 
@@ -226,8 +235,19 @@ pub fn evaluate(
         limit,
     };
 
-    // 6. roll/hydrostatics — zero until section 07 (F6.7).
-    let k_restore = 0.0;
+    // 6. roll/hydrostatics — the F6.7 righting moment (section 07).
+    //
+    //    `GZ` is solved from the live `stability` parameters on every
+    //    evaluation rather than cached, so a parameter edit (brief §31) takes
+    //    effect on the next step with nothing to invalidate. It is two
+    //    `sin_cos` calls and a 3×3 Cramer solve, and it keeps `evaluate` a
+    //    pure function of `(state, controls, parameters, field, t)`.
+    //
+    //    Hull roll damping is **not** added here. It is an F6.6 term and slot
+    //    1 has already contributed it; see the module note.
+    let curve = GzCurve::from_params(p);
+    let gz = curve.gz(st.phi);
+    let k_restore = righting_moment(st.phi, &curve, p.total_mass());
     total.k += k_restore;
 
     ForceBreakdown {
@@ -248,7 +268,7 @@ pub fn evaluate(
         sheet_extension: sheet.extension,
         m_beta: boom.total(),
         k_restore,
-        gz: 0.0,
+        gz,
         aw_boat: apparent_wind_cg(st, wind_world),
         tw_boat: world_to_body(wind_world, st.psi),
     }
@@ -280,6 +300,16 @@ mod tests {
 
     fn params() -> BoatParameters {
         BoatParameters::ilca7()
+    }
+
+    /// `Δ·g·∫₀^φ GZ` — the potential energy stored in heel (F6.7).
+    ///
+    /// Live from section 07. Before it existed, roll had no restoring force
+    /// and kinetic energy alone was a complete account of a still-air episode;
+    /// it no longer is, because the boat now trades roll kinetic energy for
+    /// roll potential every time it swings through upright.
+    fn roll_potential(st: &BoatState, p: &BoatParameters) -> f64 {
+        p.total_mass() * crate::constants::G * GzCurve::from_params(p).gz_integral(st.phi)
     }
 
     /// `½ m_x u² + ½ m_y v² + ½ I_z r² + ½ I_x p²` (task 4.5).
@@ -360,7 +390,10 @@ mod tests {
 
     #[test]
     fn energy_not_created() {
-        // brief §35 dissipative behaviour. No wind, no external load.
+        // brief §35 dissipative behaviour. No wind, no external load. The
+        // account includes the roll potential of F6.7: hydrostatic righting is
+        // conservative, and a kinetic-only measure would read its return
+        // stroke as energy appearing from nowhere.
         let p = params();
         let c = Controls::default();
         let mut rng = Lcg(0xE0E0_1111_2222_3333);
@@ -373,10 +406,10 @@ mod tests {
                 delta_r: rng.range(-p.rudder.delta_r_max, p.rudder.delta_r_max),
                 ..crate::simulation::Simulation::initial_state(&p)
             };
-            let mut prev = kinetic_energy(&st, &p);
+            let mut prev = kinetic_energy(&st, &p) + roll_potential(&st, &p);
             for i in 0..(5.0 / p.sim.dt) as u32 {
                 st = step(&st, &c, &p, &PhysicalForces, p.sim.dt, p.sim.integrator);
-                let e = kinetic_energy(&st, &p);
+                let e = kinetic_energy(&st, &p) + roll_potential(&st, &p);
                 assert!(
                     e <= prev + 1e-9,
                     "episode {k}, step {i}: energy rose {prev} -> {e}"
@@ -399,11 +432,18 @@ mod tests {
         // diverges to Inf inside a second, which is how the defect was found.
         //
         // The foils are switched off by zeroing their area — `foil_force`
-        // scales linearly with it — so what is left is exactly the hull.
+        // scales linearly with it — and the F6.7 righting arm by zeroing `GM`
+        // and `GZ_max`, which makes every `GZ` coefficient exactly zero. What
+        // is left is exactly the hull, which is what this test is about.
+        // Slot 6 *is* heel-dependent, by construction; inversion is guarded
+        // for it by `stability::capsize::passes_through_inversion` and by
+        // `invariants::capsize_finite`.
         let mut p = params();
         p.board.section.area = 0.0;
         p.rudder.section.area = 0.0;
         p.sail.section.area = 0.0;
+        p.stability.gm = 0.0;
+        p.stability.gz_max = 0.0;
 
         let mut rng = Lcg(0x1257_0000_4444_5555);
         for k in 0..200 {
@@ -444,7 +484,21 @@ mod tests {
         assert!(breezy.sail.f.length() > 0.0);
         assert!(breezy.m_beta < 0.0);
         assert_ne!(calm.total, breezy.total);
+
+        // Hydrostatic righting is live from section 07. The initial state is
+        // upright, so `GZ(0)` and the moment it produces are exactly zero —
+        // and any heel at all makes both non-zero, with the F6.7 sign.
+        assert_eq!(breezy.gz, 0.0);
         assert_eq!(breezy.k_restore, 0.0);
+        let heeled = evaluate(
+            &BoatState { phi: 0.3, ..st },
+            &Controls::default(),
+            &p,
+            &uniform_wind(5.0, 180.0),
+            0.0,
+        );
+        assert!(heeled.gz > 0.0);
+        assert!(heeled.k_restore < 0.0);
 
         // The sheet is live from section 06. The default state is sheeted
         // hard in, so the rope is loaded — and its two ends cancel exactly in
@@ -862,5 +916,185 @@ mod sheet_integrated {
                 );
             }
         }
+    }
+}
+
+/// Roll, wired through the whole chain (section 07, task 7.3).
+///
+/// Every test here drives the **complete** `evaluate` → `derivative` →
+/// `integrator` path. None of them reaches into `stability/` for a moment and
+/// applies it by hand: the point is that heel emerges from loads that were
+/// already being summed, through `Generalized::add` and the F6.4 geometry.
+#[cfg(test)]
+mod roll_integrated {
+    use super::*;
+    use crate::simulation::Simulation;
+    use crate::state::{STATE_FIELDS, STATE_LEN};
+
+    fn params() -> BoatParameters {
+        BoatParameters::ilca7()
+    }
+
+    /// The roll moment one load contributes, through the same `add` the EOM
+    /// uses. Nothing is recomputed: this is the F6.4 expression applied to a
+    /// `Load` the breakdown already carries.
+    fn roll_of(l: Load, phi: f64) -> f64 {
+        let mut g = Generalized::default();
+        g.add(l, phi);
+        g.k
+    }
+
+    /// A simulation on a beam reach in a uniform wind, sheeted to `l_sheet`.
+    ///
+    /// Bearing 0 is a northerly; the boat starts heading east, so the wind is
+    /// on the **port** beam and the boat heels to starboard. Bearing 180 puts
+    /// it on the starboard beam and the heel goes the other way.
+    fn beam_reach(speed: f64, bearing_deg: f64, l_sheet: f64) -> Simulation {
+        let p = params();
+        let mut sim = Simulation::new(p, 7);
+        sim.set_wind(crate::environment::wind::WindConfig {
+            mode: crate::environment::wind::WindMode::Uniform,
+            speed,
+            bearing_deg,
+            ..Default::default()
+        });
+        sim.reset(
+            BoatState {
+                l_sheet,
+                ..Simulation::initial_state(&p)
+            },
+            7,
+        );
+        sim
+    }
+
+    fn advance_seconds(sim: &mut Simulation, seconds: f64, p: &BoatParameters) {
+        sim.advance((seconds / p.sim.dt) as u32);
+    }
+
+    #[test]
+    fn sail_force_heels_boat() {
+        // The full-chain sign test. Wind on the starboard beam pushes the boat
+        // to port, so the port rail goes down: `φ < 0` (F2).
+        let p = params();
+        let mut sim = beam_reach(6.0, 180.0, p.sheet.l_sheet_min);
+        advance_seconds(&mut sim, 6.0, &p);
+        let st = *sim.state();
+        assert!(st.phi < -0.1, "phi = {} rad", st.phi);
+
+        // And the mirror: a northerly heels the boat the other way.
+        let mut sim = beam_reach(6.0, 0.0, p.sheet.l_sheet_min);
+        advance_seconds(&mut sim, 6.0, &p);
+        assert!(sim.state().phi > 0.1, "phi = {} rad", sim.state().phi);
+    }
+
+    #[test]
+    fn easing_reduces_heel() {
+        // brief §46 steps 11–16 and §47, as a causal chain rather than an
+        // outcome. A regression that produced the right heel for the wrong
+        // reason — a rule that reads the sheet command, say — would still
+        // fail here, because the three links have to happen **in order**:
+        //
+        //     sheet tension → 0   ⇒   |β| grows   ⇒   sail heeling moment falls
+        //
+        // and only then does the heel come off.
+        let p = params();
+        let mut sim = beam_reach(7.0, 0.0, 2.0);
+        advance_seconds(&mut sim, 40.0, &p);
+
+        let start = *sim.state();
+        let f0 = evaluate(&start, sim.controls(), &p, sim.wind(), start.t);
+        let k_sail_0 = roll_of(f0.sail, start.phi);
+        assert!(start.phi > 0.3, "not heeled to begin with: {}", start.phi);
+        assert!(f0.sheet_tension > 0.0, "the rope was not loaded");
+        assert!(k_sail_0 > 0.0, "the sail was not heeling the boat");
+
+        sim.set_controls(Controls {
+            sheet_release: true,
+            ..Default::default()
+        });
+
+        let (mut slack_at, mut boom_at, mut unloaded_at) = (None, None, None);
+        for _ in 0..(20.0 / p.sim.dt) as u32 {
+            sim.advance(1);
+            let st = *sim.state();
+            let f = evaluate(&st, sim.controls(), &p, sim.wind(), st.t);
+            if slack_at.is_none() && f.sheet_tension == 0.0 {
+                slack_at = Some(st.t);
+            }
+            if boom_at.is_none() && (st.beta - start.beta).abs() > 0.3 {
+                boom_at = Some(st.t);
+            }
+            if unloaded_at.is_none() && roll_of(f.sail, st.phi).abs() < 0.5 * k_sail_0 {
+                unloaded_at = Some(st.t);
+            }
+        }
+
+        let slack = slack_at.expect("the sheet never went slack");
+        let boom = boom_at.expect("the boom never moved out");
+        let unloaded = unloaded_at.expect("the sail never depowered");
+        assert!(
+            slack < boom && boom < unloaded,
+            "out of order: tension 0 at {slack}, boom out at {boom}, sail unloaded at {unloaded}"
+        );
+        assert!(
+            sim.state().phi.abs() < 0.2 * start.phi,
+            "heel did not come off: {} -> {}",
+            start.phi,
+            sim.state().phi
+        );
+    }
+
+    #[test]
+    fn couple_from_sail_and_board() {
+        // A geometry check that catches a sign error in `board_pos_b.z`. The
+        // sail force acts **above** the CG and the board's reaction **below**
+        // it, and they point opposite ways, so their roll moments have the
+        // same sign: together they are the heeling couple, not a pair that
+        // cancels.
+        let p = params();
+        for bearing in [0.0, 180.0] {
+            let mut sim = beam_reach(6.0, bearing, 2.0);
+            advance_seconds(&mut sim, 30.0, &p);
+            let st = *sim.state();
+            let f = evaluate(&st, sim.controls(), &p, sim.wind(), st.t);
+            let sail = roll_of(f.sail, st.phi);
+            let board = roll_of(f.board, st.phi);
+            assert!(sail.abs() > 1.0 && board.abs() > 1.0, "nothing loaded");
+            assert!(
+                sail * board > 0.0,
+                "bearing {bearing}: sail K = {sail}, board K = {board}"
+            );
+        }
+    }
+
+    #[test]
+    fn rest_equilibrium() {
+        // `forces::tests::rest_equilibrium` (section 04) still holds with roll
+        // live — `GZ(0)` is exactly zero, so slot 6 adds exactly `-0.0` and
+        // rest stays rest, bit for bit.
+        let p = params();
+        let start = Simulation::initial_state(&p);
+        let mut st = start;
+        let c = Controls::default();
+        for i in 0..10_000 {
+            st = crate::integrator::step(&st, &c, &p, &PhysicalForces, p.sim.dt, p.sim.integrator);
+            let (now, then) = (st.to_array(), start.to_array());
+            for (k, name) in STATE_FIELDS.iter().enumerate().take(STATE_LEN - 1) {
+                assert_eq!(
+                    now[k].to_bits(),
+                    then[k].to_bits(),
+                    "step {i}, field {name}"
+                );
+            }
+        }
+
+        // And it is a *stable* equilibrium now: released from a heel with no
+        // wind, the boat comes back to upright instead of staying put.
+        let mut st = BoatState { phi: 0.35, ..start };
+        for _ in 0..10_000 {
+            st = crate::integrator::step(&st, &c, &p, &PhysicalForces, p.sim.dt, p.sim.integrator);
+        }
+        assert!(st.phi.abs() < 1e-3, "did not return upright: {}", st.phi);
     }
 }

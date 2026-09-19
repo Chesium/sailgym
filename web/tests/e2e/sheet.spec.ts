@@ -179,7 +179,19 @@ test.describe('mainsheet rope', () => {
     // out at a fixed rate in *simulated* seconds, and a software-rendered
     // Firefox page reaches a given `l_sheet` several wall-clock frames after
     // Chromium does.
+    //
+    // The poll waits on the **slack itself**, not on the drawn bounding box.
+    // The box grows for two reasons — the rope bows as it goes slack, and the
+    // boom swings out and rotates the whole path — and only the first is what
+    // this test is about. Waiting on the box let the poll finish while the
+    // rope was still taut and the boom merely turning, and the `slack > 0`
+    // assertion below then read a 0. That is what failed on Firefox in
+    // section 06 and again in section 07's gate run; the box-height
+    // assertions are unchanged and still checked, once there is slack to see.
     await page.keyboard.down(' ')
+    await expect
+      .poll(async () => (await ropeGeometry(page, params)).slack, { timeout: 8_000 })
+      .toBeGreaterThan(0)
     await expect
       .poll(async () => (await ropeGeometry(page, params)).boxHeight, { timeout: 8_000 })
       .toBeGreaterThan(taut.boxHeight + 5)

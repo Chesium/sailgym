@@ -13,6 +13,7 @@ use sailgym_physics::integrator::step;
 use sailgym_physics::parameters::BoatParameters;
 use sailgym_physics::rigging::mainsheet::{rope_path_length, sheet_output};
 use sailgym_physics::simulation::Simulation;
+use sailgym_physics::stability::hydrostatics::GzCurve;
 use sailgym_physics::state::{BoatState, Controls, STATE_FIELDS, STATE_LEN};
 use sailgym_physics::testkit::{mirror_controls, mirror_state, WithExternalLoad};
 use sailgym_physics::vec::{Vec2, Vec3};
@@ -159,11 +160,19 @@ fn mirror_symmetry_trajectory() {
 fn force_sign_sanity() {
     // Drag opposes motion. The hull terms are the ones with an unambiguous
     // sign for every DOF (F6.6); a foil's lift is perpendicular to its own
-    // local flow and has no such relation to `v` on its own.
+    // local flow and has no such relation to `v` on its own, and the F6.7
+    // righting moment is a function of `φ` rather than of `p`. So the foils
+    // are switched off by zeroing their area and the righting arm by zeroing
+    // `GM` and `GZ_max`, which makes every `GZ` coefficient exactly zero.
+    // Righting has its own sign guard, `stability::hydrostatics::
+    // restoring_moment_sign`, and its own trajectory guard,
+    // `roll_mirror_symmetry`.
     let mut p = params();
     p.board.section.area = 0.0;
     p.rudder.section.area = 0.0;
     p.sail.section.area = 0.0;
+    p.stability.gm = 0.0;
+    p.stability.gz_max = 0.0;
 
     let mut rng = Lcg(0x5164_0000_1111_2222);
     for k in 0..200 {
@@ -279,10 +288,10 @@ fn dissipative_behaviour() {
             delta_r: rng.range(-p.rudder.delta_r_max, p.rudder.delta_r_max),
             ..Simulation::initial_state(&p)
         };
-        let mut prev = kinetic_energy(&st, &p);
+        let mut prev = mechanical_energy(&st, &p);
         for i in 0..steps_for(5.0, &p) {
             st = step(&st, &c, &p, &PhysicalForces, p.sim.dt, p.sim.integrator);
-            let e = kinetic_energy(&st, &p);
+            let e = mechanical_energy(&st, &p);
             assert!(
                 e <= prev + 1e-9,
                 "episode {k}, step {i}: energy rose {prev} -> {e}"
@@ -621,12 +630,14 @@ fn sheet_tension(st: &BoatState, c: &Controls, p: &BoatParameters) -> f64 {
     sheet_output(st, sheet_rate(c, st, p), p).tension
 }
 
-/// Total mechanical energy, **including the sheet's elastic term**
-/// `½·k_sheet·max(0, e)²` and the boom's soft-limit spring.
+/// Total mechanical energy: kinetic, plus **the sheet's elastic term**
+/// `½·k_sheet·max(0, e)²`, the boom's soft-limit spring, and **the roll
+/// potential** `Δ·g·∫₀^φ GZ ds` (F6.7).
 ///
-/// A version that omitted the elastic term would report energy vanishing into
-/// the rope and reappearing out of it; the accounting has to be complete or
-/// the invariant is meaningless.
+/// A version that omitted any of these would report energy vanishing into a
+/// conservative store and reappearing out of it; the accounting has to be
+/// complete or the invariant is meaningless. The roll potential joined the
+/// account in section 07, when hydrostatic righting became a real force.
 fn mechanical_energy(st: &BoatState, p: &BoatParameters) -> f64 {
     let extension = (rope_path_length(st.beta, p) - st.l_sheet).max(0.0);
     let past_stop = (st.beta.abs() - p.sail.beta_max).max(0.0);
@@ -634,6 +645,12 @@ fn mechanical_energy(st: &BoatState, p: &BoatParameters) -> f64 {
         + 0.5 * p.sail.i_boom * st.beta_dot * st.beta_dot
         + 0.5 * p.sheet.k_sheet * extension * extension
         + 0.5 * p.sail.k_lim * past_stop * past_stop
+        + roll_potential(st, p)
+}
+
+/// `Δ·g·∫₀^φ GZ(s) ds` — the potential energy stored in heel (F6.7).
+fn roll_potential(st: &BoatState, p: &BoatParameters) -> f64 {
+    p.total_mass() * sailgym_physics::constants::G * GzCurve::from_params(p).gz_integral(st.phi)
 }
 
 #[test]
@@ -847,4 +864,217 @@ fn sheet_geometry_continuous() {
              {coarse} -> {fine} — that is a discontinuity, not a slope"
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// Roll, righting and capsize (section 07)
+// ---------------------------------------------------------------------------
+
+/// Roll moment from one load, through the same `Generalized::add` the EOM uses
+/// (F6.4). Nothing is recomputed here.
+fn roll_of(l: Load, phi: f64) -> f64 {
+    let mut g = sailgym_physics::dynamics::Generalized::default();
+    g.add(l, phi);
+    g.k
+}
+
+#[test]
+fn roll_mirror_symmetry() {
+    use sailgym_physics::environment::wind::{WindConfig, WindMode};
+    // R3's roll guard. The mirror of a boat heeling to starboard is a boat
+    // heeling to port by the same angle, at every step, all the way into a
+    // capsize — the wind is strong enough here to drive one, so the check
+    // covers the nonlinear part of `GZ` and not just the linear root.
+    let p = params();
+    let start = BoatState {
+        psi: 0.35,
+        phi: 0.12,
+        beta: -0.5,
+        u: 1.5,
+        r: 0.03,
+        p: 0.04,
+        ..Simulation::initial_state(&p)
+    };
+    let mut a = Simulation::new(p, 707);
+    let mut b = Simulation::new(p, 707);
+    a.set_wind(WindConfig {
+        mode: WindMode::Uniform,
+        speed: 9.0,
+        bearing_deg: 135.0,
+        ..Default::default()
+    });
+    b.set_wind(WindConfig {
+        mode: WindMode::Uniform,
+        speed: 9.0,
+        bearing_deg: 45.0,
+        ..Default::default()
+    });
+    a.reset(start, 707);
+    b.reset(mirror_state(&start), 707);
+
+    let mut extreme = 0.0f64;
+    for i in 0..steps_for(30.0, &p) {
+        a.advance(1);
+        b.advance(1);
+        let (left, right) = (a.state().phi, b.state().phi);
+        assert!(
+            (right + left).abs() < 1e-9,
+            "step {i}: phi = {left} vs mirrored {right}"
+        );
+        assert!(
+            (a.state().p + b.state().p).abs() < 1e-9,
+            "step {i}: roll rate {} vs {}",
+            a.state().p,
+            b.state().p
+        );
+        if left.abs() > extreme {
+            extreme = left.abs();
+        }
+    }
+    // Worth nothing unless the boat really went over.
+    assert!(
+        extreme > 1.0,
+        "the boat only reached {extreme} rad of heel; the nonlinear part of GZ was never exercised"
+    );
+    assert_eq!(a.capsize().capsized, b.capsize().capsized);
+}
+
+#[test]
+fn dissipative_with_roll() {
+    // brief §35 dissipative behaviour, with roll live. Zero wind, roll and yaw
+    // energy on the clock, and a **complete** account: kinetic, the sheet's
+    // elastic term, the boom's soft limit, and the roll potential
+    // `Δ·g·∫₀^φ GZ ds`. Hydrostatic righting is conservative, so it may move
+    // energy between those stores; nothing may add any.
+    let p = params();
+    let c = Controls::default();
+    let mut rng = Lcg(0x8011_0777_0007_1234);
+    for k in 0..40 {
+        let mut st = BoatState {
+            phi: rng.range(-1.2, 1.2),
+            u: rng.range(-3.0, 3.0),
+            v: rng.range(-1.0, 1.0),
+            r: rng.range(-1.2, 1.2),
+            p: rng.range(-1.5, 1.5),
+            ..boom_free_state(&p)
+        };
+        let mut prev = mechanical_energy(&st, &p);
+        let first = prev;
+        for i in 0..steps_for(20.0, &p) {
+            st = step(&st, &c, &p, &PhysicalForces, p.sim.dt, p.sim.integrator);
+            let e = mechanical_energy(&st, &p);
+            assert!(
+                e <= prev + 1e-9,
+                "episode {k}, step {i}: energy rose {prev} -> {e}"
+            );
+            prev = e;
+        }
+        assert!(prev < first, "episode {k} lost no energy at all");
+    }
+}
+
+#[test]
+fn capsize_finite() {
+    use sailgym_physics::environment::wind::{WindConfig, WindMode};
+    // brief §17 and brief §35's finite-number invariant, in the regime that
+    // stresses them: 100 episodes blown flat and left there for a minute. The
+    // simulation is never stopped, nothing is clamped, and no state may go
+    // non-finite.
+    let p = params();
+    let mut rng = Lcg(0xCA95_1234_5678_9ABC);
+    let mut capsized = 0usize;
+    for episode in 0..100 {
+        let mut sim = Simulation::new(p, episode);
+        sim.set_wind(WindConfig {
+            mode: if episode % 2 == 0 {
+                WindMode::Uniform
+            } else {
+                WindMode::Gust
+            },
+            speed: rng.range(8.0, 22.0),
+            bearing_deg: rng.range(0.0, 360.0),
+            ..Default::default()
+        });
+        sim.reset(
+            BoatState {
+                psi: rng.range(-3.1, 3.1),
+                phi: rng.range(-0.4, 0.4),
+                u: rng.range(0.0, 3.0),
+                p: rng.range(-1.0, 1.0),
+                ..Simulation::initial_state(&p)
+            },
+            episode,
+        );
+        for i in 0..steps_for(60.0, &p) {
+            sim.advance(1);
+            assert!(
+                sim.state().is_finite(),
+                "episode {episode}, step {i}: {:?}",
+                sim.state()
+            );
+        }
+        if sim.capsize().max_heel > p.stability.phi_capsize {
+            capsized += 1;
+        }
+    }
+    // The episodes have to actually reach capsize, or this proves nothing.
+    assert!(
+        capsized > 50,
+        "only {capsized} of 100 episodes went past the capsize threshold"
+    );
+}
+
+#[test]
+fn heel_reduces_drive() {
+    use sailgym_physics::environment::wind::{WindConfig, WindMode};
+    // F6.4 and nothing else. Heel reduces the lateral component of the
+    // apparent wind at the sail through `R_x(−φ)` (F6.2 step 6) and tilts the
+    // sail force out of the horizontal plane through `Generalized::add`. Both
+    // are geometry; there is no empirical `cos φ` anywhere, and this is what
+    // says so.
+    let p = params();
+    let mut sim = Simulation::new(p, 42);
+    sim.set_wind(WindConfig {
+        mode: WindMode::Uniform,
+        speed: 5.0,
+        bearing_deg: 0.0,
+        ..Default::default()
+    });
+    sim.reset(
+        BoatState {
+            l_sheet: 2.0,
+            ..Simulation::initial_state(&p)
+        },
+        42,
+    );
+    // Let the boat find a steady sailing state, then read the same state twice
+    // with only `phi` changed.
+    for _ in 0..steps_for(30.0, &p) {
+        sim.advance(1);
+    }
+    let steady = BoatState {
+        phi: 0.0,
+        ..*sim.state()
+    };
+    let upright =
+        sailgym_physics::forces::evaluate(&steady, &Controls::default(), &p, sim.wind(), steady.t);
+    let heeled = sailgym_physics::forces::evaluate(
+        &BoatState { phi: 0.5, ..steady },
+        &Controls::default(),
+        &p,
+        sim.wind(),
+        steady.t,
+    );
+    assert!(
+        upright.total.x > 0.0,
+        "the boat was not being driven forward"
+    );
+    assert!(
+        heeled.total.x < upright.total.x,
+        "heel did not reduce drive: {} at phi = 0.5 vs {} upright",
+        heeled.total.x,
+        upright.total.x
+    );
+    // The sail itself is what lost the force, not the hull.
+    assert!(roll_of(heeled.sail, 0.5).abs() < roll_of(upright.sail, 0.0).abs());
 }

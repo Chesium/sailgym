@@ -9,6 +9,7 @@ use crate::environment::wind::{ProceduralWind, WindConfig};
 use crate::environment::WindField;
 use crate::forces::WindForces;
 use crate::parameters::{BoatParameters, ParamError};
+use crate::stability::capsize::CapsizeState;
 use crate::state::{BoatState, Controls};
 use crate::vec::Vec2;
 
@@ -20,6 +21,7 @@ pub struct Simulation {
     wind: ProceduralWind,
     seed: u64,
     steps: u64,
+    capsize: CapsizeState,
 }
 
 impl Simulation {
@@ -33,6 +35,7 @@ impl Simulation {
             wind: ProceduralWind::new(WindConfig::default(), seed),
             seed,
             steps: 0,
+            capsize: CapsizeState::default(),
         }
     }
 
@@ -52,6 +55,7 @@ impl Simulation {
         self.seed = seed;
         self.steps = 0;
         self.controls = Controls::default();
+        self.capsize = CapsizeState::default();
         // The wind is procedural, not stateful, but it is *seeded*: rebuilding
         // it here is what makes a reset with a new seed give a new field, and
         // a reset with the same seed reproduce the old one bit for bit
@@ -98,6 +102,13 @@ impl Simulation {
                 method,
             );
             self.steps += 1;
+            // Once per **completed** step, and only here (F6.10). The capsize
+            // report is an observer of the trajectory: driving it from inside
+            // `derivative` would feed it the integrator's intermediate stages,
+            // which are not states the boat ever occupies, and would make
+            // `advance(n)` differ from `n` calls to `advance(1)` (F9.7).
+            // Nothing reads it back — see `stability::capsize`.
+            self.capsize.observe(&self.state, &self.params);
         }
         n
     }
@@ -112,6 +123,12 @@ impl Simulation {
 
     pub fn controls(&self) -> &Controls {
         &self.controls
+    }
+
+    /// The capsize report (F6.10). Informational: written by [`Self::advance`],
+    /// read by the diagnostics and the UI, and read by no force model.
+    pub fn capsize(&self) -> &CapsizeState {
+        &self.capsize
     }
 
     /// The seed every procedural source in the simulation derives from

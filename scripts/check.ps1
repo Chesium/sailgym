@@ -32,7 +32,11 @@ $Steps = @(
     @{ Name = 'cargo fmt --check';                          Action = { cargo fmt --check } }
     @{ Name = 'cargo clippy --all-targets -- -D warnings';  Action = { cargo clippy --all-targets -- -D warnings } }
     @{ Name = 'cargo test -p sailgym-physics';              Action = { cargo test -p sailgym-physics } }
-    @{ Name = 'cargo test -p sailgym-physics --test invariants'; Action = { cargo test -p sailgym-physics --test invariants } }
+    @{ Name = 'cargo test -p sailgym-physics --test invariants --test no_shortcuts'; Action = {
+            cargo test -p sailgym-physics --test invariants
+            if ($LASTEXITCODE -ne 0) { return }
+            cargo test -p sailgym-physics --test no_shortcuts
+        } }
     @{ Name = 'cargo test -p sailgym-physics --test regression'; Action = { cargo test -p sailgym-physics --test regression } }
     @{ Name = 'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'; Action = { & (Join-Path $PSScriptRoot 'build-wasm.ps1') } }
     @{ Name = 'pnpm --dir web typecheck';                   Action = { pnpm --dir web typecheck } }

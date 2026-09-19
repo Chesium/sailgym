@@ -11,6 +11,7 @@ import {
   type Vec2,
 } from './render/Camera'
 import { BoatSvg } from './render/BoatSvg'
+import { HeelIndicator, HeelProbe } from './render/HeelIndicator'
 import { DEFAULT_INPUT } from './sim/controls'
 import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetInputState } from './sim/sheetInput'
 import { useSimulation } from './sim/useSimulation'
@@ -248,6 +249,21 @@ export default function App() {
         </div>
       </div>
 
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* brief §26: top-down geometry cannot show roll, so heel gets its own
+            stern view. `φ` comes from the snapshot, the capsize report from the
+            diagnostics; both are the core's numbers (F8).
+
+            It sits **below** the world view on purpose. The section 02-06 specs
+            drive the mainsheet with absolute page coordinates, so anything
+            added above the boat moves the target out from under them. */}
+        <HeelIndicator
+          phi={s.phi}
+          capsized={sim.diagnostics?.capsize.capsized ?? false}
+          maxHeel={sim.diagnostics?.capsize.max_heel ?? 0}
+        />
+      </div>
+
       <div
         data-testid="snapshot"
         data-dt={sim.dt}
@@ -266,6 +282,10 @@ export default function App() {
         data-l-sheet={s.lSheet}
         data-sheet-tension={sim.diagnostics?.sheet_tension ?? 0}
         data-rope-length={sim.diagnostics?.rope_length ?? 0}
+        data-gz={sim.diagnostics?.gz ?? 0}
+        data-k-restore={sim.diagnostics?.k_restore ?? 0}
+        data-capsized={sim.diagnostics?.capsize.capsized ? 'true' : 'false'}
+        data-max-heel={sim.diagnostics?.capsize.max_heel ?? 0}
       >
         t {s.t.toFixed(3)} s · x {s.x.toFixed(2)} m · y {s.y.toFixed(2)} m · ψ{' '}
         {((s.psi * 180) / Math.PI).toFixed(1)}° · u {s.u.toFixed(2)} m/s · δr{' '}
@@ -290,6 +310,7 @@ export default function App() {
       </div>
 
       <ArrowProbe field={arrows} />
+      <HeelProbe />
 
       <div style={{ color: '#667' }}>
         A / ← and D / → steer · <strong>drag down to haul the mainsheet in, drag up to
