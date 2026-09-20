@@ -31,13 +31,16 @@ a defect — stop and escalate rather than choosing.
 | — | Ablating action and observation spaces | discussion only | `discussions/ablation-spaces.md` |
 | — | Autopilot baselines (rule sailor, polar racer, planner) | discussion only | `discussions/autopilot-suggestions.md` |
 | — | Gymnasium + a JAX/Warp second stack | discussion only | `discussions/cross-stack.md` |
+| — | Mobile touch controls (sheet + rudder tracks, tilt later) | discussion only | `discussions/mobile-controls.md` |
 
 Section 01 is deliberately first and deliberately small: it is **web-only**, it
 touches no Rust, and it therefore cannot destabilise the physics core while the
-v2 regime itself is being shaken down. The four remaining notes all describe
+v2 regime itself is being shaken down. The five remaining notes all describe
 post-v1 *scope extensions* (brief §44 defers autopilots, multiple boats, RL,
-obstacles); none of them may be converted into a PRD until the scope question
-in `discussions/unified-agent-interface.md` §0 has a human answer.
+obstacles, mobile controls). The first four may not be converted into a PRD
+until the scope question in `discussions/unified-agent-interface.md` §0 has a
+human answer; `discussions/mobile-controls.md` raises a **separate** scope
+question, tiered in its own §0, and is gated on V-D below rather than on V-A.
 
 ## Converting a discussion into a PRD
 
@@ -118,6 +121,7 @@ exceptions and no "will fix next section".
 
 | # | Item | Blocking |
 |---|---|---|
-| **V-A** | **Scope.** brief §44 defers multiple boats, RL, multi-agent sailing, collisions and obstacle avoidance; brief §45 lists the same items as the intended direction. Four of the five discussion notes need a v2 brief (or a brief §44 amendment) before they can become PRDs. | sections after 01 |
+| **V-A** | **Scope.** brief §44 defers multiple boats, RL, multi-agent sailing, collisions and obstacle avoidance; brief §45 lists the same items as the intended direction. Four of the six discussion notes need a v2 brief (or a brief §44 amendment) before they can become PRDs. | sections after 01 |
 | **V-B** | **Rotation matrices outside `frames.rs`.** F2 says frame conversions live in `physics/frames.rs` "and nowhere else"; section 02's AC calls it "the only file in the repository containing a rotation matrix". `web/src/render/Camera.ts` has contained a 2-D view rotation since M1, so the established reading is that *view* transforms are exempt. Section 01 needs a 3-D view rotation and proceeds on that reading, with guard tests. Confirm the reading, or say otherwise before 01 is dispatched. | section 01, non-fatal |
 | **V-C** | Whether v2 gets its own `00-foundations.md` now, or keeps recording deltas per-PRD until there are enough to justify one. | none |
+| **V-D** | **Mobile/touch scope, in four independent rulings.** brief §38 puts mobile "out of scope unless trivial"; brief §44 separately defers *mobile controls*, *hand-force simulation*, *detailed block-and-tackle mechanics* and *hiking/body movement*; brief §45 does **not** re-list mobile as intended direction. `discussions/mobile-controls.md` §0 splits the work into T0 (touch plumbing — plausibly §38-trivial), T1 (the hand model — web-only, but §44-deferred), T2 (tension-limited haul rate — a physics change needing an F4.3 delta) and T3 (tilt/hiking — needs a crew-position DOF, forbidden by brief §4). Each tier needs its own ruling; T0+T1 are separable from T2+T3 and touch no Rust. Adding a Playwright touch project also changes the browser targets fixed by brief §38 (see §8 of that note). | a mobile section |
