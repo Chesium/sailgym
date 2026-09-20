@@ -12,7 +12,9 @@ mechanical acceptance criteria, a handoff note per section.
 |---|---|
 | `../v1/brief.md` | The original specification brief. Still authoritative on **v1 scope**. Anything v2 adds beyond it is a scope extension and needs human sign-off (see below). |
 | `../v1/00-foundations.md` | **Still normative.** Conventions, frames, sign conventions, equations, parameters, the WASM surface, the gate. No v2 agent may redefine anything in it. |
-| `00-foundations.md` | **Pending.** Will record v2's *deltas* to the above — nothing more. Until it exists, every delta is recorded in the PRD that needs it, under a heading `Normative deltas`, and escalated to the human there. |
+| `brief.md` | **Proposed, unsigned.** The v2 scope extension, answering V-A. Authoritative on nothing until its signature block is filled in; until then `../v1/brief.md` §44 stands in full. |
+| `00-foundations.md` | **Written** (F12′, F14–F17), answering V-C. Records v2's *deltas* to the above — nothing more. A delta not yet approved is marked `Open` there **and** in the PRD that needs it, under `Normative deltas`. |
+| `conformance.md`, `throughput.md` | **Generated**, in the style of `../v1/convergence.md` and `../v1/performance.md` — by a command in the repository, never typed. Written by sections 02 and 06. |
 | `discussions/*.md` | Design notes and suggestions. **Not normative, not executable.** Source material for PRDs. |
 | `prds/NN-<name>.md` | Executable section PRDs, one per milestone. Numbering restarts at `01` for v2. |
 | `progress/NN-handoff.md` | Written by each section agent on completion. Read by the next. |
@@ -26,21 +28,36 @@ a defect — stop and escalate rather than choosing.
 
 | # | Section | State | Source discussion |
 |---|---|---|---|
-| 01 | [Low-poly boat: 3-D geometry projected into the SVG](prds/01-boat-3d-svg.md) | **PRD written** | `discussions/boat-rendering-suggestions.md` |
-| — | Unified agent interface | discussion only | `discussions/unified-agent-interface.md` |
-| — | Ablating action and observation spaces | discussion only | `discussions/ablation-spaces.md` |
+| 01 | [Low-poly boat: 3-D geometry projected into the SVG](prds/01-boat-3d-svg.md) | **shipped** | `discussions/boat-rendering-suggestions.md` |
+| 02 | [The conformance bundle: generator, Rust runner, throughput](prds/02-conformance-bundle.md) | **PRD written**, dispatchable | `discussions/cross-stack.md` §§0, 2, 3, 4.1 |
+| 03 | [Python, and `wind.sample` in JAX](prds/03-jax-wind.md) | **PRD written**, dispatchable | `discussions/cross-stack.md` §§1.1, 4.1–4.3, 5 |
+| 04 | [`sailgym-course`: routes, marks, guidance, passage](prds/04-course.md) | **PRD written**, blocked on V-A | `discussions/unified-agent-interface.md` §5 |
+| 05 | [`sailgym-agent`: sensors, actions, cadence, helm](prds/05-agent.md) | **PRD written**, blocked on V-A | `discussions/unified-agent-interface.md` §§2–4, `discussions/ablation-spaces.md` |
+| 06 | [`sailgym-env`: episode runner, autoreset, `VecEnv`](prds/06-env.md) | **PRD written**, blocked on V-A | `discussions/cross-stack.md` §§1.4, 6; `…/unified-agent-interface.md` §9 |
+| 07 | [`sailgym-py`: the Gymnasium binding](prds/07-py.md) | **PRD written**, blocked on V-A | `discussions/cross-stack.md` §1 |
+| — | Warp port, branch-free JAX port, invariants on both | discussion only | `discussions/cross-stack.md` §8 points 6–8 |
 | — | Autopilot baselines (rule sailor, polar racer, planner) | discussion only | `discussions/autopilot-suggestions.md` |
-| — | Gymnasium + a JAX/Warp second stack | discussion only | `discussions/cross-stack.md` |
 | — | Mobile touch controls (sheet + rudder tracks, tilt later) | discussion only | `discussions/mobile-controls.md` |
 
-Section 01 is deliberately first and deliberately small: it is **web-only**, it
-touches no Rust, and it therefore cannot destabilise the physics core while the
-v2 regime itself is being shaken down. The five remaining notes all describe
-post-v1 *scope extensions* (brief §44 defers autopilots, multiple boats, RL,
-obstacles, mobile controls). The first four may not be converted into a PRD
-until the scope question in `discussions/unified-agent-interface.md` §0 has a
-human answer; `discussions/mobile-controls.md` raises a **separate** scope
-question, tiered in its own §0, and is gated on V-D below rather than on V-A.
+Section 01 was deliberately first and deliberately small: **web-only**, no Rust,
+so it could not destabilise the physics core while the v2 regime itself was being
+shaken down.
+
+**Sections 02 and 03 are dispatchable now.** They build the conformance bundle
+and the first port against it, and they need only `sailgym-physics`. The reading
+that unblocks them is stated in each PRD so it can be overruled: brief §44's
+deferred list does not contain the vectorised alternate backend, brief §45 names
+it directly, and V-A below names the four notes proposing *agents, courses, RL
+and swarm* — not verification infrastructure. `brief.md` S1 and S2 put the same
+question to the human explicitly.
+
+**Sections 04–07 are blocked on V-A** and may not be dispatched until
+`brief.md` is signed. They are written anyway, so that the ruling is made against
+a concrete proposal rather than against an idea — and so that the cost, which
+`brief.md` §4 states plainly, is visible before the ruling rather than after.
+
+`discussions/mobile-controls.md` raises a **separate** scope question, tiered in
+its own §0, and is gated on V-D below rather than on V-A.
 
 ## Converting a discussion into a PRD
 
@@ -121,7 +138,9 @@ exceptions and no "will fix next section".
 
 | # | Item | Blocking |
 |---|---|---|
-| **V-A** | **Scope.** brief §44 defers multiple boats, RL, multi-agent sailing, collisions and obstacle avoidance; brief §45 lists the same items as the intended direction. Four of the six discussion notes need a v2 brief (or a brief §44 amendment) before they can become PRDs. | sections after 01 |
+| **V-A** | **Scope. A proposal now exists: [`brief.md`](brief.md), unsigned.** It puts six separable rulings (S1–S6) and states what stays deferred. S1 and S2 (conformance bundle, vectorised backend) are argued not to be reached by V-A at all; S3–S5 (courses, RL environment, non-interacting fleet) are; S6 (obstacles, collision-as-termination) touches §44's deferred list directly and should be ruled on separately. | sections 04–07; **not** 02–03 |
 | **V-B** | **Rotation matrices outside `frames.rs`.** F2 says frame conversions live in `physics/frames.rs` "and nowhere else"; section 02's AC calls it "the only file in the repository containing a rotation matrix". `web/src/render/Camera.ts` has contained a 2-D view rotation since M1, so the established reading is that *view* transforms are exempt. Section 01 needs a 3-D view rotation and proceeds on that reading, with guard tests. Confirm the reading, or say otherwise before 01 is dispatched. | section 01, non-fatal |
-| **V-C** | Whether v2 gets its own `00-foundations.md` now, or keeps recording deltas per-PRD until there are enough to justify one. | none |
+| **V-C** | ~~Whether v2 gets its own `00-foundations.md` now~~ — **answered.** [`00-foundations.md`](00-foundations.md) exists and carries F12′ and F14–F17. Each delta is still *also* recorded in the PRD that needs it, marked `Open` until approved with a date. | none |
 | **V-D** | **Mobile/touch scope, in four independent rulings.** brief §38 puts mobile "out of scope unless trivial"; brief §44 separately defers *mobile controls*, *hand-force simulation*, *detailed block-and-tackle mechanics* and *hiking/body movement*; brief §45 does **not** re-list mobile as intended direction. `discussions/mobile-controls.md` §0 splits the work into T0 (touch plumbing — plausibly §38-trivial), T1 (the hand model — web-only, but §44-deferred), T2 (tension-limited haul rate — a physics change needing an F4.3 delta) and T3 (tilt/hiking — needs a crew-position DOF, forbidden by brief §4). Each tier needs its own ruling; T0+T1 are separable from T2+T3 and touch no Rust. Adding a Playwright touch project also changes the browser targets fixed by brief §38 (see §8 of that note). | a mobile section |
+| **V-E** | **The gate grows to eleven steps.** Section 02 adds `--test conformance` to step 4; section 03 adds step 10 (`ruff`) and step 11 (`scripts/py-test.sh`). Sections 04–06 extend step 3's crate list without adding a step. Each is an F12 amendment in the form section 01's D1 took, and each needs a date and an approval. Text is in [`00-foundations.md`](00-foundations.md) F12′. | sections 02, 03 |
+| **V-F** | **`brief.md` S6 — obstacles.** Called out separately because it is the one proposed row that lands squarely on brief §44's deferred list (*obstacle avoidance*, *collisions*). Tasks 4.5 and 4.6 are gated on it alone and are explicitly cuttable; nothing in cross-stack §8 points 1–5 needs it. | section 04, partially |
