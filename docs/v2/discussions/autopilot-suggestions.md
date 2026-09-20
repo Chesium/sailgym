@@ -1,11 +1,15 @@
-**I’d build a reliable rule-based sailor first, then a polar-based racer, and later a short-horizon planning baseline.** That gives you useful game NPCs and progressively stronger opponents for RL comparison.
+**Updated 2026-09-20:** deliver sections 08–11's human learning loop first. Then build a recorded ghost, one short course and a rule sailor; follow with a polar racer and only later a planner if profiling and evaluation justify it. The original baseline design below remains research context.
+
+Compare completion, time, capsizes, missed marks, failed manoeuvres and control effort on held-out seeds/courses with matching model/task/action contracts. Existing 04–07 are infrastructure drafts, not the browser course or rule-sailor integration. Recorded ghosts require no fleet or collisions; [Vibesail's collision change](https://vibesail.com/blog/changelog-073-race-collisions-removed/) is a useful precedent.
+
+Use shared Rust control semantics. Do not cancel self-centering with tiny epsilon commands or per-frame parameter toggles. Position tracking needs an explicit engaged/released contract.
 
 The project already has a good foundation: deterministic Rust stepping, seeded wind, native execution, and episode recording. What’s missing is the race layer: courses, mark rounding, finish conditions, multiple boats, and controller interfaces.
 
 A few implementation details strongly affect the design:
 
-- [Controls](/home/chesium/sailgym/crates/sailgym-physics/src/state.rs:191) command **rudder rate, sheet rate, and sheet release**. They do not set heading, rudder angle, or boom angle.
-- [Rudder dynamics](/home/chesium/sailgym/crates/sailgym-physics/src/dynamics.rs:89) automatically center the rudder when its command is zero. A conventional angle controller needs an actuator adapter that accounts for this.
+- [Controls](../../../crates/sailgym-physics/src/state.rs) command **rudder rate, sheet rate, and sheet release**. They do not set heading, rudder angle, or boom angle.
+- [Rudder dynamics](../../../crates/sailgym-physics/src/dynamics.rs) automatically center the rudder when its command is zero. A conventional angle controller needs an actuator adapter that accounts for this.
 - The boom, heel, and leeway are dynamic. Good steering alone will not make a competent sailor.
 - Existing golden control scripts are useful regression fixtures, but they are open-loop sequences rather than autopilots.
 
@@ -40,7 +44,7 @@ Keep maneuver states in the **autopilot**, outside the physics crate. They repre
 
 A polar is a table of attainable boat speed versus wind speed and sailing angle. Generate yours headlessly, sweeping heading and sheet settings while measuring settled speed, track direction, heel, and stability on both tacks.
 
-There is already useful evidence in [the roll milestone measurements](/home/chesium/sailgym/docs/v1/progress/07-handoff.md:635): in its close-hauled experiment, a 2.0 m sheet setting produced approximately 1.78 m/s, versus 0.40 m/s fully hauled in. “Pull the sheet tight upwind” would be a particularly weak heuristic here.
+There is already useful evidence in [the roll milestone measurements](../../../docs/v1/progress/07-handoff.md): in its close-hauled experiment, a 2.0 m sheet setting produced approximately 1.78 m/s, versus 0.40 m/s fully hauled in. “Pull the sheet tight upwind” would be a particularly weak heuristic here.
 
 Use these tables to:
 
@@ -72,7 +76,7 @@ Define mark passage carefully: ordered marks, required rounding side, and direct
 - **Episodes:** log every policy action and its step index alongside controller version, course, seed, and physics parameters. The current sampled recorder is useful for inspection but may miss intervening actions.
 - **Environment API:** follow Gymnasium’s distinction between task termination and time-limit truncation. [API reference](https://gymnasium.farama.org/api/env/)
 
-The documented stability-curve and mainsheet-preload issues in [parameter provenance](/home/chesium/sailgym/docs/v1/parameters.md) also matter: freeze and version the physics used for comparisons, because stronger policies may exploit those behaviors.
+The documented stability-curve and mainsheet-preload issues in [parameter provenance](../../../docs/v1/parameters.md) also matter: freeze and version the physics used for comparisons, because stronger policies may exploit those behaviors.
 
 **My first milestone would be:** one rule sailor reliably completing a windward–leeward course from varied starting headings, followed by polar generation and the stronger racer. That delivers a usable NPC while establishing the evaluation machinery RL will need.
 

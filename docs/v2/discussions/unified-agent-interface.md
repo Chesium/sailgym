@@ -1,5 +1,18 @@
 # A unified agent interface — design suggestion
 
+## Current recommendation — 2026-09-20
+
+M-next is sections 08–11. Retain the research sketches below for later 04–07, with these corrections taking precedence:
+
+- Manual/browser input supplies Controls through an explicit boundary; Rust does not read held keys from EpisodeCtx. Share validation, cadence and logging without giving an agent hidden episode access.
+- Begin with one versioned observation layout. When a configurable sensor study lands, the runtime ordered layout replaces the fixed OBS_FIELDS/OBS_LEN sketch below; do not maintain two authorities.
+- Task rules own passage/outcome; tactics own steering/trim. Log privileged guidance and true-wind access explicitly.
+- Compute observations freshly at decision time, not from the once-per-advance force cache. One extra evaluation per ten steps adds 5% to RK2's twenty evaluations, before other costs.
+- Use section 10's full identity, including units, normalization, noise and privilege. Sensor version/width and parameter digests alone are insufficient.
+- Independent vector episodes have independent reset clocks/seeds. A shared-clock live fleet is separate; recorded ghosts need neither.
+
+The original proposal below is research context; revised PRDs override conflicting sketches.
+
 Companion to `autopilot-suggestions.md`, which argues *which* controllers to
 build. This one argues *what they plug into*: one interface that serves the web
 autopilot picker, waypoint/lookahead guidance, later swarm work, and RL

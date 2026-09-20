@@ -1,10 +1,14 @@
-**I’d start with a small low-poly boat projected into the existing SVG.** It gives continuous roll, keeps the current camera and controls, and avoids maintaining a large set of rendered images.
+**Updated 2026-09-20: this direction already shipped in section 01.** App now passes `phi` to BoatSvg. Retain the low-poly geometry projected into SVG; section 09 improves viewport sizing, wind visibility and controls. Full 3-D scenery and photorealism are outside the product direction.
+
+## Historical pre-01 design rationale
+
+The inspection below describes the earlier implementation, not today's tree. The chosen approach gives continuous roll, retains the camera and avoids rendered-image sets.
 
 From inspecting the code:
 
-- The main boat **doesn’t receive `phi`**, the roll angle: [App.tsx:379](/home/chesium/sailgym/web/src/App.tsx:379). Its hull, sail and rudder remain flat regardless of heel.
-- Roll appears only in the separate [HeelIndicator.tsx:98](/home/chesium/sailgym/web/src/render/HeelIndicator.tsx:98).
-- The existing [geometry.ts](/home/chesium/sailgym/web/src/render/geometry.ts) already defines a simple, dimension-scaled hull outline—a useful starting point.
+- The main boat **doesn’t receive `phi`**, the roll angle: [App.tsx:379](../../../web/src/App.tsx). Its hull, sail and rudder remain flat regardless of heel.
+- Roll appears only in the separate [HeelIndicator.tsx:98](../../../web/src/render/HeelIndicator.tsx).
+- The existing [geometry.ts](../../../web/src/render/geometry.ts) already defines a simple, dimension-scaled hull outline—a useful starting point.
 
 | Approach | Main advantage | Main cost | Fit here |
 |---|---|---|---|

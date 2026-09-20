@@ -2,15 +2,9 @@
 
 **This document contains no tasks and is not executed by an agent.**
 
-It records **only** v2's deltas to `../v1/00-foundations.md`, which remains
-normative in full and outranks this file wherever the two could be read as
-disagreeing. Nothing here redefines F1–F13. If an implementation appears to
-contradict F1–F13, that is a defect: stop, record the exact passages in the
-section handoff, and escalate. Never silently pick a convention.
+**Status: proposed deltas, not implemented contracts.** The [index](README.md) schedules 08–11 before research sections 02–07. The brief records separate scope decisions. v1 foundations remain the shipped reference; explicit v2 corrections require a recorded decision and evidence, not a silent reinterpretation. No signature is supplied by this planning update.
 
-This file answers open item **V-C** in `README.md` by existing. Item **V-A** is
-answered by `brief.md`, which is **not yet signed**; every section below marked
-*blocked on V-A* stays blocked until it is.
+F18 records the playable milestone. F14–F17 remain later research proposals, with the corrections below incorporated. Section-number order is not delivery order.
 
 Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
@@ -20,19 +14,20 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 | **F14** | Agent interface — sensors, actions, cadence, helm | blocked on V-A |
 | **F15** | Task and course — routes, marks, guidance, passage | blocked on V-A |
 | **F16** | Conformance, digests and the tolerance contract | proposed; section 02 |
-| **F17** | The Python boundary | proposed; section 03 |
+| **F17** | The Python boundary | proposed; sections 03 and 07 |
+| **F18** | Corrected model, input, replay and tasks | proposed; sections 08–11 |
 
 ---
 
 ## F12′. The gate
 
-F12's chain becomes **eleven** steps. Steps 1–9 keep their numbers and their
+After 11, step 3 includes sailgym-task. Only when 03 lands does the chain become **eleven** steps. Steps 1–9 keep their numbers and their
 meaning; step 4's test list gains one entry.
 
 ```
  1. cargo fmt --check
  2. cargo clippy --all-targets -- -D warnings
- 3. cargo test -p sailgym-physics
+ 3. cargo test -p sailgym-physics -p sailgym-task
  4. cargo test -p sailgym-physics --test invariants --test no_shortcuts \
                                   --test convergence --test symmetry \
                                   --test provenance --test conformance     ← + conformance
@@ -63,7 +58,7 @@ itself: `scripts/check.sh` (the `step_names` array **and** the `run_step` case),
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
 
-No other F12 change is authorised by this document.
+All gate changes remain proposed. Section 11 adds task coverage before research gates; retain it in all later crate lists.
 
 ---
 
@@ -75,16 +70,17 @@ No other F12 change is authorised by this document.
 ### F14.1 Crates and the direction of dependency
 
 ```
-sailgym-physics/   knows nothing about agents. Unchanged. (F8.1)
+sailgym-physics/   knows nothing about tasks or agents. Corrected by 08. (F8.1)
+sailgym-task/      pure practice evaluation (11), reused by later env
 sailgym-course/    Route, Mark, Rounding, Guidance, passage, Obstacle   (F15)
 sailgym-agent/     Sensor, Actuation, Action, Agent, Helm, Cadence, registry
 sailgym-env/       episode runner, Outcome, decision log, VecEnv
 sailgym-py/        pyo3 binding over sailgym-env                        (F17)
-sailgym-wasm/      unchanged in v2 sections 02-06
+sailgym-wasm/      09–11 input/inspection/tasks; unchanged within 02–06
 sailgym-bench/     unchanged except the conformance generator           (F16)
 ```
 
-Arrows point one way: `py → env → {agent, course, physics}`,
+Arrows point one way: `py → env → {agent, course, task, physics}`,
 `agent → {course, physics}`, `physics → nothing`. **A dependency from
 `sailgym-physics` onto any of the others is a defect**, because it ends the
 "builds and tests on the host with plain `cargo test`" property that F8.1
@@ -100,12 +96,12 @@ is declarative data recorded in the episode header:
 | `Rates` | tactic and helm | none — this is F3 `Controls`, verbatim |
 | `Setpoint` | tactic only | the one shared `Helm` |
 
-Two variants. Everything above the cut — route, guidance, mark progression — is
+Rates ships first. Setpoint/Helm remains a design until an engaged/released contract and consumer are selected; do not scaffold it. Everything above the cut — route, guidance, mark progression — is
 the **environment's** job for every agent, including rule-based ones.
 
 ### F14.3 Observation layout is runtime data, not a constant
 
-The observation vector is the **ordered concatenation** of each configured
+Start with one concrete versioned layout. A selected configurable-sensor study may extend it; no speculative lidar/noise registry is required. The observation vector is the **ordered concatenation** of each configured
 sensor's outputs. Its layout is the concatenation of each sensor's
 `field_names()`, recorded in the episode header. There is no `const OBS_FIELDS`
 and no `OBS_LEN`: a ray-casting sensor's width is configurable and is therefore
@@ -117,8 +113,7 @@ not a subset of any fixed field set.
 
 Sensors receive a `WorldView` and see everything in it. The agent sees only the
 concatenated vector. There is no path from an `Agent` to a `WindField`, a
-`Route` or another boat's state. This makes "privileged information" enforceable
-by construction rather than by discipline.
+`Route` or another boat's state. This restricts direct access, but derived guidance can still leak privileged information. Validate output semantics and mark any true-wind-derived guidance explicitly.
 
 ### F14.5 Action bounds are always `[−1, 1]^k`
 
@@ -140,7 +135,7 @@ pub struct Cadence { pub period_steps: u32 }   // 10 → 20 Hz at dt = 0.005
 1. A decision happens exactly when `episode_step % period_steps == 0`, keyed off
    the **episode** step counter — never off a per-`advance`-call counter, never
    off elapsed time.
-2. Between decisions the last `Controls` is held (zero-order hold).
+2. Rate actions hold Controls between decisions. A later setpoint action holds the target while its shared adapter updates on a separately declared simulation cadence.
 3. `period_steps` is frozen at `reset` and recorded in the header.
 
 F9.7 (`advance(n) == n × advance(1)`) must continue to hold **with an agent
@@ -220,8 +215,7 @@ scored at all, is a **termination**, never a force.
 
 ## F16. Conformance, digests and the tolerance contract
 
-*Implemented by sections 02 and 03. Not blocked on V-A: `brief.md` S1 and S2 are
-not in the v1 §44 list, and v1 §45 names the vectorised backend directly.*
+*Proposed for sections 02 and 03, after 08 and 10. S1/S2 and these deltas require a recorded implementation decision; neither section is unconditionally dispatchable.*
 
 ### F16.1 Bit-identity across stacks is not available, and is not claimed
 
@@ -233,27 +227,18 @@ order-deterministic unless forced, and JAX defaults to f32.
 **No conformance test may assert equality across stacks.** What is asserted is
 a tolerance, tiered by how much error has had a chance to accumulate.
 
-### F16.2 The tolerance contract
+### F16.2 Quantity-specific tolerance contract
 
-> A second implementation agrees if its divergence from the reference is small
-> compared with the discretisation error the reference already carries.
+Conformance is implementation agreement, not real-world model validation. Record finite-input domains, units, absolute/relative bounds, near-zero handling and derivation per column. No “32 ulp relative” ambiguity: an ULP distance and a relative error are distinct metrics. An initial 32-ULP budget is a proposal for well-scaled tier-0 values, not a universal pass threshold near cancellation.
 
-"Small" is **10 %**, fixed once, here. Every tier's tolerance is derived the
-same way, and the derivation — not just the number — is written into the
-bundle's `manifest.json`.
-
-| Tier | What is compared | Tolerance source |
+| Tier | Comparison | Required evidence |
 |---|---|---|
-| **0** | pure functions at sampled inputs | No accumulation, so the convergence study says nothing about it. **32 ulp relative**, or a *measured* bound where the reference uses a non-libm kernel (F16.6) |
-| **1** | `dynamics::derivative` at sampled states | 10 % of the per-step `O(dt²)` term implied by `docs/v1/convergence.md` |
-| **2** | 1–5 s trajectories from fixed initial conditions | 10 % of the measured `dt = 0.005` error in `docs/v1/convergence.md`, per scenario and per quantity |
-| **3** | the brief §35 invariant suite, re-run against the port | each invariant's own criterion, as `tests/invariants.rs` states it |
+| 0 | Pure functions | Absolute floor near zero plus relative/ULP bounds away from zero; separately measured custom-kernel/reduction error over the tested domain |
+| 1 | Derivative components | Direct component error with derivative units; no dimensionally invalid reuse of a state-error tolerance |
+| 2 | 1–5 s trajectories | Fresh dt/dt2/dt4 reference study after 08, per scenario and state quantity; target port error below 10% of measured reference discretization error with justified numerical floors |
+| 3 | Port invariants | Each invariant's actual criterion plus branch/event tests; agreement is scoped to tested regimes |
 
-**Long trajectories are deliberately not a tier.** Near the stability boundary
-this system is strongly divergent — F11's R2 puts it close to capsize in normal
-conditions — so two implementations differing in the last bit separate
-exponentially and a 60-second comparison teaches only that floating point
-exists. Tier 3, not tier 2, is what licenses the claim "the same environment".
+RK2 local state error is O(dt³), global error O(dt²) in smooth regimes. Branch crossings need dedicated event-aware evidence. Long divergent capsize trajectories are not a pointwise oracle. A tolerance change requires a new derivation, never merely a green port test.
 
 ### F16.3 Sampling is dense at the branch points, not uniform
 
@@ -264,7 +249,7 @@ each is sampled at, around and **exactly on** the boundary:
 | Branch | The trap |
 |---|---|
 | `limit_rate` (`dynamics.rs`) | a **strict** inequality whose strictness is load-bearing and documented at its source |
-| `T = max(0, k·e + c·ė)` (`mainsheet.rs`) | the unilateral sheet; sample `e ≈ 0` and the damping-dominated case where the bracket goes negative with `e > 0` |
+| `T` with explicit slack boundary from 08 (`mainsheet.rs`) | the unilateral sheet; sample `e ≈ 0` and the damping-dominated case where the bracket goes negative with `e > 0` |
 | `delta_r_self_centre` (`dynamics.rs`) | a **three-way** `partial_cmp` including the exact-zero case; a two-way `where` is wrong at zero |
 | stall blend (`foil.rs`) | `alpha_stall ± stall_blend`, where two smooth pieces are joined |
 | `wrap_pi` (`frames.rs`) | exactly `±π`, the half-open `(−π, π]` convention, and the bit-identical in-range fast path |
@@ -290,21 +275,15 @@ Three properties are normative:
 1. **One runner per stack, consuming the same bundle — including Rust.** The
    Rust runner is not redundant: it is what catches a *stale bundle*, which is
    otherwise the failure that sends everyone hunting a phantom port bug.
-2. **Keyed by `physics_digest`.** Change a parameter, the digest changes, and a
-   stale bundle refuses rather than silently passing.
-3. **Regenerating is a gate step** (F12′ step 4). A physics change that does not
+2. **Keyed by complete bundle identity.** Parameter or equation changes invalidate it; a stale bundle refuses.
+3. **Freshness checking is a gate step** (F12′ step 4). A physics change that does not
    regenerate the bundle fails, the way `cargo fmt --check` fails.
 
-`physics_digest` is SHA-256, implemented in-crate, over the serialised
-`BoatParameters` followed by the `(path, tag, unit)` triples of
-`parameters::catalogue()`. In-crate for F9.2's reason: no dependency on an
-algorithm whose behaviour may change across versions. It uses no hash container,
-so `determinism.rs::no_hash_iteration` continues to hold.
+The bundle key must cover the model/source identity from 08, resolved parameters, integrator/dt, fixture inputs/wind modes, generator/schema and tolerance-contract versions. Reuse 10's canonical records. A parameter-only key cannot reject changed equations. Canonical-record equality is sufficient for comparisons; if a compact artifact key is needed, use an established SHA-256 implementation, not handwritten cryptography. Serialization/order is explicitly versioned.
 
-Two further digests, once F14 lands: `obs_digest` over the ordered
-`(sensor_id, version, width)` triples, and `contract_digest` over
-`(action_id, dim, cadence_steps, physics_digest)`. Comparing two runs is then a
-digest check rather than an act of faith.
+Observation identity includes ordered fields, units, bounds, normalization, sensor config/noise/privilege and versions. Action identity includes adapter/gains/engagement semantics/cadence. Experiment identity also includes initial state/controls, task/thresholds, wind/seed and outcome rules. Keep the full records beside optional digests. Unknown metadata prevents strict comparison while permitting display.
+
+Verification must reject stale records even if the directory and manifest agree with each other. Compare against the selected source/contract identity; toolchain-incompatible bit checks are explicitly inconclusive, never certified passes. Regeneration is an explicit command; the gate checks freshness without rewriting committed artifacts.
 
 ### F16.5 Parallelism
 
@@ -357,16 +336,9 @@ the rigging DOF in the port, or run that DOF in f64.
 
 ### F17.1 The F8 rule, restated
 
-**No physical equation, no physical constant and no layout is written in
-Python.** Parameters are read from the bundle or from the binding; observation
-and action spaces are built from what Rust reports. This is F8's rule with the
-same reason behind it, stated separately because Python is where the discipline
-usually collapses.
+**Binding/wrapper Python contains no physical equations or independently defined parameter/layout values.** Rust exports those contracts. The explicit exception is `python/sailgym_jax`: it is an independent verification implementation and therefore contains the equations it tests. Its kernel constants cite the Rust source; physical parameters come from the identified bundle. This exception does not extend to `python/sailgym` wrappers.
 
-It is enforced the way F7 is enforced on TypeScript: a source audit, in the
-three-tier shape of `provenance.rs::no_stray_constants`, that permits only
-structural literals (`0.0`, `1.0`, `0.5`, `2.0`) and named module constants, and
-that guards itself against becoming vacuous.
+Audit the two scopes separately with non-vacuity checks. A named constant is not automatically valid merely because it is named. Independent ports may share model mistakes; conformance remains distinct from physical validation.
 
 ### F17.2 Two independent boundaries
 
@@ -397,10 +369,27 @@ must agree.
 
 ### F17.5 Performance non-negotiables
 
-Zero-copy `numpy` in and out, writing into caller-provided arrays in the shape
+The low-level batch API uses caller-owned contiguous `numpy` buffers, writing into caller-provided arrays in the shape
 `sample_wind_grid` already establishes; the GIL **released** for the duration of
-`step_all`; and no per-step Python object allocation — a struct-of-arrays is
-returned and `info` dicts are materialised only when asked for.
+`step_all`; and avoids per-environment object churn. The public Gymnasium adapter still returns its required tuples/dicts; measure its overhead separately. Stable buffer addresses prove reuse, not absence of temporary allocations. Releasing the GIL enables Python concurrency; Rust rayon can execute internally even while the caller holds it.
 
 `obs_out: &mut [f32]` does not violate F9.5, which forbids f32 **intermediates
 in physics**. This is an output buffer, exactly like the wind grid's.
+
+## F18. Playable milestone contracts (proposed)
+
+### F18.1 Corrected reduced model — section 08
+
+Retain 13 state scalars and force-based RK2 motion. Resolve GZ peak/root/domain constraints, unintended sheet preload and positive slack tension in the shared physics modules. Record exact changed F6/F7 clauses, equation/parameter rationale, before/after evidence and a new model/source identity. Do not choose replacement coefficients by tutorial success. No new degrees of freedom or empirical certification is implied.
+
+### F18.2 Input ownership — section 09
+
+The web composes device input once into normalized Controls. Rust limits actuator rates. Release overrides sheet rate; each pointer owns one pad; lifecycle transitions clear transient commands. Actual-state gauges and rate feedback are distinct. Position-target control waits for explicit engaged/released semantics in a shared Rust adapter.
+
+### F18.3 Recording and comparison — section 10
+
+Extend the existing versioned Episode codec with the diagnostic/identity data needed for truthful display. Decode schema-1 files with unavailable fields explicit. Replay selects one recorded source for every consumer and does not recompute missing forces using current physics. Canonical identity contains model/source, parameters, initial state/controls, integrator/dt, wind/seed and applicable task/action/observation contracts. Unknown is not equal to known. Sampled inspection is not action resimulation.
+
+### F18.4 Guided tasks — section 11
+
+A small pure sailgym-task evaluator owns practice outcomes outside physics. Evaluate on physics steps; thresholds and ordered events are versioned task data. Retry restores exact conditions, not live edited defaults. Record outcomes/events and compare only compatible attempts. Later course/env work reuses these semantics. Only two attempts are retained in session memory; no persistence framework is required.

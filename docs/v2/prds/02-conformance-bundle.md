@@ -1,11 +1,15 @@
 # v2 Section 02 — The conformance bundle: generator, Rust runner, and the throughput question
 
+**Planning revision (2026-09-20):** later than playable milestone 08–11; IDs are preserved, not dispatch order. Read the revised index/brief/F18 and dependency handoffs. All required scope/normative decisions remain proposed. Compare no-change guards against this section's starting revision, not the pre-08 baseline.
+
 Source discussion: `../discussions/cross-stack.md`, §§0, 2, 3, 4.1.
 Answers §8 point **4**, and §0's "measure before you port".
 
 Read first, in order: `../../v1/00-foundations.md` in full, `../README.md`,
 `../brief.md`, `../00-foundations.md` (F12′, F16), then this PRD. The discussion
 note is background; where it and this PRD differ, **this PRD wins**.
+
+**Prerequisites:** 08 corrected model and 10 canonical identity; M-next is delivered before this follow-on. Reuse their handoffs.
 
 ## Goal
 
@@ -62,13 +66,9 @@ are F16.2 (the 10 % rule), F16.3 (branch-point sampling), F16.4 (bundle layout
 and `physics_digest`), F16.5 (rayon is permitted outside `sailgym-physics`) and
 F16.7 (modes as data).
 
-### D3 — `brief.md` S1. **Open; the human must sign.**
+### D3 — `brief.md` S1. **Open; record the implementation decision.**
 
-S1 (conformance bundle) is not in v1 §44's deferred list and v1 §45 names the
-vectorised backend directly, so `../README.md` V-A — which names the four notes
-proposing agents, courses, RL and swarm — does not reach it. **This reading is
-stated so it can be overruled.** If the human rules otherwise, this section
-stops.
+S1 and F16 remain proposed. The old interpretation that this section was automatically dispatchable is withdrawn; implement after the selected scope/deltas are recorded and the corrected baseline exists.
 
 ## The tolerance contract, stated once
 
@@ -79,9 +79,11 @@ typed by hand.
 
 | Tier | Tolerance |
 |---|---|
-| 0 | 32 ulp relative, per column. Where the reference uses the non-libm `wave` kernel (F16.6), a **measured** bound instead, computed by task 2.4 and written into the manifest |
-| 1 | 10 % of the per-step `O(dt²)` term implied by `../../v1/convergence.md` |
-| 2 | 10 % of the measured `dt = 0.005` error in `../../v1/convergence.md`, per scenario and per quantity. At the time of writing that table reads, in position: `close_hauled` 9.2e-5 m, `beam_reach_capsize` 7.9e-3 m, `gybe` 7.6e-6 m — **read them from the file, do not retype them** |
+| 0 | F16.2 absolute near-zero floor and relative/ULP bound per quantity; measured wind kernel plus reduction error over a declared input domain |
+| 1 | Component-wise derivative error, in derivative units; derive directly rather than borrowing trajectory tolerances |
+| 2 | Fresh 1–5 s dt/dt2/dt4 study on section 08's model; target 10% of measured discretization error with justified numerical floors |
+
+Historical v1 convergence values are context only, not the corrected model's acceptance values. RK2 smooth local state error is O(dt³), global error O(dt²).
 
 The manifest carries the tolerance *and its justification*, as a string, per
 tier. A number without its derivation is how a tolerance gets widened three
@@ -92,38 +94,19 @@ months later by someone who does not know what it meant.
 ### 2.1 — `physics_digest`
 
 **Owns:** `crates/sailgym-physics/src/digest.rs`,
-`crates/sailgym-physics/src/lib.rs`
+`crates/sailgym-physics/src/lib.rs`, `crates/sailgym-physics/Cargo.toml`, `Cargo.lock`
 **P-group: S**
 
-SHA-256, implemented in-crate. In-crate for F9.2's reason: a digest that changes
-because a dependency changed its algorithm is worse than no digest.
+Reuse 08/10's model and canonical identity records. A compact bundle key covers model/source, parameters, integrator/dt, generator/schema, tolerance version, fixture inputs and wind modes. Keep the full canonical record beside the key. Parameter-only identity is insufficient.
 
-```rust
-/// Hex SHA-256 over the serialised parameter catalogue. F16.4.
-pub fn physics_digest(p: &BoatParameters) -> String;
-pub fn sha256_hex(bytes: &[u8]) -> String;
-```
-
-Input, in this order and no other: `serde_json::to_string(p)?`, a `\n`, then one
-line per `ParamMeta` from `parameters::catalogue()` spelled `"{path}\t{tag}\t{unit}"`.
-`catalogue()` returns a `Vec` in source order, serde emits struct fields in
-declaration order, and `serde_json` carries `float_roundtrip`, so the input is
-canonical without any sorting step. Do not sort it — a sort is a second
-convention that can drift from the first.
+Use a standard SHA-256 implementation only if a compact key is useful; do not implement cryptography. If that requires a new dependency, task 2.1 owns the physics Cargo.toml and workspace Cargo.lock and records the dependency decision. Canonical equality remains the comparison authority.
 
 Acceptance:
 
-- `cargo test -p sailgym-physics digest` — the three NIST SHA-256 sample vectors
-  (`""`, `"abc"`, the 448-bit message) match their published digests.
-- `physics_digest` is stable across two calls and across a JSON round-trip of
-  the same `BoatParameters`.
-- Changing any one parameter through `set_path` changes the digest.
-- `cargo test -p sailgym-physics --test determinism no_hash_iteration` still
-  passes. (The implementation uses `[u32; 64]`, not a hash container.)
-- `cargo test -p sailgym-physics --test provenance no_stray_constants` still
-  passes. The round constants are `u32` and carry no decimal point, which that
-  audit does not scan; **if this turns out to be false, stop and report it — do
-  not add an `EXEMPT` entry.**
+- Identical canonical records round-trip and compare equally.
+- Changing an equation without changing parameters invalidates the bundle, as do changes to parameters, dt, generator or tolerance contract.
+- Unknown/dirty source identity is explicit and cannot certify a release bundle.
+- A compact key, if used, has standard known-answer tests; full records remain inspectable.
 
 ### 2.2 — The wind modes become readable data
 
@@ -156,20 +139,14 @@ modes reproduces `sample` bit-for-bit at 1 000 sampled `(x, y, t)`.
 **Owns:** `crates/sailgym-physics/src/stability/hydrostatics.rs`
 **P-group: A**
 
-Additive accessors for the solved coefficients `c1, c2, c3`, so the bundle can
-ship the curve **and** so `GzCurve::fit` becomes its own tier-0 case. `fit`
-solves a 3×3 system by Cramer's rule with no pivoting — deliberately, for
-determinism — which is exactly the kind of thing a port silently replaces with a
-library solve that pivots.
+Expose the representation selected by 08 as read-only, versioned data. Do not assume the corrected curve still has three coefficients or a 3×3 fit. Export enough data to evaluate GZ, derivative and integral under the identified model. This task changes no equations.
 
-Acceptance: `cargo test -p sailgym-physics stability` unchanged and green; a
-curve rebuilt from its three coefficients reproduces `gz(phi)` bit-for-bit over
-`phi ∈ [−π, π]` at 4 096 samples.
+Acceptance: rebuilding from exported data reproduces all three quantities on the same build across the supported domain, including extrema, roots and inversion boundaries. Existing 08 physics tests stay green.
 
 ### 2.4 — The generator
 
 **Owns:** `crates/sailgym-bench/src/conformance/mod.rs`,
-`crates/sailgym-bench/src/conformance/npy.rs`,
+`crates/sailgym-physics/src/testkit/npy.rs`, `crates/sailgym-physics/src/testkit.rs`,
 `crates/sailgym-bench/src/conformance/samplers.rs`,
 `crates/sailgym-bench/src/bin/gen_conformance.rs`,
 `crates/sailgym-bench/Cargo.toml`, `docs/v2/conformance.md`
@@ -178,7 +155,7 @@ curve rebuilt from its three coefficients reproduces `gz(phi)` bit-for-bit over
 `cargo run --release -p sailgym-bench --bin gen_conformance`. Enables
 `sailgym-physics/testkit`.
 
-**Format: plain `.npy`, v1.0, not the note's `.npz`.** A `.npy` file is a
+**Format: plain `.npy`, v1.0, not the note's `.npz`.** Share the bounded codec through the existing testkit surface (2.4 also owns its module declaration); do not make physics tests depend on the bench crate or duplicate the reader. Reject malformed dtype/shape/length before allocation. A `.npy` file is a
 64-byte-aligned header plus raw little-endian data — about forty lines to write
 and about thirty to read — and `np.load` opens it directly. `.npz` is a zip
 container, which would mean a zip dependency in a workspace whose entire
@@ -247,7 +224,7 @@ Acceptance:
 ### 2.5 — The committed bundle
 
 **Owns:** `conformance/`
-**P-group: B**
+**P-group: C** (after generator and runner)
 
 The generated artifact, committed. Goldens are committed for the same reason and
 at a similar cost (`tests/golden/*.json` are ~51 KB each); the 2 MB budget in 2.4
@@ -273,8 +250,8 @@ against Rust on the same build is F9's territory and must be exact.
 
 Three further assertions:
 
-1. `manifest.digest == digest::physics_digest(&BoatParameters::ilca7())`.
-2. `manifest.toolchain` is compared against `ToolchainInfo::current()`, and on a
+1. The manifest full identity equals the selected current source/model/parameter contract, not just its directory name.
+2. A toolchain mismatch makes bit-conformance **inconclusive**, not passed. The release requires the pinned toolchain. `manifest.toolchain` is compared against `ToolchainInfo::current()`, and on a
    mismatch the runner **skips with a message naming both**, exactly as
    `tests/regression.rs:84` does and for exactly R7's reason: a red suite on a
    different compiler falsely says "the physics changed", and people learn to
@@ -290,11 +267,13 @@ Acceptance:
   `no_shortcuts.rs`'s module doc records it for each of its audits: flip one
   sign in `foil.rs`, watch tier 0 go red naming the function; change one
   parameter default, watch the digest assertion go red; hand-edit one byte of
-  one `.npy`, watch that file's comparison go red. Revert all three.
+  one `.npy`, watch that file's comparison go red. Use temporary fixture/source copies for failure demonstrations, never edit and blindly revert unrelated work. Revert all three.
 
 ### 2.7 — The throughput question
 
 **Owns:** `crates/sailgym-bench/src/bin/vec_bench.rs`, `docs/v2/throughput.md`
+
+Task 2.4 owns the bench manifest and adds the benchmark dependency after the contract decision.
 **P-group: C**
 
 `cargo run --release -p sailgym-bench --bin vec_bench -- --write docs/v2/throughput.md`.
@@ -323,7 +302,7 @@ Acceptance:
 ### 2.8 — The gate, and the no-physics-changed guard
 
 **Owns:** `scripts/check.sh`, `scripts/check.ps1`, `CLAUDE.md`,
-`docs/v1/00-foundations.md`, `docs/v2/README.md`
+`docs/v2/00-foundations.md`, `docs/v2/README.md`
 **P-group: S**
 
 D1: step 4's test list gains `--test conformance`, at **both** sites in
@@ -342,8 +321,7 @@ git diff --stat crates/sailgym-physics/src/forces/ \
                 crates/sailgym-physics/src/parameters.rs
 ```
 
-It must be empty. The section touches the physics crate in three files and adds
-one; anything else is a defect.
+It must be empty. Only declared owned files may change; additional changes require an explicit ownership amendment.
 
 ## Section acceptance criteria
 
@@ -367,10 +345,10 @@ one; anything else is a defect.
 
 | # | Risk | Mitigation | Fires when |
 |---|---|---|---|
-| **RV7** | The bundle goes stale and nobody notices, which is the exact failure the section exists to prevent. | 2.6 is a gate-step-4 test comparing committed data against recomputed source, plus the digest assertion. | `--test conformance` is ever made non-blocking, or the digest check is loosened |
+| **RV7** | The bundle goes stale and nobody notices, which is the exact failure the section exists to prevent. | 2.6 is a gate-step-4 test comparing committed data against recomputed source, plus the full identity assertion. | `--test conformance` is ever made non-blocking, or the digest check is loosened |
 | **RV8** | An "additive" accessor in 2.2 perturbs a bit of `sample`. | `--test regression` and `--test wind` unchanged; the mode-round-trip assertion at 1 000 points. | any golden's worst `\|Δ\|` moves |
 | **RV9** | The committed bundle grows without bound as tiers are added. | Hard 2 MB budget asserted by the generator itself, not by review. | the generator's own size assertion fails |
-| **RV10** | `no_stray_constants` fires on the SHA-256 round constants, and someone quiets it with an `EXEMPT` entry. | 2.1 forbids that explicitly: the constants are `u32`, the audit scans floats, and if that is wrong it is escalated, not exempted. | an `EXEMPT` row is added by this section |
+| **RV10** | Artifact key ignores equation changes. | Reuse complete canonical identity and test an equation-only edit. | Parameters match but source identity differs and the bundle still passes |
 | **RV11** | Tier 2's tolerances get retyped from `convergence.md` and then drift from it. | 2.4 reads the file; the manifest carries the derivation string, not just the number. | a float from that table appears as a literal in `crates/` |
 | **RV12** | 2.7 measures the benchmark harness rather than the physics — the co-tenant-worker mistake `../../v1/performance.md` records three sections chasing. | Host block recorded; thread count swept explicitly; serial baseline in the same process; bit-identity asserted at every point. | efficiency exceeds 1.0, or the serial column disagrees with `bench` |
 
@@ -381,4 +359,4 @@ one; anything else is a defect.
 | `.npy` rather than `.npz`, so the bundle is a directory of files rather than one archive | 2.4, to avoid a zip dependency | never, unless a stack appears that cannot read `.npy` |
 | No tier-3 runner; the invariants exist only as `tests/invariants.rs` | scope | section 03 for the wind slice; a later section for the rest |
 | The bundle covers one parameter catalogue (`ilca7`) and one wind config per mode | scope, to hold the 2 MB budget | when a second catalogue is ever shipped |
-| `vec_bench` steps bare `Simulation`s, not episodes, so it cannot see the cost of observation or agent cadence | 2.7, because the answer is wanted before `sailgym-env` is designed | section 06, which re-measures on the real runner |
+| `vec_bench` steps bare `Simulation`s, not episodes, so it cannot see the cost of observation or agent cadence | 2.7, because the answer is wanted before `sailgym-env` is implemented | section 06, which re-measures on the real runner |

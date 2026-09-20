@@ -1,15 +1,17 @@
 # v2 Section 04 — `sailgym-course`: routes, marks, guidance, passage
 
+**Planning revision (2026-09-20):** later than playable milestone 08–11; IDs are preserved, not dispatch order. Read the revised index/brief/F18 and dependency handoffs. All required scope/normative decisions remain proposed. Compare no-change guards against this section's starting revision, not the pre-08 baseline.
+
 Source discussions: `../discussions/unified-agent-interface.md` §§5, 11.1;
 `../discussions/ablation-spaces.md` §2.4.
 
 > **BLOCKED.** This PRD may not be dispatched until `../brief.md` S3 (and S6, for
-> the obstacle tasks) is signed by the human, answering `../README.md` V-A. Write
+> the obstacle tasks) has a recorded implementation decision, answering `../README.md` V-A. Write
 > it, review it, do not execute it. Tasks 4.5 and 4.6 are additionally gated on
 > S6 alone and may be cut without affecting the rest of the section.
 
 Read first: `../../v1/00-foundations.md` in full, `../README.md`, `../brief.md`,
-`../00-foundations.md` (F14.1, F15), `../progress/03-handoff.md`, then this PRD.
+`../00-foundations.md` (F14.1, F15), `../progress/11-handoff.md`, then this PRD.
 
 ## Goal
 
@@ -41,7 +43,7 @@ expensive later.
 - **No Rust outside `crates/sailgym-course/`** except the workspace manifest and
   the gate scripts, both of which are `S` tasks. `git diff --name-only crates/sailgym-physics/`
   must be empty.
-- No scoring beyond progress and elapsed time. Finish rate, capsize counts and
+- Reuse 11 task outcome semantics when integrating; this crate adds geometry, not a second practice evaluator. No scoring beyond progress and elapsed time. Finish rate, capsize counts and
   control effort are evaluation concerns and belong to section 06.
 - **No collision physics, under any circumstance** (`brief.md` §3). Even if S6 is
   approved, contact is a termination reason computed by section 06, never a
@@ -54,14 +56,14 @@ expensive later.
 `../00-foundations.md` F15 in full. F15.3 is the load-bearing clause: passage is
 ordered, sided and directed, and a radius check is forbidden.
 
-### D2 — F12′ step 4′s Rust test list gains the new crate. **Open.**
+### D2 — F12′ step 3′s Rust test list gains the new crate. **Open.**
 
 A new gate step is **not** requested. `cargo test -p sailgym-course` is added to
-step 3's command as `cargo test -p sailgym-physics -p sailgym-course`, which
+step 3's command as `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course`, which
 keeps "the Rust core is correct" as one step and keeps a red step 3 meaning one
 thing. Sections 05 and 06 extend the same list rather than each adding a step.
 
-### D3 — `brief.md` S3, and S6 for tasks 4.5–4.6. **Open; the human must sign.**
+### D3 — `brief.md` S3, and S6 for tasks 4.5–4.6. **Open; record the implementation decision.**
 
 ## Passage, stated once
 
@@ -91,7 +93,7 @@ that crosses back out has not un-passed the mark — passage is monotone in
 ### 4.1 — Contracts: the crate, the types, the workspace
 
 **Owns:** `crates/sailgym-course/Cargo.toml`, `crates/sailgym-course/src/lib.rs`,
-`crates/sailgym-course/src/route.rs`, `Cargo.toml`
+`crates/sailgym-course/src/route.rs`, `Cargo.toml`, `Cargo.lock`
 **P-group: S**
 
 ```rust
@@ -195,9 +197,7 @@ Analytic against both primitives. Iterates a `Vec` in **index order**, never a
 set (F9.3) — determinism is the reason, and a `HashSet` here would be invisible
 until a trajectory diverged on a different machine.
 
-Built now, unused until a sensor wants it, because the unification worth
-designing for is that **when swarm arrives, other boats are just obstacles**. A
-separate boat-detection sensor is the thing not to build.
+Do not build this unused. Tasks 4.5–4.6 remain deferred unless S6 selects a concrete obstacle task and sensor consumer. Other boats are not automatically obstacles in a non-interacting ghost race.
 
 Acceptance: `cargo test -p sailgym-course raycast` — ranges match a closed-form
 reference at 10⁴ sampled `(origin, direction)`; a ray exactly tangent to a circle
@@ -207,19 +207,19 @@ runs, asserted by hashing the returned range vector.
 ### 4.7 — The gate
 
 **Owns:** `scripts/check.sh`, `scripts/check.ps1`, `CLAUDE.md`,
-`docs/v1/00-foundations.md`, `docs/v2/README.md`
+`docs/v2/00-foundations.md`, `docs/v2/README.md`
 **P-group: S**
 
-D2: step 3 becomes `cargo test -p sailgym-physics -p sailgym-course`. Both sites
+D2: step 3 becomes `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course`. Both sites
 in `check.sh`, the `$Steps` array in `check.ps1`, the `CLAUDE.md` table, the
 chain in `docs/v2/README.md`, F12. **Step count does not change**, so
-`[ValidateRange(1, 11)]` is untouched.
+the implemented ValidateRange is untouched: nine before 03, eleven after 03. This section has no Python/JAX dependency.
 
 Acceptance: `scripts/check.sh 3` runs both crates' tests; `scripts/check.sh` green.
 
 ## Section acceptance criteria
 
-1. `scripts/check.sh` green, eleven steps.
+1. `scripts/check.sh` green with the currently implemented steps (nine before 03, eleven afterward).
 2. `cargo tree -p sailgym-physics` does not mention `sailgym-course` (F14.1).
 3. `git diff --name-only crates/sailgym-physics/` is empty.
 4. The corner-cut regression in 4.2 and the mirror assertion in 4.3 each

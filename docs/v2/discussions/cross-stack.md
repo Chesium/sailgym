@@ -1,5 +1,18 @@
 # Gymnasium, and a JAX/Warp second stack — design suggestion
 
+## Current recommendation — 2026-09-20
+
+The detailed PRDs from commit `6358c92` retain IDs 02–07, but [delivery order](../README.md) puts 08–11 first. Freeze fixtures after physics corrections and reuse section 10's identity. Section 03 is a wind-only JAX pilot, not a complete sailing backend.
+
+- v1 measured single-core throughput; the 32-core calculation below is an estimate. Measure batching and real observation/environment costs before selecting a full GPU port.
+- Independent agreement detects discrepancies, not shared model errors or real-world accuracy. Do not freeze known GZ/preload/slack defects into a reference.
+- RK2 local state error is O(dt³), global trajectory error O(dt²) in smooth regimes. Derivative error has different units. Use F16.2's quantity-specific tolerances and near-zero policy.
+- JAX supports `lax.cond`, `lax.while_loop` and `lax.scan`; every branch need not become `where`. Inactive arithmetic and batching still require boundary tests. [Official documentation](https://docs.jax.dev/en/latest/control-flow.html).
+- Identity includes source/model, parameters, dt/integrator, initial state, wind/seed and task/action/observation contracts. Parameter-only hashes miss equation changes.
+- Binding code contains no physics; an explicitly scoped verification backend necessarily does. Use canonical records or a standard hash implementation, not handwritten SHA-256.
+
+This update and revised F16/F17 supersede conflicting research recommendations below.
+
 Third note in the series, after `unified-agent-interface.md` and
 `ablation-spaces.md`. brief §45 names both "Gymnasium/PettingZoo-style RL
 environment" and "vectorized alternate physics backend → JAX / Warp

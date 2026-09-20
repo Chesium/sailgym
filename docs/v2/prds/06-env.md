@@ -1,9 +1,11 @@
 # v2 Section 06 — `sailgym-env`: the episode runner, the autoreset convention, and `VecEnv`
 
+**Planning revision (2026-09-20):** later than playable milestone 08–11; IDs are preserved, not dispatch order. Read the revised index/brief/F18 and dependency handoffs. All required scope/normative decisions remain proposed. Compare no-change guards against this section's starting revision, not the pre-08 baseline.
+
 Source discussions: `../discussions/cross-stack.md` §§0, 1.4, 6, 8 points **1**
 and **3**; `../discussions/unified-agent-interface.md` §§8, 9.
 
-> **BLOCKED.** Not dispatchable until `../brief.md` S4 and S5 are signed,
+> **BLOCKED.** Not dispatchable until `../brief.md` S4 has a recorded implementation decision,
 > answering `../README.md` V-A.
 
 Read first: `../../v1/00-foundations.md` in full, `../README.md`, `../brief.md`,
@@ -25,25 +27,15 @@ the vectorised path cannot see.
 
 ## Why this shape
 
-**Plural from day one.** `sailgym-env` holds `Vec<BoatRuntime>` with N = 1 as
-the ordinary case; `Sim` in `sailgym-wasm` stays exactly the single-boat object
-it is. Adding a fleet export later is then additive. Getting this backwards — a
-single-boat env that a `Fleet` has to work around — is the expensive mistake,
-and it is expensive in exactly the place that is hardest to refactor.
+**One independent episode first, VecEnv batches episodes.** Each episode owns its wind/seed, clock, outcome and reset state. An independent batch is not a shared-clock fleet. Build a live multi-boat episode only when S5 and its product need are selected; recorded ghosts do not need it.
 
-**One environment, many boats.** Wind field, clock and seed live in the episode,
-not per boat. The physics is already shaped for this: wind is a field sampled at
-a position, so N non-interacting boats in one field is nearly free.
-
-**Terminations are masks, not early exits**, because that is what the vectorised
-path and every on-policy algorithm want, and because building it the other way
-means building it twice.
+Distinguish terminated and truncated in every batch result, retain final observations and define autoreset mode explicitly. A combined done mask may be derived, never replace those fields.
 
 ## What this section does **not** do
 
 - No Python. Section 07.
 - **No boat-to-boat interaction of any kind** — no collisions, no right-of-way,
-  no wind shadow (`brief.md` §3). N boats sample one field independently. If
+  no wind shadow (`brief.md` §3). Independent episodes can use identical wind configurations/seeds but own their reset state. If
   shadowing is ever wanted, the seam is a `WindField` decorator, not a force
   term, and it would take the parallel path back to a fixed index order.
 - No reward function beyond what evaluation needs. A reward is an experiment
@@ -63,14 +55,11 @@ autoreset convention in Rust.
 
 ### D2 — F12′ step 3 gains `-p sailgym-env`. **Open.** As section 04's D2.
 
-### D3 — `brief.md` S4, S5. **Open; the human must sign.**
+### D3 — `brief.md` S4. **Open; record the implementation decision.**
 
 ## The autoreset convention, stated once
 
-Gymnasium's vector API and the JAX-native environment ecosystem have
-historically differed over whether the reset observation appears on the **same**
-step that reports `done` or the **next** one, and Gymnasium 1.0 made the mode
-explicit and configurable.
+Vector APIs differ over whether reset observations appear on the same or next step and how final observations are returned. The implementation must verify the selected pinned API, not assume a historical version behavior.
 
 **Check the convention of the exact version pinned in `uv.lock`. Do not assume
 it, and do not take it from this document.** Then:
@@ -93,7 +82,7 @@ keep tuning.
 ### 6.1 — Contracts: the crate, `Outcome`, the episode header
 
 **Owns:** `crates/sailgym-env/Cargo.toml`, `crates/sailgym-env/src/lib.rs`,
-`crates/sailgym-env/src/outcome.rs`, `Cargo.toml`
+`crates/sailgym-env/src/outcome.rs`, `crates/sailgym-env/src/recording.rs`, `Cargo.toml`, `Cargo.lock`
 **P-group: S**
 
 ```rust
@@ -109,25 +98,18 @@ An enum, not a bool. Gymnasium distinguishes task termination from time-limit
 truncation, and conflating them biases value bootstrapping — silently, in the
 returns, which is where this section's whole risk lives.
 
-The header **extends** `recording::EpisodeHeader` rather than inventing a
-parallel structure. It already carries `scenario`, `parameters`, `dt`, `log_hz`
-and `ToolchainInfo`; it gains `agent_spec`, `action_space`, `obs_digest`,
-`cadence`, `route`, `autoreset_mode`, and `physics_digest` from section 02.
+Reuse section 10's complete identity and section 11's task outcomes; do not duplicate their semantics. The env crate owns a versioned research envelope around the existing recorded Episode, adding agent/action/observation/cadence/route/autoreset metadata and a complete decision log. It does not mutate physics recording types from a task without ownership.
 
-`EPISODE_SCHEMA_VERSION` bumps from 1 to 2. The existing loader rejects unknown
-versions, so this is a real bump with a real migration, not a free field.
+Do not assume the current schema is still 1 or automatically bump it to 2. Preserve section 10's legacy-viewing policy; version the research envelope independently and validate the nested recording through the existing codec. The research envelope lives in the recording module owned by 6.1.
 
-Acceptance: `cargo test -p sailgym-env outcome`; header JSON round-trips; a
-version-1 episode loads with a clear message naming both versions, or is
-explicitly rejected — whichever the handoff argues for, but not silently
-accepted.
+Acceptance: nested recording and research metadata round-trip; known legacy recordings remain inspectable and cannot acquire fabricated agent metadata. Incompatible identities refuse action-resimulation comparisons.
 
 ### 6.2 — The episode runner
 
 **Owns:** `crates/sailgym-env/src/episode.rs`
 **P-group: A**
 
-`Vec<BoatRuntime>` with N = 1 ordinary. `reset(seed: u64)`, `step()`, cadence
+A single independent Episode; VecEnv in 6.5 owns an ordered Vec of Episodes. `reset(seed: u64)`, `step()`, cadence
 from F14.6, zero-order hold between decisions, `Outcome` evaluated every step.
 
 The scenario, if randomised per episode, derives from the same `u64` through
@@ -169,13 +151,12 @@ real gap for RL, where the action sequence **is** the artifact. Since decisions
 are at a fixed cadence with zero-order hold, `(step_index, action)` pairs are a
 complete and small record.
 
-A `decisions` array **alongside** `frames` in `Episode`. The sampled frames stay
+A `decisions` array in the research envelope alongside the nested recorded Episode. The sampled frames stay
 for inspection. Do not try to make one array serve both; they have different
 rates, different consumers and different lifetimes.
 
 Acceptance: `cargo test -p sailgym-env decision_log` — replaying the logged
-decisions reproduces the episode bit-for-bit; the decision count equals
-`steps / period_steps + 1`; the log survives a JSON round-trip.
+decisions reproduces the episode bit-for-bit; decision indices are exactly those k with `0 <= k < executed_steps` and `k % period_steps == 0` (zero decisions for zero steps); the log survives a JSON round-trip.
 
 ### 6.5 — `VecEnv`
 
@@ -183,13 +164,13 @@ decisions reproduces the episode bit-for-bit; the decision count equals
 **P-group: B**
 
 ```rust
-fn step_all(&mut self, actions: &[f64], obs_out: &mut [f32], done_out: &mut [u8]);
+fn step_all(&mut self, actions: &[f64], obs_out: &mut [f32],
+            rewards: &mut [f64], terminated: &mut [u8], truncated: &mut [u8]);
+// Also expose final observations and validity masks for the chosen autoreset mode.
 ```
 
 Flat caller-provided buffers, no per-env allocation — the pattern
-`sample_wind_grid` already proves. Structure-of-arrays throughout, in the F8.3
-order, so the layout is the same constant everywhere and a transposed batch is
-impossible. rayon across envs (F16.5), autoreset in-graph, terminations as masks.
+`sample_wind_grid` already proves. Batch shapes and strides are validated against the runtime observation layout. F8.3 is the physical state order, not the configurable observation order. rayon across envs (F16.5), explicit per-episode autoreset, separate termination/truncation masks.
 
 `obs_out: &mut [f32]` does **not** violate F9.5, which forbids f32
 *intermediates in physics*. This is an output buffer, exactly like the wind
@@ -241,10 +222,10 @@ scripted episode with a hand-checked expected value.
 ### 6.8 — The gate
 
 **Owns:** `scripts/check.sh`, `scripts/check.ps1`, `CLAUDE.md`,
-`docs/v1/00-foundations.md`, `docs/v2/README.md`
+`docs/v2/00-foundations.md`, `docs/v2/README.md`
 **P-group: S**
 
-D2. Step count unchanged.
+D2. Add sailgym-env to the existing step-3 crate list, retaining physics, task, course and agent coverage. Step count unchanged.
 
 ## Section acceptance criteria
 
@@ -271,8 +252,8 @@ D2. Step count unchanged.
 | **RV34** | Truncation and termination are conflated, biasing value bootstrapping. | `Outcome` is an enum (6.1); Gymnasium's `TimeLimit` is not used (F17.4). | a `bool done` appears in any signature |
 | **RV35** | rayon changes a bit, and the parallel path is not the environment the serial path describes. | 6.5's `to_bits()` assertion at four N and every thread count — the argument is not trusted, the test is. | the bit-identity test is relaxed to a tolerance |
 | **RV36** | The capsize accumulator is recomputed rather than carried, so capsize never fires under `step_all`. | F6.10; 6.5's dedicated assertion, which is the only test that would notice. | an env capsizes at a different step under `step_all` |
-| **RV37** | `sailgym-env` is built single-boat and a fleet has to work around it. | `Vec<BoatRuntime>` from day one; 6.5 asserts N = 1 equals a single `Episode`. | `BoatRuntime` is not behind a `Vec` |
-| **RV38** | Wind, clock or seed drift into per-boat state, making N boats N environments. | 6.2 puts them in the episode; the fixed-seed cross-process test would catch a per-boat seed. | any of the three appears in `BoatRuntime` |
+| **RV37** | `sailgym-env` is built single-boat and a fleet has to work around it. | one Episode per VecEnv slot; 6.5 asserts N = 1 equals a single `Episode`. | batching changes single-episode semantics |
+| **RV38** | Independent episode resets accidentally share a clock or seed. | 6.2 gives every episode its own state; reset one slot and assert others are unchanged. | resetting one slot changes another |
 | **RV39** | The decision log and the sampled frames are merged "to simplify", and the action sequence stops being complete. | 6.4 states they are separate and why. | `frames` gains an action column |
 | **RV40** | `rayon` reaches `sailgym-physics` through a transitive dependency. | Criterion 5's grep over every `Cargo.toml`, plus `cargo tree`. | the grep finds it |
 

@@ -1,11 +1,13 @@
 # v2 Section 05 — `sailgym-agent`: sensors, actions, cadence, helm
 
+**Planning revision (2026-09-20):** later than playable milestone 08–11; IDs are preserved, not dispatch order. Read the revised index/brief/F18 and dependency handoffs. All required scope/normative decisions remain proposed. Compare no-change guards against this section's starting revision, not the pre-08 baseline.
+
 Source discussions: `../discussions/unified-agent-interface.md` §§2, 3, 4;
 `../discussions/ablation-spaces.md` §§1, 2, 3.
 Prepares `../discussions/cross-stack.md` §1.2, which builds the Gymnasium spaces
 from what this section reports.
 
-> **BLOCKED.** Not dispatchable until `../brief.md` S3 and S4 are signed,
+> **BLOCKED.** Not dispatchable until `../brief.md` S3 has a recorded implementation decision,
 > answering `../README.md` V-A.
 
 Read first: `../../v1/00-foundations.md` in full, `../README.md`, `../brief.md`,
@@ -17,9 +19,7 @@ One interface that the web autopilot picker, a rule sailor, a polar racer and an
 RL policy all plug into, so that a difference between two of them is a
 difference in tactics rather than in how each happened to reimplement the helm.
 
-The section is done when **`manual` — the human — goes through the trait and the
-gate is still green.** That is the load-bearing criterion: if the human needs a
-bypass, the interface is wrong, and this is the cheapest moment to find out.
+The section is done when externally supplied manual actions and agent decisions share validated action semantics, cadence and logging. A human is an external action source, not a policy with access to hidden episode state.
 
 ## Why this shape
 
@@ -29,7 +29,7 @@ Then nothing is comparable and "which layer was the policy substituted at"
 becomes archaeology. F14.2 makes the substitution point an enumerated, logged
 value with exactly two variants.
 
-Two further decisions, both taken against the companion note and in favour of
+Begin with one concrete, versioned observation layout for the rate-only baseline. The configurable design is enabled only for an actual study; do not create unused sensor/adapter implementations. Two design decisions for that extension, in favour of
 `ablation-spaces.md`:
 
 - **A sensor list, not an `ObsMask` over a fixed field set** (F14.3). The
@@ -43,15 +43,14 @@ Two further decisions, both taken against the companion note and in favour of
 
 ## What this section does **not** do
 
-- No autopilot. `manual` is the only `Agent` implementation that ships here. The
+- No autopilot. The manual external source and a test stub exercise the shared actuation path. The
   rule sailor, the polar racer and the polar tables are later sections.
 - No episode, no `Outcome`, no `VecEnv`. Section 06.
 - No WASM surface, no picker UI. F8.2 enumerates the entire WASM API and no task
   here owns `sailgym-wasm`.
 - **No new state variables.** `STATE_LEN = 13` and the F8.3 order are normative
   and untouched. The `Actuation` trait is deliberately shaped so a future
-  second-order actuator adds a *parallel* actuator state rather than widening
-  `BoatState` — but that model is not built here (`ablation-spaces.md` §0 tier 2).
+  second-order actuator adds explicitly versioned actuator state recorded alongside initial state rather than silently widening `BoatState` — but that model is not built here (`ablation-spaces.md` §0 tier 2).
 - No lidar, no wind probe, no noise models. Listed in 5.3 as the extension
   points they are; built later.
 - No physical coefficient is added or changed. Controller and adapter gains are
@@ -73,7 +72,7 @@ is what lets a jittery agent be added without shifting the wind field by a bit.
 
 ### D3 — F12′ step 3 gains `-p sailgym-agent`. **Open.** As section 04's D2.
 
-### D4 — `brief.md` S3, S4. **Open; the human must sign.**
+### D4 — `brief.md` S3. **Open; record the implementation decision.**
 
 ## The three determinism traps, stated once
 
@@ -87,7 +86,7 @@ steps old, so the observation would depend on how the caller happened to chunk
 its calls — and F9.7 would break in the one place nobody tests. F14.7 requires
 `observe` to be pure in its arguments, and any sensor needing accelerations
 calls `forces::evaluate` itself at the decision instant. At 20 Hz over 200 Hz
-physics that is one extra evaluation per ten steps, about 10 % on top of RK2's
+physics that is one extra evaluation per ten steps, about 5 % in force-evaluation count on top of RK2's
 two per step.
 
 **2. Cadence keys off the episode step counter.** Not off a per-`advance`
@@ -106,10 +105,10 @@ deterministic environment stops being reproducible.
 
 **Owns:** `crates/sailgym-agent/Cargo.toml`, `crates/sailgym-agent/src/lib.rs`,
 `crates/sailgym-agent/src/spec.rs`, `crates/sailgym-physics/src/rng.rs`,
-`Cargo.toml`
+`Cargo.toml`, `Cargo.lock`
 **P-group: S**
 
-`Action`, `ActionSpace`, `Setpoint`, `AgentSpec`, `Cadence`, and the `Agent`
+`Action`, `ActionSpace`, `AgentSpec`, `Cadence`, and the `Agent`
 trait — object-safe, so `Box<dyn Agent>` works and the registry is a `Vec`, not
 a `HashMap` (F9.3).
 
@@ -161,13 +160,13 @@ the task:
 
 | id | width | note |
 |---|---|---|
-| `imu` | 6 | `p`, `r`, `φ`, body `ax`, `ay`, heading. **No velocity, no position.** Calls `forces::evaluate` itself — trap 1 |
+| `imu` | 5 | `p`, `r`, `φ`, body `ax`, `ay` (width 5; no absolute heading). **No velocity, no position.** Calls `forces::evaluate` itself — trap 1 |
 | `apparent_wind` | 2 | AWA, AWS at the masthead. This is what a boat actually measures |
 | `rig_state` | 4 | `β`, `β̇`, `L`, normalised sheet slack |
 | `actuator_state` | 2 | `δr` and the rate command in force — the inner loop is part of the plant, so a policy is lost without it |
 | `guidance` | 5 | from `sailgym-course`: cross-track, bearing to target relative to heading, distance, leg bearing vs. wind, rounding side |
 
-**No absolute `x`, `y`, `psi` in any non-privileged sensor.** A policy that
+**No absolute `x`, `y`, `psi` in the policy observation.** Sensors may read state to derive body-relative quantities; a source-access grep alone cannot establish absence of privileged information. Guidance derived from true wind must be marked privileged or use sensed estimates. A policy that
 learns the course geometry by absolute position has learned the course, not
 sailing.
 
@@ -185,8 +184,7 @@ Acceptance: `cargo test -p sailgym-agent sensor::` — each sensor's `field_name
 length equals `width`; `imu` uses a **fresh** `forces::evaluate` and not
 `Simulation::forces`, asserted by a source grep in the shape of
 `no_shortcuts.rs`; no sensor's output depends on `advance` chunking, asserted
-numerically; a grep asserts no non-privileged sensor reads `st.x`, `st.y` or
-`st.psi`.
+numerically; translation/rotation tests verify declared output semantics, and the emitted field layout contains no undeclared absolute coordinates/heading. Test guidance privilege separately.
 
 ### 5.4 — The observation, and `obs_digest`
 
@@ -195,8 +193,7 @@ numerically; a grep asserts no non-privileged sensor reads `st.x`, `st.y` or
 
 The ordered concatenation, `observe(...)` pure in its arguments (F14.7), the
 layout emitted as data, and `obs_digest` over the ordered
-`(sensor_id, version, width)` triples — reusing `digest::sha256_hex` from
-section 02 rather than adding a second hash.
+field records including IDs/versions, units, bounds, normalization, noise and privilege, using section 10 canonical identity. A compact hash is optional; do not introduce another hash implementation.
 
 Acceptance: `cargo test -p sailgym-agent observation` — layout length equals the
 sum of widths; the layout is a `Vec<String>`, not a constant; `obs_digest` is
@@ -236,13 +233,7 @@ not in how well each compensated for rudder self-centring.
 
 Its gains are agent parameters (F14.9) and are tuned freely.
 
-`delta_r_self_centre = true` is the F7 default and the helm must hold a nonzero
-command just to stand still. That is the plant, and the helm's test asserts
-steady-state tracking **against** it rather than around it.
-
-Acceptance: `cargo test -p sailgym-agent helm` — steady-state heading error below
-a stated numeric bound with `delta_r_self_centre` **on**, from at least eight
-seeded initial headings; the bound is a number in the test, not a comment.
+Do not implement a position servo by requiring a tiny nonzero command at equilibrium. Zero currently means released/self-centering, so engaged hold needs an explicit Rust contract first. **Task 5.6 is deferred** until that delta and a concrete setpoint consumer are selected; the rate-only section can finish without it. No placeholder Helm implementation ships. Gains and tracking bounds then become versioned adapter configuration, and feedback runs every physics step or a declared adapter cadence distinct from policy decisions.
 
 ### 5.7 — `manual`, and the F9.7 identity with an agent attached
 
@@ -250,9 +241,7 @@ seeded initial headings; the bound is a number in the test, not a comment.
 `crates/sailgym-agent/tests/determinism.rs`
 **P-group: S**
 
-The section's contract task. `manual` reads held controls out of the episode
-context and returns `Action::Rates`, so there is no "agent attached / not
-attached" branch anywhere and no second code path for the case exercised most.
+The section's contract task. An external action source receives normalized manual Controls through a setter/step argument. It has no access to browser held keys or hidden EpisodeCtx. Route both external and policy actions through the same validation/adapter/logging path; selecting their source is legitimate, not a forbidden branch.
 
 The tests:
 
@@ -269,17 +258,16 @@ cadence off a per-call counter, and reverted.
 ### 5.8 — The gate
 
 **Owns:** `scripts/check.sh`, `scripts/check.ps1`, `CLAUDE.md`,
-`docs/v1/00-foundations.md`, `docs/v2/README.md`
+`docs/v2/00-foundations.md`, `docs/v2/README.md`
 **P-group: S**
 
-D3: step 3 becomes `cargo test -p sailgym-physics -p sailgym-course -p sailgym-agent`.
+D3: step 3 becomes `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent`.
 Step count unchanged.
 
 ## Section acceptance criteria
 
-1. `scripts/check.sh` green, eleven steps.
-2. **`manual` goes through the trait and nothing bypasses it** — no `if agent.is_some()`
-   anywhere in the repository, asserted by grep.
+1. `scripts/check.sh` green with the current nine/eleven-step gate, retaining sailgym-task coverage.
+2. **External manual and agent actions share the validated actuation path**, proven by equal resulting trajectories; no source-pattern ban replaces this behavioral test.
 3. `rate` reproduces a golden trajectory bit-for-bit (5.5).
 4. F9.7 holds with an agent attached, and the test was demonstrated able to fail.
 5. `cargo tree -p sailgym-physics` mentions no v2 crate.
@@ -293,13 +281,13 @@ Step count unchanged.
 
 | # | Risk | Mitigation | Fires when |
 |---|---|---|---|
-| **RV25** | The observation is built from `Diagnostics`, and F9.7 dies silently. | F14.7; 5.3's source grep; 5.7's chunking test. | `ForceBreakdown` or `Diagnostics` is named anywhere in `sailgym-agent` |
+| **RV25** | The observation is built from `Diagnostics`, and F9.7 dies silently. | F14.7; 5.3's source grep; 5.7's chunking test. | an observation reads stale cached force data |
 | **RV26** | Cadence keys off a per-`advance` counter and `advance(n) ≠ n × advance(1)`. | 5.7's chunking test over six chunkings, demonstrated able to fail. | any cadence test uses a single chunking |
-| **RV27** | `manual` needs a bypass, and the interface is wrong — discovered after three controllers exist. | It is the section's contract task and criterion 2. | criterion 2's grep finds a branch |
+| **RV27** | External/manual actions acquire different semantics from policies. | 5.7 and criterion 2 compare equal actions through both sources. | Equal actions produce different controls or trajectories |
 | **RV28** | An agent gain gets written into `parameters.rs` because it "felt physical". | F14.9; criterion 7's grep; `--test provenance` is unchanged and still gates. | any new field appears in `parameters.rs` in this section |
 | **RV29** | A sensor version is not bumped after a field reorder, and two incomparable runs compare cleanly. | 5.3's rule; 5.4's digest test asserts order changes the digest. | `obs_digest` is unchanged across a reorder |
 | **RV30** | `true_wind` is added as an ordinary sensor, leaking a velocity estimate to an IMU-only arm. | Excluded from the suite here, with the reason stated; when added it is privileged or derived. | a `true_wind` sensor ships unmarked |
-| **RV31** | Absolute position reaches a policy, which then learns the course. | 5.3's grep for `st.x`, `st.y`, `st.psi` in non-privileged sensors. | the grep finds one |
+| **RV31** | Absolute position reaches a policy, which then learns the course. | 5.3 output-semantic tests and explicit guidance privilege. | an undeclared absolute field or privileged derivation reaches the policy |
 | **RV32** | The `rate` adapter perturbs a bit and every committed golden silently becomes wrong. | 5.5's bit-identity test is a **stop condition**, not a warning. | the golden test needs a tolerance |
 
 ## Deliberate debts, tracked
@@ -310,4 +298,4 @@ Step count unchanged.
 | Only five sensors; no `wind_probe`, `lidar2d`, `polar_prior`, `layline_prior`, `speed_log` | scope | the observation ablation section |
 | No noise, bias, latency or dropout models | scope; `NoiseModel` is designed for in F14.8's substream scheme but not built | the sensor-quality ablation |
 | No `ActuatorModel` / parallel actuator state; a force-controlled tiller has no CP-offset model to push against | `ablation-spaces.md` §0 tier 2 — this is a physics milestone with an F5 amendment, not an adapter | only if the ablation results justify it |
-| `Helm` gains have no tuned defaults beyond meeting 5.6's bound | 5.6 | the rule-sailor section, which is the first thing that stresses them |
+| `Helm` and position tracking are deferred pending engagement semantics | 5.6 deferred | the rule-sailor section, which is the first thing that stresses them |

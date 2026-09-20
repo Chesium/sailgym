@@ -1,5 +1,13 @@
 # Ablating action and observation spaces — design suggestion
 
+## Current recommendation — 2026-09-20
+
+This is a later research study, not M-next scope. Ship corrected physics, usable rate controls, truthful replay and three practice tasks first. Start an ablation with rate actions and one versioned sensor layout, then change one variable at a time.
+
+Force-controlled tiller/sheet actions require explicit physical or actuator state, equations, recorded initial conditions and convergence checks. They are not differently scaled Controls adapters. Position targets need engaged/released semantics because zero rudder rate currently self-centres; feedback must run on simulation cadence.
+
+Record units, bounds, normalization, noise/bias/latency/dropout, privilege, gains and cadence in experiment identity. Runtime layout replaces fixed layout when configurable sensors land. Derived guidance may leak true wind even when coordinates are hidden. Lidar, terrain and priors wait for a concrete study; see [deferred features](deferred-features.md).
+
 Extends `unified-agent-interface.md`. That note fixed *where* a policy cuts into
 the control stack; this one is about making the cut itself a **swept
 experimental variable**, across action spaces (rate / angle / force) and sensor

@@ -1,5 +1,7 @@
 # v2 Section 03 — Python, and `wind.sample` in JAX
 
+**Planning revision (2026-09-20):** later than playable milestone 08–11; IDs are preserved, not dispatch order. Read the revised index/brief/F18 and dependency handoffs. All required scope/normative decisions remain proposed. Compare no-change guards against this section's starting revision, not the pre-08 baseline.
+
 Source discussion: `../discussions/cross-stack.md`, §§1.1, 2, 3, 4.1, 4.2, 4.3, 5.
 Answers §8 point **5**.
 
@@ -32,8 +34,7 @@ and eight branch points.
 - No `derivative`, no integrator, no forces, no trajectories. Tiers 1 and 2 of
   the bundle are consumed by a later section; this one consumes tier 0 and the
   wind slice of tier 3.
-- No Warp. No f32 training path. No training loop, no policy, no Gymnasium — all
-  of that is blocked on V-A and is sections 04–07.
+- No Warp. No f32 training path. No training loop, no policy, no Gymnasium — the environment/binding are later 04–07; training and full ports have no implementation PRD yet.
 - **No change to any Rust file.** `git diff --name-only crates/` must be empty at
   the end of the section; acceptance criterion 6 asserts it. If the port needs
   something from Rust that section 02 did not export, **stop and report it** —
@@ -70,7 +71,7 @@ accumulates in a fixed two-slot pairwise order required by F9.4. F16.6 requires
 a port to ship **two arms** and to report the divergence between them as a
 number.
 
-### D4 — `brief.md` S2. **Open; the human must sign.** Same reading as section 02's D3.
+### D4 — `brief.md` S2. **Open; record the implementation decision.** After 02 and the recorded S2/F16/F17 decision; no automatic dispatch exception.
 
 ## The two arms, stated once
 
@@ -79,7 +80,7 @@ left to a task.
 
 | Arm | Kernel | Reduction | Held to |
 |---|---|---|---|
-| `wave_exact` | the Cody–Waite three-way argument reduction and the polynomial of `wind.rs`, transcribed | the two-slot pairwise accumulation of `sample_inner`, transcribed | tier 0's 32 ulp |
+| `wave_exact` | the Cody–Waite three-way argument reduction and the polynomial of `wind.rs`, transcribed | the two-slot pairwise accumulation of `sample_inner`, transcribed | tier 0's recorded per-column bound |
 | `wave_cos` | `jnp.cos` | whatever XLA's reduction does | the **measured** bound section 02 wrote into the manifest |
 
 Both arms read the same mode table and the same parameters. Neither may be
@@ -92,8 +93,7 @@ Why both, rather than either alone:
   unit slip and every stratification mistake — the R3 defect class — but it
   cannot distinguish a correct port from one that is wrong in the sixteenth
   digit, and "the port agrees to 1e-13" would then be an untestable claim.
-- `wave_exact` alone is the arm nobody will use in production, because it is
-  slower and will not fuse.
+- `wave_exact` alone is the arm nobody will use in production, until its measured performance and error justify that choice; neither speed nor lack of fusion is assumed.
 - Together they give the thing §5 asks for on f32 versus f64, one section early
   and on a much simpler function: **a measured number for how much the
   convenient choice costs**, rather than an assumption that it costs nothing.
@@ -124,8 +124,7 @@ accident would produce a number that looks like a tolerance failure and is
 actually a configuration failure, and that is a day lost.
 
 Acceptance: `uv sync --frozen` succeeds from a clean checkout;
-`uv run python -c "import jax; assert jax.config.jax_enable_x64"` under
-`conftest`'s import; `uv run ruff check python` and
+`uv run pytest python/tests/test_bundle.py` asserts x64 after conftest initialization (a standalone Python process does not import pytest conftest); `uv run ruff check python` and
 `uv run ruff format --check python` both clean.
 
 ### 3.2 — The bundle loader
@@ -147,7 +146,7 @@ bundle.modes()                         # the wind mode table
 Three behaviours are the point:
 
 1. **Refuses on a digest mismatch** (F16.4.2) — the manifest's `digest` field
-   must equal its directory name, and the loader raises rather than warning. A
+   must equal its directory name AND the selected expected full model/contract identity; the loader takes that expected identity explicitly and raises rather than warning. A
    stale bundle that silently passes is worse than no bundle.
 2. **Columns are addressed by name**, never by index. The manifest's column
    names are the contract; a port that reads column 3 is one insertion away from
@@ -179,9 +178,7 @@ There is no PCG32 here, no stratification, no Fisher–Yates shuffle, and no
 `seed` argument — F16.7. If a reviewer finds a seed in this file, the port is
 wrong in a way no tolerance will catch.
 
-`sample_grid` exists because F6.1 requires it to produce **bit-identical**
-values to `sample` at the same points; the port inherits that requirement and
-3.5 asserts it.
+`sample_grid` must agree with point sampling under the manifest tolerance on each JAX backend. Rust F6.1 bit identity remains the Rust contract; do not promise it under XLA transformations.
 
 Transcription rules for `wave_exact`, because this is the file where a port most
 easily becomes a paraphrase:
@@ -189,8 +186,7 @@ easily becomes a paraphrase:
 - The three-way Cody–Waite reduction constants, the fold onto `[0, π/2]`, the
   `clamp`, and the polynomial's Estrin grouping are transcribed **structurally**,
   not re-derived. A mathematically equivalent regrouping is not equivalent in
-  floating point, and reproducing the reference bit pattern is the entire
-  purpose of this arm.
+  floating point, and preserving operation structure isolates kernel/reduction differences; XLA may still fuse arithmetic, so cross-stack bit identity is not promised.
 - The two-slot pairwise accumulation of `sample_inner` is reproduced including
   the odd-`K` tail, and including the empty-modes early return that avoids
   `base + 0.0` negative-zero drift.
@@ -203,19 +199,18 @@ on the same mistake.
 
 ### 3.4 — Tier 0
 
-**Owns:** `python/tests/test_wind_tier0.py`
+**Owns:** `python/tests/test_wind_tier0.py`, `docs/v2/conformance.md`
 **P-group: B**
 
 Against `tier0_wave` and `tier0_wind_sample` from the bundle:
 
-- `wave_exact` within **32 ulp** relative, per row.
+- `wave_exact` within the manifest absolute/relative/ULP policy, per row, including its near-zero floor.
 - `wave_cos` within the **measured** bound from the manifest.
 - The **divergence between the two arms** computed over the same inputs and
   reported: max absolute, max relative, and the ulp distribution. Printed, and
   written to the handoff. Not asserted against a threshold.
 - Branch rows are reported **by their sampler's name** on failure, so a red test
-  names the hazard rather than a row index. In particular the `wrap_pi`-adjacent
-  rows, the `±π` boundary and the `EPS_FLOW` guard rows carry their names.
+  names the hazard rather than a row index. For this wind-only port, include argument-reduction joins, zero/odd mode counts and cancellation cases. Foil EPS_FLOW tests belong to a future foil port.
 
 The failure demonstration this task must perform and record, in the style
 `no_shortcuts.rs`'s module doc uses: negate one component of `amp` in `wind.py`,
@@ -284,7 +279,7 @@ in the handoff.
 ### 3.7 — The gate
 
 **Owns:** `scripts/py-test.sh`, `scripts/py-test.ps1`, `scripts/check.sh`,
-`scripts/check.ps1`, `CLAUDE.md`, `docs/v1/00-foundations.md`,
+`scripts/check.ps1`, `CLAUDE.md`, `docs/v2/00-foundations.md`,
 `docs/v2/README.md`
 **P-group: S**
 
@@ -328,7 +323,7 @@ Python test makes `scripts/check.sh` exit non-zero **and** print
 
 | # | Risk | Mitigation | Fires when |
 |---|---|---|---|
-| **RV13** | `wave_exact` is written as a paraphrase — mathematically equal, differently grouped — and the 32 ulp tolerance is then quietly widened to make it pass. | 3.3's transcription rules; the tolerance lives in the manifest, which this section does not own and cannot edit. | any tolerance in `manifest.json` changes in a commit owned by this section |
+| **RV13** | `wave_exact` is written as a paraphrase — mathematically equal, differently grouped — and the manifest tolerance is then quietly widened to make it pass. | 3.3's transcription rules; the tolerance lives in the manifest, which this section does not own and cannot edit. | any tolerance in `manifest.json` changes in a commit owned by this section |
 | **RV14** | f32 creeps in through a dtype promotion nobody notices, and a real disagreement reads as a tolerance failure. | `conftest.py` enables and **asserts** `jax_enable_x64` at import; the loader returns `float64` arrays explicitly. | any conformance array's dtype is not `float64` |
 | **RV15** | Someone reimplements PCG32 to "check the modes", spending days to reproduce a kilobyte. | F16.7; 3.3 forbids a seed in the module; 3.6 asserts the absence. | the string `pcg`, `seed` or `stratum` appears under `python/sailgym_jax/` |
 | **RV16** | The Python audit is vacuous — scans an empty directory, passes forever. | Two self-checks copied from `provenance.rs`, plus the proven-able-to-fail demonstration in 3.6. | `scanned` or `files` falls below its stated floor |
@@ -341,6 +336,6 @@ Python test makes `scripts/check.sh` exit non-zero **and** print
 |---|---|---|
 | `--fast` does not run steps 10 and 11 | 3.7, to keep the pre-commit subset fast | whenever the Python suite gets slow enough that skipping it matters |
 | Only tier 0 and the wind slice of tier 3 are consumed; tiers 1 and 2 sit unused in the bundle | scope — one function is the point | the section that ports the full step |
-| `wave_exact` will not fuse and is not the arm anyone trains with | by design, F16.6 | never; it is a conformance witness, not a backend |
+| `wave_exact` preserves source structure; its fusion/performance remain measured properties | by design, F16.6 | never; it is a conformance witness, not a backend |
 | No Warp runner, though F16.4 says one runner per stack | scope | the Warp section |
 | No CI runs any of this; `scripts/check.sh` is still invoked by hand | inherited from v1 — there is no `.github/` in the repository | whenever CI is set up; it is one call to one script |
