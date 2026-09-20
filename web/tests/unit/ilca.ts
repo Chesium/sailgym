@@ -25,7 +25,13 @@ export function ilcaParams(overrides: DeepPartial<RenderParams> = {}): RenderPar
       z_ce: 2.4,
       mast_pos_b: { x: 1.2, y: 0, z: 0 },
     },
-    rudder: { pos_b: { x: -2.0, y: 0, z: -0.28 }, area: 0.105 },
+    rudder: {
+      pos_b: { x: -2.0, y: 0, z: -0.28 },
+      area: 0.105,
+      delta_r_max: 0.698,
+      delta_r_rate_max: 2.09,
+      delta_r_return_rate: 1.57,
+    },
     board: { pos_b: { x: 0.45, y: 0, z: -0.45 }, area: 0.2 },
     sheet: {
       d_sheet: 2.45,
@@ -33,6 +39,9 @@ export function ilcaParams(overrides: DeepPartial<RenderParams> = {}): RenderPar
       block_pos_b: { x: -2.1, y: 0, z: 0.1 },
       l_sheet_min: 1.0404326023342405,
       l_sheet_max: 4.5,
+      sheet_haul_rate: 1.5,
+      sheet_ease_rate: 3.0,
+      sheet_release_rate: 6.0,
     },
   }
   return {

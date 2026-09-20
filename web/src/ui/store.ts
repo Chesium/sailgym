@@ -80,6 +80,24 @@ export const CHART_CAPACITY = 600
 
 export interface UiState {
   mode: UiMode
+  /**
+   * The mode was chosen by a person, rather than being the default.
+   *
+   * v2 section 09 asks for two things at once: a **new** user starts in Sail
+   * Mode, and a **deliberately selected** Debug Mode survives. Both already
+   * follow from `mode` alone — but only by inference, and the inference is
+   * exactly the kind that a later change quietly invalidates: the moment
+   * anything else sets `mode` (a scenario that suggests a mode, a deep link, a
+   * tutorial step), a stored `'debug'` stops meaning "they asked for it" and
+   * the guarantee becomes untestable.
+   *
+   * So the distinction is *recorded* rather than inferred. It is set by
+   * {@link UiState.setMode} and {@link UiState.toggleMode} and by nothing else
+   * — in particular not by the layout, which may **arrange** the modes but may
+   * never **choose** one for the player — and `ui/Layout.tsx` publishes it as
+   * `data-mode-chosen` so a browser test can tell the two apart from outside.
+   */
+  modeChosen: boolean
   overlays: Record<OverlayKey, boolean>
   charts: Record<ChartKey, boolean>
   /** Newtons per pixel for the force vectors, when auto-scaling is off. */
@@ -108,6 +126,7 @@ export interface UiState {
 
 const INITIAL = {
   mode: 'sail' as UiMode,
+  modeChosen: false,
   overlays: {
     ...allOff(OVERLAY_KEYS),
     // Enough on by default that Debug Mode is useful the moment it opens,
@@ -129,8 +148,9 @@ export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
       ...INITIAL,
-      setMode: (mode) => set({ mode }),
-      toggleMode: () => set((s) => ({ mode: s.mode === 'sail' ? 'debug' : 'sail' })),
+      setMode: (mode) => set({ mode, modeChosen: true }),
+      toggleMode: () =>
+        set((s) => ({ mode: s.mode === 'sail' ? 'debug' : 'sail', modeChosen: true })),
       setOverlay: (key, on) => set((s) => ({ overlays: { ...s.overlays, [key]: on } })),
       setAllOverlays: (on) =>
         set(() => ({
@@ -150,11 +170,36 @@ export const useUiStore = create<UiState>()(
     {
       name: 'sailgym-ui',
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2,
+      /**
+       * Schema 1 had no `modeChosen`.
+       *
+       * A stored schema-1 state exists only because someone used the app, and
+       * the only way it can hold `'debug'` is if they pressed `M` or the
+       * button — so the flag is recoverable exactly, and nobody is demoted out
+       * of a mode they picked.
+       */
+      migrate: (persisted, from) => {
+        const saved = (persisted ?? {}) as Partial<UiState>
+        if (from < 2) {
+          return { ...saved, modeChosen: saved.mode === 'debug' }
+        }
+        return saved
+      },
       // `resetRequired` describes the *current run*, so it must not come back
       // from a previous session and demand a reset that has already happened.
-      partialize: ({ mode, overlays, charts, newtonsPerPixel, autoScale, sampleHz, parametersOpen }) => ({
+      partialize: ({
         mode,
+        modeChosen,
+        overlays,
+        charts,
+        newtonsPerPixel,
+        autoScale,
+        sampleHz,
+        parametersOpen,
+      }) => ({
+        mode,
+        modeChosen,
         overlays,
         charts,
         newtonsPerPixel,

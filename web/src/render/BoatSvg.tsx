@@ -174,17 +174,39 @@ export function BoatSvg({
       // it completely. The sea colour moved to the wrapper in `App.tsx`.
       style={{ display: 'block', background: 'transparent', touchAction: 'none' }}
       onPointerDown={(e) => {
-        // Middle button, or Shift + any button, pans. A plain left-drag is the
-        // mainsheet. Both go to `onSheet`, whose reducer ignores the camera's.
-        onSheet({ type: 'down', y: e.clientY, button: e.button, shiftKey: e.shiftKey })
-        e.currentTarget.setPointerCapture(e.pointerId)
-        if (e.button === 1 || e.shiftKey) {
+        // Middle button, or Shift + any button, pans. A plain left-drag with a
+        // mouse or a pen is the mainsheet; a **finger** is neither — trimming
+        // by touch belongs to the pads of `ui/TouchControls.tsx`, and
+        // `sheetInput` drops it (v2 section 09, task 9.3).
+        onSheet({
+          type: 'down',
+          y: e.clientY,
+          button: e.button,
+          shiftKey: e.shiftKey,
+          pointerType: e.pointerType,
+        })
+        const panning = e.button === 1 || e.shiftKey
+        const trimming = !panning && e.button === 0 && e.pointerType !== 'touch'
+        // Capture, and suppress the browser's own gesture, **only** once this
+        // view owns the pointer. A finger that owns nothing here is left alone,
+        // so the page can still be scrolled and a later camera gesture is not
+        // swallowed by an element that was not using the pointer.
+        if (panning || trimming) {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }
+        if (panning) {
           e.preventDefault()
           dragging.current = { x: e.clientX, y: e.clientY }
         }
       }}
       onPointerMove={(e) => {
-        onSheet({ type: 'move', y: e.clientY, button: e.button, shiftKey: e.shiftKey })
+        onSheet({
+          type: 'move',
+          y: e.clientY,
+          button: e.button,
+          shiftKey: e.shiftKey,
+          pointerType: e.pointerType,
+        })
         const from = dragging.current
         if (from === null) {
           return
@@ -193,14 +215,27 @@ export function BoatSvg({
         dragging.current = { x: e.clientX, y: e.clientY }
       }}
       onPointerUp={(e) => {
-        onSheet({ type: 'up', y: e.clientY, button: e.button, shiftKey: e.shiftKey })
+        onSheet({
+          type: 'up',
+          y: e.clientY,
+          button: e.button,
+          shiftKey: e.shiftKey,
+          pointerType: e.pointerType,
+        })
         dragging.current = null
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
         }
       }}
       onPointerCancel={(e) => {
-        onSheet({ type: 'cancel', y: e.clientY })
+        onSheet({ type: 'cancel', y: e.clientY, pointerType: e.pointerType })
+        dragging.current = null
+      }}
+      onLostPointerCapture={(e) => {
+        // The browser took the pointer away — a system gesture, a scroll
+        // taking over. Same ending as a cancel: the drag is over and the
+        // command goes back to nothing (RV53).
+        onSheet({ type: 'cancel', y: e.clientY, pointerType: e.pointerType })
         dragging.current = null
       }}
       onWheel={(e) => {

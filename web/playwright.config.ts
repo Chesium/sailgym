@@ -23,6 +23,27 @@ import { defineConfig, devices } from '@playwright/test'
  */
 const GPU = { args: ['--enable-gpu', '--use-angle=default', '--ignore-gpu-blocklist'] }
 
+/**
+ * The one spec that needs a touch screen (v2 section 09, task 9.5).
+ *
+ * It runs in **one** extra project rather than in all four: the desktop three
+ * exist to satisfy brief §38 (current Chrome, Edge and Firefox, mouse and
+ * keyboard), and running a touch suite three more times would triple the
+ * section's wall cost to re-prove the same pointer plumbing. The desktop
+ * projects therefore ignore it and the mobile project runs only it, so nothing
+ * is executed twice.
+ *
+ * `devices['Pixel 5']` is Chromium with `hasTouch`, `isMobile` and a 393 × 851
+ * viewport at DPR 2.75. **It is emulation.** It gives real trusted touch
+ * events, real pointer capture and a real mobile viewport, and it does not
+ * give a real digitiser, a real finger, real palm rejection or a real mobile
+ * GPU. Where a result depends on the difference, the spec says so, and the
+ * handoff records hardware coverage as outstanding. `isMobile` is a
+ * Chromium-only option, which is the other reason there is no mobile Firefox
+ * project here.
+ */
+const TOUCH_SPEC = /mobile-controls\.spec\.ts/
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -57,11 +78,21 @@ export default defineConfig({
   },
 
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'], launchOptions: GPU } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], launchOptions: GPU },
+      testIgnore: TOUCH_SPEC,
+    },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] }, testIgnore: TOUCH_SPEC },
     {
       name: 'msedge',
       use: { ...devices['Desktop Edge'], channel: 'msedge', launchOptions: GPU },
+      testIgnore: TOUCH_SPEC,
+    },
+    {
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 5'], launchOptions: GPU },
+      testMatch: TOUCH_SPEC,
     },
   ],
 

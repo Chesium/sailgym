@@ -43,6 +43,65 @@ export const DEFAULT_PARTICLES: ParticleSystemConfig = {
 }
 
 /**
+ * How densely and how strongly the field is drawn (v2 section 09, task 9.4).
+ *
+ * **Presentation only.** Neither number reaches `sample_wind_grid`, the
+ * advection below or anything in Rust: the whole population is still stepped
+ * through the same field at the same speed, and `density` decides only how
+ * many of them a frame *draws*. The wind the boat feels is unchanged, and
+ * `wind.spec.ts`'s once-per-frame grid call is unaffected.
+ */
+export interface WindVisual {
+  /** Fraction of the population drawn, in `(0, 1]`. */
+  density: number
+  /** Multiplies the trails' and heads' alpha and the trail width, in `(0, 1]`. */
+  contrast: number
+}
+
+/**
+ * Sail Mode's setting.
+ *
+ * **Provenance.** Four thousand trails at full contrast across a phone-sized
+ * view put roughly one mark every four CSS pixels, and at that spacing the
+ * hull's 0.8 px stroke, the boom line and the heel of the deck read as texture
+ * rather than as a boat — which is RV55 exactly. Halving the count doubles the
+ * mean gap between trails, and taking the alpha down by the same factor keeps
+ * the field readable as *motion* while letting the boat sit in front of it.
+ *
+ * `0.5` is also the largest reduction that leaves the drawn count in the
+ * thousands (2000 of 4000), which is what `wind.spec.ts` asserts is really
+ * being drawn rather than faked in the DOM.
+ *
+ * It is a visual constant and it is not tuned to make anything *look better*
+ * in the sense brief §43 forbids — nothing physical moves with it, and the
+ * same field is sampled either way.
+ */
+export const SAIL_MODE_WIND: WindVisual = { density: 0.5, contrast: 0.55 }
+
+/**
+ * Debug Mode's setting: everything, at full strength.
+ *
+ * Debug Mode exists to show the field and the force overlay together, and
+ * someone reading a streamline pattern wants every streamline.
+ */
+export const DEBUG_MODE_WIND: WindVisual = { density: 1, contrast: 1 }
+
+/**
+ * How many particles a frame draws at a given density.
+ *
+ * The population is spawned in index order at independent random positions, so
+ * the first `n` are a uniform random sample of the field rather than a patch
+ * of it. At least one is always drawn, so a mistyped density cannot empty the
+ * screen silently.
+ */
+export function visibleCount(total: number, density: number): number {
+  if (!Number.isFinite(density) || density >= 1) {
+    return total
+  }
+  return Math.max(Math.min(total, 1), Math.round(total * clamp01(density)))
+}
+
+/**
  * Per-particle lifetimes are drawn from `maxAgeFrames × [LIFETIME_LO,
  * LIFETIME_HI]`. Identical lifetimes would make the whole population expire
  * together every `maxAgeFrames` frames — a visible pulse, and the thing

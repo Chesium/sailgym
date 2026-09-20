@@ -25,6 +25,16 @@
  * exactly `0`. That decision lives here, in the pure function, rather than in
  * the component, so it is unit-testable.
  *
+ * ## Touch belongs to the pads
+ *
+ * A `touch` pointer on the world view produces **no** sheet command (v2
+ * section 09). Trimming by touch is the sheet pad's job — it has a labelled
+ * neutral grab, a gauge and a release button next to it — and letting a finger
+ * on the boat haul as well would mean a player who put a thumb down to look at
+ * the boat trimmed it by accident, with no way to tell which of the two had
+ * the channel. The pad's own reducer is `touchInput.ts`, and it reuses
+ * {@link rateFor} so the two agree about what a pixel of drag means.
+ *
  * **No physics here** (F8): this file maps pixels to a normalised command and
  * does nothing else.
  */
@@ -41,6 +51,12 @@ export interface SheetEvent {
   button?: number
   /** `PointerEvent.shiftKey`. A Shift-drag belongs to the camera. */
   shiftKey?: boolean
+  /**
+   * `PointerEvent.pointerType`. Absent means `'mouse'`, which is what every
+   * section 02–08 caller and every `page.mouse` event in the E2E suite is.
+   * `'touch'` belongs to the pads; see the module header.
+   */
+  pointerType?: string
 }
 
 export interface SheetInputState {
@@ -78,6 +94,11 @@ export function reduceSheetInput(
         // The camera's drag. Not ours, and it must not move the sheet.
         return [IDLE_SHEET_INPUT, 0]
       }
+      if ((ev.pointerType ?? 'mouse') === 'touch') {
+        // The sheet pad's finger, or a finger on the boat. Either way this
+        // reducer does not own it.
+        return [IDLE_SHEET_INPUT, 0]
+      }
       return [{ dragging: true, lastY: ev.y, accumulated: 0 }, 0]
     }
     case 'move': {
@@ -94,8 +115,33 @@ export function reduceSheetInput(
   }
 }
 
-/** The command a given accumulated drag produces. Down (`+y`) hauls (`−`). */
+/**
+ * Whether a drag currently **owns** the sheet channel.
+ *
+ * `composeControls` needs the difference between "the mouse is driving the
+ * sheet and asking for zero" and "the mouse is not driving the sheet at all":
+ * only the second falls through to another device. A bare rate of `0` cannot
+ * express it (RV53).
+ */
+export function ownsSheet(s: SheetInputState): boolean {
+  return s.dragging
+}
+
+/** The command a given accumulated **mouse** drag produces. Down (`+y`) hauls (`−`). */
 export function rateFor(accumulated: number, cfg: InputConfig): number {
-  const sign = cfg.sheetInvert ? 1 : -1
-  return clamp(sign * cfg.sheetDragGain * accumulated)
+  return normalisedDrag(accumulated, cfg.sheetDragGain, cfg.sheetInvert)
+}
+
+/**
+ * Pixels of vertical drag → a normalised sheet command in `[−1, 1]`.
+ *
+ * The sign rule of this module, stated once and shared: **down (`+y`) hauls
+ * (`−`)**, `sheetInvert` flips it. The mouse reducer above and the touch pad's
+ * reducer in `touchInput.ts` differ only in their gain, so they call this
+ * rather than each writing the same product and the same clamp — which is how
+ * two drags on the same axis come to disagree about which way is "in".
+ */
+export function normalisedDrag(pixels: number, gain: number, invert: boolean): number {
+  const sign = invert ? 1 : -1
+  return clamp(sign * gain * pixels)
 }

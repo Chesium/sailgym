@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_INPUT } from '../../src/sim/controls'
-import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetEvent } from '../../src/sim/sheetInput'
+import {
+  IDLE_SHEET_INPUT,
+  normalisedDrag,
+  ownsSheet,
+  rateFor,
+  reduceSheetInput,
+  type SheetEvent,
+} from '../../src/sim/sheetInput'
 
 /** Press at y = 0, then drag to `y`, and report the resulting rate command. */
 function drag(y: number, cfg = DEFAULT_INPUT, down: Partial<SheetEvent> = {}) {
@@ -67,5 +74,44 @@ describe('sheetInput', () => {
 
   it('pressing down does not itself command anything', () => {
     expect(drag(0).downRate).toBe(0)
+  })
+})
+
+/** v2 section 09, task 9.1: ownership, and the shared pixels → command rule. */
+describe('sheetInput — channel ownership (task 9.1)', () => {
+  it('owns the sheet only while a drag is actually in progress', () => {
+    expect(ownsSheet(IDLE_SHEET_INPUT)).toBe(false)
+    const { state } = drag(100)
+    expect(ownsSheet(state)).toBe(true)
+    const [afterUp] = reduceSheetInput(state, { type: 'up', y: 100 }, DEFAULT_INPUT)
+    expect(ownsSheet(afterUp)).toBe(false)
+    const [afterCancel] = reduceSheetInput(state, { type: 'cancel', y: 100 }, DEFAULT_INPUT)
+    expect(ownsSheet(afterCancel)).toBe(false)
+  })
+
+  it('a touch pointer on the world view is not a mainsheet drag', () => {
+    // Trimming by touch belongs to the sheet pad (v2 section 09); a finger on
+    // the boat must not haul as a side effect.
+    const touched = drag(200, DEFAULT_INPUT, { pointerType: 'touch' })
+    expect(touched.rate).toBe(0)
+    expect(ownsSheet(touched.state)).toBe(false)
+    // A pen, and an event with no `pointerType` at all, are still the mouse.
+    expect(drag(200, DEFAULT_INPUT, { pointerType: 'pen' }).rate).toBeLessThan(0)
+    expect(drag(200).rate).toBeLessThan(0)
+  })
+
+  it('normalisedDrag is the one pixels → command rule, gain apart', () => {
+    // The mouse reducer is this function at the mouse's gain, which is what
+    // stops the pad and the mouse disagreeing about which way is "in".
+    expect(rateFor(100, DEFAULT_INPUT)).toBe(
+      normalisedDrag(100, DEFAULT_INPUT.sheetDragGain, DEFAULT_INPUT.sheetInvert),
+    )
+    // Down hauls, up eases, and both clamp.
+    expect(normalisedDrag(1, 0.5, false)).toBe(-0.5)
+    expect(normalisedDrag(-1, 0.5, false)).toBe(0.5)
+    expect(normalisedDrag(1, 0.5, true)).toBe(0.5)
+    expect(normalisedDrag(1000, 0.5, false)).toBe(-1)
+    expect(normalisedDrag(-1000, 0.5, false)).toBe(1)
+    expect(normalisedDrag(0, 0.5, false)).toBe(-0)
   })
 })

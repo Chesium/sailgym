@@ -24,7 +24,12 @@ import {
   type ReplayProbe,
 } from './sim/replay'
 import type { Episode } from './sim/scenarioTypes'
-import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetInputState } from './sim/sheetInput'
+import {
+  IDLE_SHEET_INPUT,
+  ownsSheet,
+  reduceSheetInput,
+  type SheetInputState,
+} from './sim/sheetInput'
 import { useSimulation, type RenderParams } from './sim/useSimulation'
 import { Charts, useChartSampler } from './ui/Charts'
 import { ClockControls } from './ui/ClockControls'
@@ -36,14 +41,61 @@ import { ParameterPanel } from './ui/ParameterPanel'
 import { RecordControls } from './ui/RecordControls'
 import { ScenarioPicker } from './ui/ScenarioPicker'
 import { Timeline, type PlaybackSpeed } from './ui/Timeline'
+import { TouchControls } from './ui/TouchControls'
 import { useUiStore } from './ui/store'
 import { WindReadout } from './ui/WindReadout'
 import { ArrowProbe, buildArrows, type ArrowField } from './wind/ArrowOverlay'
 import { DeckOverlay } from './wind/DeckOverlay'
+import { DEBUG_MODE_WIND, SAIL_MODE_WIND, visibleCount } from './wind/particles'
 import { particleLayers } from './wind/WindLayer'
 import { useWindField } from './wind/useWindField'
 
-const VIEWPORT = { width: 780, height: 520 }
+/**
+ * The world view's size, in CSS pixels, before anything has been measured and
+ * as the floor and ceiling of what a measurement may produce (v2 section 09,
+ * task 9.4).
+ *
+ * **Provenance.** Presentation only — every one of these is a count of screen
+ * pixels and none of them reaches the camera's metres-per-pixel, the wind grid
+ * or anything in Rust.
+ *
+ * - `fallback` is v1's fixed 780 × 520, kept as the pre-measurement size so a
+ *   browser without `ResizeObserver`, and the first frame of every load, draw
+ *   exactly what v1 drew.
+ * - `min` is the smallest view the boat still reads in: at the default zoom of
+ *   20 px/m a 4.23 m hull is 85 px long, so 260 × 190 holds the boat with
+ *   about a hull-length of water around it. Below that the view stops being a
+ *   view; the main row scrolls instead of shrinking it further.
+ * - `maxAspect` keeps a tall narrow phone from turning the world into a
+ *   letterbox slot on its side: the height never exceeds 1.15 × the width.
+ */
+const WORLD_PX = {
+  fallback: { width: 780, height: 520 },
+  min: { width: 260, height: 190 },
+  maxAspect: 1.15,
+} as const
+
+/**
+ * Viewport width, in CSS pixels, at or below which the layout goes compact.
+ *
+ * **Provenance.** Presentation only. 760 px is just above the widest phone in
+ * landscape the acceptance criteria name (844 × 390 is 844 *wide*, so it is
+ * not compact) and below the narrowest tablet-ish width where the header's
+ * controls fit on two rows. It is a layout threshold and nothing else.
+ */
+const COMPACT_MAX_WIDTH_PX = 760
+
+/**
+ * Viewport height, in CSS pixels, at or below which the layout also goes
+ * compact.
+ *
+ * **Provenance.** Presentation only, and the same threshold the landscape
+ * arrangement in `ui/Layout.tsx` uses. A phone in landscape is wide but short:
+ * 844 × 390 is not narrow, yet an uncapped header and readouts take 150 px of
+ * its 390, which is most of what the boat needed. Capping them is the same
+ * remedy for the same problem, so it is the same flag.
+ */
+const COMPACT_MAX_HEIGHT_PX = 560
 
 /**
  * What the renderer draws before `parameters_json()` has been read.
@@ -55,7 +107,13 @@ const VIEWPORT = { width: 780, height: 520 }
 const PENDING_PARAMS: RenderParams = {
   hull: { loa: 1, beam: 1, lwl: 1 },
   sail: { area: 1, boom_length: 1, z_ce: 1, mast_pos_b: { x: 0, y: 0, z: 0 } },
-  rudder: { pos_b: { x: 0, y: 0, z: 0 }, area: 1 },
+  rudder: {
+    pos_b: { x: 0, y: 0, z: 0 },
+    area: 1,
+    delta_r_max: 1,
+    delta_r_rate_max: 1,
+    delta_r_return_rate: 1,
+  },
   board: { pos_b: { x: 0, y: 0, z: 0 }, area: 1 },
   sheet: {
     d_sheet: 0,
@@ -63,6 +121,9 @@ const PENDING_PARAMS: RenderParams = {
     block_pos_b: { x: 0, y: 0, z: 0 },
     l_sheet_min: 0,
     l_sheet_max: 1,
+    sheet_haul_rate: 1,
+    sheet_ease_rate: 1,
+    sheet_release_rate: 1,
   },
 }
 
@@ -116,6 +177,84 @@ declare global {
   }
 }
 
+/**
+ * Measure the space the world view may have, and keep measuring it.
+ *
+ * `main` is the layout's `1fr` row: its height comes from the grid, so it does
+ * not depend on what is drawn inside it. `world` is a flex cell of width
+ * `100%`, so its width does not depend on its children either. Taking the
+ * height from one and the width from the other is what makes this loop-free —
+ * an observer on a box that its own content sizes would resize forever.
+ *
+ * `ResizeObserver` covers everything the acceptance criteria name at once: a
+ * window resize, a device rotation, a mobile browser's chrome sliding in and
+ * out, and the debug column mounting or unmounting beside the world. There is
+ * no `resize` listener and no orientation listener, because those report the
+ * *window* and what matters is the box.
+ */
+function useWorldViewport(): {
+  viewport: { width: number; height: number }
+  mainRef: React.RefObject<HTMLDivElement | null>
+  worldRef: React.RefObject<HTMLDivElement | null>
+} {
+  const mainRef = useRef<HTMLDivElement | null>(null)
+  const worldRef = useRef<HTMLDivElement | null>(null)
+  const [box, setBox] = useState<{ width: number; height: number }>(WORLD_PX.fallback)
+
+  useEffect(() => {
+    const main = mainRef.current
+    const world = worldRef.current
+    if (main === null || world === null || typeof ResizeObserver === 'undefined') {
+      return
+    }
+    const measure = () => {
+      const width = world.clientWidth
+      const height = main.clientHeight
+      if (width <= 0 || height <= 0) {
+        return
+      }
+      setBox((previous) =>
+        previous.width === width && previous.height === height ? previous : { width, height },
+      )
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(main)
+    observer.observe(world)
+    measure()
+    return () => observer.disconnect()
+  }, [])
+
+  // The SVG is drawn at whole pixels: a fractional viewport makes every grid
+  // line land on a half-pixel and the whole view goes soft.
+  const width = Math.max(WORLD_PX.min.width, Math.floor(box.width))
+  const height = Math.max(
+    WORLD_PX.min.height,
+    Math.floor(Math.min(box.height, width * WORLD_PX.maxAspect)),
+  )
+  return { viewport: { width, height }, mainRef, worldRef }
+}
+
+/** Whether the layout should go compact, from the measured window width. */
+const COMPACT_QUERY =
+  `(max-width: ${COMPACT_MAX_WIDTH_PX}px), (max-height: ${COMPACT_MAX_HEIGHT_PX}px)`
+
+function useCompactLayout(): boolean {
+  const [compact, setCompact] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      (window.innerWidth <= COMPACT_MAX_WIDTH_PX ||
+        window.innerHeight <= COMPACT_MAX_HEIGHT_PX),
+  )
+  useEffect(() => {
+    const query = window.matchMedia(COMPACT_QUERY)
+    const update = () => setCompact(query.matches)
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return compact
+}
+
 /** The three F6.1 wind modes, as the scenario JSON spells them. */
 const WIND_MODES = ['uniform', 'spatial', 'gust'] as const
 type WindModeName = (typeof WIND_MODES)[number]
@@ -153,12 +292,21 @@ export default function App() {
 
   const sim = useSimulation(undefined, onFrame, scenarioFromUrl(), renderHzFromUrl())
   const ui = useUiStore()
+  const { viewport, mainRef, worldRef } = useWorldViewport()
+  const compact = useCompactLayout()
   const charts = useChartSampler(sim.diagnostics, ui.sampleHz)
   const [mode, setMode] = useState<CameraMode>('northUp')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Vec2>({ x: 0, y: 0 })
   const [windMode, setWindMode] = useState<WindModeName>('gust')
   const sheetInput = useRef<SheetInputState>(IDLE_SHEET_INPUT)
+  /**
+   * The world view owns a pointer drag — a mainsheet trim or a camera pan.
+   *
+   * Handed to the layout, which stops the main row scrolling for the duration.
+   * See `LayoutProps.dragging` for the measurement that made it necessary.
+   */
+  const [worldDrag, setWorldDrag] = useState(false)
   const [showArrows, setShowArrows] = useState(false)
   const [showBoatProbes] = useState(boatProbesRequested)
   const baseCentre = useRef<Vec2>({ x: 0, y: 0 })
@@ -179,6 +327,12 @@ export default function App() {
     // other in the same view. Pausing is also what makes "replay works with
     // the physics clock paused" the ordinary case rather than a special one.
     sim.pause()
+    // Entering replay is one of the clear paths (RV53): a finger or a key that
+    // was down belongs to the live run, and the controls now drive nothing the
+    // viewer can see. `sim.pause()` already clears, so this is belt and braces
+    // against the pause becoming conditional later — and it is the call the
+    // PRD names.
+    sim.clearInput()
     setPlayback({ kind: 'replay', source })
     setReplayTime(source.startTime)
     setReplayPlaying(false)
@@ -290,7 +444,7 @@ export default function App() {
     baseCentre.current,
     { x: s.x, y: s.y },
     mode,
-    VIEWPORT,
+    viewport,
     scale,
   )
   const camera = createCamera({
@@ -298,7 +452,7 @@ export default function App() {
     zoom,
     centre: { x: baseCentre.current.x + pan.x, y: baseCentre.current.y + pan.y },
     heading: s.psi,
-    viewport: VIEWPORT,
+    viewport,
   })
   cameraRef.current = camera
 
@@ -324,15 +478,24 @@ export default function App() {
   const grid = wind.grid()
   const arrows: ArrowField | null =
     showArrows && grid !== null ? buildArrows(grid, camera) : null
+  // Sail Mode draws the field thinner and fainter so the hull, the boom, the
+  // heading and the wind's own direction all stay readable (RV55). It is a
+  // **presentation** setting: the same field is sampled, the same particles
+  // are advected through it at the same speed, and nothing the boat feels
+  // changes. Debug Mode, which exists to be read, gets all of it.
+  const windVisual = ui.mode === 'sail' ? SAIL_MODE_WIND : DEBUG_MODE_WIND
   const layers =
     grid === null
       ? []
       : [
-          ...particleLayers({
-            particles: wind.particles(),
-            heads: wind.heads(),
-            tails: wind.tails(),
-          }),
+          ...particleLayers(
+            {
+              particles: wind.particles(),
+              heads: wind.heads(),
+              tails: wind.tails(),
+            },
+            windVisual,
+          ),
           ...(arrows?.layers ?? []),
         ]
   const stats = wind.stats()
@@ -415,14 +578,14 @@ export default function App() {
     <div
       style={{
         position: 'relative',
-        width: VIEWPORT.width,
-        height: VIEWPORT.height,
+        width: viewport.width,
+        height: viewport.height,
         // The sea. It lives here rather than on the SVG because the wind
         // canvas sits between the two.
         background: '#eaf2f8',
       }}
     >
-      {sim.ready && <DeckOverlay viewport={VIEWPORT} layers={layers} />}
+      {sim.ready && <DeckOverlay viewport={viewport} layers={layers} />}
       <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
         <BoatSvg
           camera={camera}
@@ -437,7 +600,18 @@ export default function App() {
           onSheet={(ev) => {
             const [next, rate] = reduceSheetInput(sheetInput.current, ev, DEFAULT_INPUT)
             sheetInput.current = next
-            sim.setSheetRate(rate)
+            // `null` when no drag owns the channel, so the composition falls
+            // through to whatever else is driving instead of reading a stale
+            // zero as a command (task 9.1, RV53).
+            sim.setSheetRate(ownsSheet(next) ? rate : null)
+            // Every gesture the world view can own arrives here, the camera's
+            // pans included, so this is the one place that knows a drag is in
+            // progress. `cancel` covers `pointercancel` and a lost capture.
+            if (ev.type === 'down') {
+              setWorldDrag(true)
+            } else if (ev.type === 'up' || ev.type === 'cancel') {
+              setWorldDrag(false)
+            }
           }}
           onPan={(dxPixels, dyPixels) => {
             const a = camera.screenToWorld({ x: 0, y: 0 })
@@ -580,11 +754,21 @@ export default function App() {
         data-benchmark-ms={stats.benchmarkMs ?? ''}
         data-grid-nx={grid?.nx ?? 0}
         data-grid-ny={grid?.ny ?? 0}
-        data-particles={wind.particles().count}
+        // `data-particles` is what the frame actually **draws**, which is what
+        // `wind.spec.ts` claims to be measuring when it asserts the dense field
+        // is WebGL and not DOM. Sail Mode draws a fraction of the population
+        // (task 9.4); the population itself is beside it, so the two are
+        // distinguishable rather than conflated.
+        data-particles={visibleCount(wind.particles().count, windVisual.density)}
+        data-particles-total={wind.particles().count}
+        data-wind-density={windVisual.density}
+        data-wind-contrast={windVisual.contrast}
         style={{ color: '#667' }}
       >
         wind grid {grid?.nx ?? 0}×{grid?.ny ?? 0} in {stats.gridMs.toFixed(2)} ms · frame{' '}
-        {stats.frameMs.toFixed(1)} ms · {wind.particles().count} particles
+        {stats.frameMs.toFixed(1)} ms ·{' '}
+        {visibleCount(wind.particles().count, windVisual.density)} of{' '}
+        {wind.particles().count} particles
       </div>
 
       <ArrowProbe field={arrows} />
@@ -592,22 +776,43 @@ export default function App() {
       {showBoatProbes && <BoatProbe params={params} hull={hull} />}
 
       <div style={{ color: '#667' }}>
-        A / ← and D / → steer · <strong>drag down to haul the mainsheet in, drag up to
-        ease</strong> · Space releases the sheet · P pauses · . single-steps · R resets · M
-        switches mode · wheel zooms · middle-drag or Shift+drag pans
+        Drag the pads below to steer and trim, or: A / ← and D / → steer ·{' '}
+        <strong>drag down on the boat to haul the mainsheet in, drag up to ease</strong> ·
+        Space releases the sheet · P pauses · . single-steps · R resets · M switches mode ·
+        wheel zooms · middle-drag or Shift+drag pans
       </div>
     </>
+  )
+
+  // The on-screen helm, trim and release (task 9.3). Always mounted, in both
+  // modes and on every device: they are the controls, not a mobile fallback,
+  // and the same pads work under a mouse. They read the boat's actual state
+  // and the live catalogue, and they write through the one input boundary.
+  const controls = (
+    <TouchControls
+      snapshot={s}
+      params={params}
+      onCommand={sim.setTouchCommand}
+      onReset={sim.reset}
+      clearSignal={sim.inputGeneration}
+    />
   )
 
   return (
     <Layout
       mode={ui.mode}
+      modeChosen={ui.modeChosen}
+      compact={compact}
+      dragging={worldDrag}
       header={header}
       readouts={readouts}
       world={world}
       instruments={instruments}
       debug={debug}
       footer={footer}
+      controls={controls}
+      mainRef={mainRef}
+      worldRef={worldRef}
     />
   )
 }
