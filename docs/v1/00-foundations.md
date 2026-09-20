@@ -918,8 +918,12 @@ scripts/check.ps1  (and check.sh)   runs, in order and failing fast:
   5. cargo test -p sailgym-physics --test regression
   6. wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm
   7. pnpm --dir web typecheck
-  8. pnpm --dir web test:e2e
+  8. pnpm --dir web test:unit
+  9. pnpm --dir web test:e2e
 ```
+
+Step 8 added 2026-09-20 by human approval; see `docs/v2/prds/01-boat-3d-svg.md`
+D1. The Playwright run moved from step 8 to step 9; steps 1-7 are unchanged.
 
 Stack, pinned by decision (brief §41 leaves it open):
 

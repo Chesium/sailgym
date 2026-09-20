@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   createCamera,
@@ -10,6 +10,7 @@ import {
   type CameraMode,
   type Vec2,
 } from './render/Camera'
+import { BoatProbe } from './render/BoatProbe'
 import { BoatSvg } from './render/BoatSvg'
 import { ForceOverlay, OverlayControls, OverlayLegend } from './render/ForceOverlay'
 import { HeelIndicator, HeelProbe } from './render/HeelIndicator'
@@ -24,7 +25,7 @@ import {
 } from './sim/replay'
 import type { Episode } from './sim/scenarioTypes'
 import { IDLE_SHEET_INPUT, reduceSheetInput, type SheetInputState } from './sim/sheetInput'
-import { useSimulation } from './sim/useSimulation'
+import { useSimulation, type RenderParams } from './sim/useSimulation'
 import { Charts, useChartSampler } from './ui/Charts'
 import { ClockControls } from './ui/ClockControls'
 import { DebugPanel } from './ui/DebugPanel'
@@ -43,6 +44,27 @@ import { particleLayers } from './wind/WindLayer'
 import { useWindField } from './wind/useWindField'
 
 const VIEWPORT = { width: 780, height: 520 }
+
+/**
+ * What the renderer draws before `parameters_json()` has been read.
+ *
+ * Unit-ish placeholders, not dimensions: the real catalogue arrives a frame or
+ * two later and replaces every one of them. No metre value from F7 appears
+ * here — that is the whole point of reading them from the core (F7, F8).
+ */
+const PENDING_PARAMS: RenderParams = {
+  hull: { loa: 1, beam: 1, lwl: 1 },
+  sail: { area: 1, boom_length: 1, z_ce: 1, mast_pos_b: { x: 0, y: 0, z: 0 } },
+  rudder: { pos_b: { x: 0, y: 0, z: 0 }, area: 1 },
+  board: { pos_b: { x: 0, y: 0, z: 0 }, area: 1 },
+  sheet: {
+    d_sheet: 0,
+    z_boom: 1,
+    block_pos_b: { x: 0, y: 0, z: 0 },
+    l_sheet_min: 0,
+    l_sheet_max: 1,
+  },
+}
 
 /**
  * `?scenario=` — one of the six shipped ids (brief §32), one of the legacy
@@ -67,6 +89,31 @@ function renderHzFromUrl(): number {
   const raw = new URLSearchParams(window.location.search).get('renderHz')
   const hz = raw === null ? 0 : Number(raw)
   return Number.isFinite(hz) && hz > 0 ? hz : 0
+}
+
+/**
+ * `?probes=boat`, or `window.__sailgymProbes` — mount the fixed-angle boat
+ * probes of `render/BoatProbe.tsx`.
+ *
+ * Opt-in, unlike `HeelProbe`, because each probe is a whole second boat: nine
+ * of them add some four hundred SVG nodes to every page, which is a real cost
+ * to the shipped application and no benefit to anyone using it. (It is also
+ * what `tests/e2e/debug.spec.ts` counts when it holds the page to 300 SVG
+ * elements — a budget about the world view and the force overlay, not about
+ * test scaffolding.) The section's own browser checks ask for them explicitly.
+ */
+function boatProbesRequested(): boolean {
+  return (
+    new URLSearchParams(window.location.search).get('probes') === 'boat' ||
+    window.__sailgymProbes === true
+  )
+}
+
+declare global {
+  interface Window {
+    /** Set by `tests/e2e/boat3d.spec.ts` before load; see above. */
+    __sailgymProbes?: boolean
+  }
 }
 
 /** The three F6.1 wind modes, as the scenario JSON spells them. */
@@ -113,6 +160,7 @@ export default function App() {
   const [windMode, setWindMode] = useState<WindModeName>('gust')
   const sheetInput = useRef<SheetInputState>(IDLE_SHEET_INPUT)
   const [showArrows, setShowArrows] = useState(false)
+  const [showBoatProbes] = useState(boatProbesRequested)
   const baseCentre = useRef<Vec2>({ x: 0, y: 0 })
 
   // --- recording and replay (brief §33) ----------------------------------
@@ -254,24 +302,24 @@ export default function App() {
   })
   cameraRef.current = camera
 
-  const hull = sim.params === null ? { loa: 1, beam: 1 } : sim.params.hull
-  const rig =
-    sim.params === null
-      ? { mastX: 0, boomLength: 1, rudderX: 0, boardX: 0 }
-      : {
-          mastX: sim.params.sail.mast_pos_b.x,
-          boomLength: sim.params.sail.boom_length,
-          rudderX: sim.params.rudder.pos_b.x,
-          boardX: sim.params.board.pos_b.x,
-        }
-  const sheetRig =
-    sim.params === null
-      ? { mastX: 0, dSheet: 0, block: { x: 0, y: 0 } }
-      : {
-          mastX: sim.params.sail.mast_pos_b.x,
-          dSheet: sim.params.sheet.d_sheet,
-          block: { x: sim.params.sheet.block_pos_b.x, y: sim.params.sheet.block_pos_b.y },
-        }
+  const params = sim.params ?? PENDING_PARAMS
+  // Memoised on the *values*, not rebuilt per frame. A fresh object here
+  // invalidates `BoatSvg`'s model memo and defeats `BoatProbe`'s `memo`, which
+  // rebuilds ten boats' worth of geometry sixty times a second — measured at
+  // 17.8 ms in the `svg` span against a 12 ms budget (RV4).
+  const hull = useMemo(
+    () => ({ loa: params.hull.loa, beam: params.hull.beam }),
+    [params.hull.loa, params.hull.beam],
+  )
+  const sheetRig = useMemo(
+    () => ({
+      mastX: params.sail.mast_pos_b.x,
+      dSheet: params.sheet.d_sheet,
+      zBoom: params.sheet.z_boom,
+      block: params.sheet.block_pos_b,
+    }),
+    [params],
+  )
 
   const grid = wind.grid()
   const arrows: ArrowField | null =
@@ -378,10 +426,10 @@ export default function App() {
       <div style={{ position: 'relative', zIndex: 1, pointerEvents: 'auto' }}>
         <BoatSvg
           camera={camera}
-          pose={{ x: s.x, y: s.y, psi: s.psi, beta: s.beta, deltaR: s.deltaR }}
+          pose={{ x: s.x, y: s.y, psi: s.psi, phi: s.phi, beta: s.beta, deltaR: s.deltaR }}
           alpha={sim.diagnostics?.alpha_sail ?? 0}
+          params={params}
           hull={hull}
-          rig={rig}
           sheet={sheetRig}
           lSheet={s.lSheet}
           ropeLength={sim.diagnostics?.sheet_rope_length ?? 0}
@@ -541,6 +589,7 @@ export default function App() {
 
       <ArrowProbe field={arrows} />
       <HeelProbe />
+      {showBoatProbes && <BoatProbe params={params} hull={hull} />}
 
       <div style={{ color: '#667' }}>
         A / ← and D / → steer · <strong>drag down to haul the mainsheet in, drag up to

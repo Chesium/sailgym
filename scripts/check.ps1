@@ -9,15 +9,16 @@
     (docs/v1/00-foundations.md F12).
 
 .PARAMETER Step
-    Run a single step, 1-8, instead of the whole chain. Each step is
+    Run a single step, 1-9, instead of the whole chain. Each step is
     independently runnable; without this switch a failing step aborts the rest.
 
 .PARAMETER Fast
-    The pre-commit subset: the same eight steps, with step 8 restricted to
+    The pre-commit subset: the same nine steps, with step 9 restricted to
     Chromium and to the specs not tagged `@slow` — the browser performance
     measurement and the three brief section 46 demonstrations, which between
     them are about half the browser suite's wall time and none of which can be
-    made quick without making it mean less.
+    made quick without making it mean less. Step 8, the vitest run, is not
+    restricted: it takes well under a second.
 
     **-Fast is not the gate.** It is what to run while working; the full chain
     is what has to be green before a section is finished (F13.7) and is what CI
@@ -31,7 +32,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateRange(1, 8)]
+    [ValidateRange(1, 9)]
     [int] $Step = 0,
     [switch] $Fast
 )
@@ -65,6 +66,11 @@ $Steps = @(
     @{ Name = 'cargo test -p sailgym-physics --test regression'; Action = { cargo test -p sailgym-physics --test regression } }
     @{ Name = 'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'; Action = { & (Join-Path $PSScriptRoot 'build-wasm.ps1') } }
     @{ Name = 'pnpm --dir web typecheck';                   Action = { pnpm --dir web typecheck } }
+    # Added 2026-09-20 by human approval (normative delta D1; see
+    # docs/v2/prds/01-boat-3d-svg.md). The vitest suite was cited by every
+    # section's acceptance criteria from M1 onwards and run by none of them;
+    # the Playwright step moved from 8 to 9 to make room.
+    @{ Name = 'pnpm --dir web test:unit';                   Action = { pnpm --dir web test:unit } }
     $E2E
 )
 

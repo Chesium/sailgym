@@ -185,7 +185,7 @@ scripts/check.sh               # Linux / CI
 pwsh scripts/check.ps1         # Windows
 ```
 
-Eight steps, each of which proves something specific:
+Nine steps, each of which proves something specific:
 
 | # | Step | Proves |
 |---|---|---|
@@ -196,9 +196,10 @@ Eight steps, each of which proves something specific:
 | 5 | `--test regression` | Six recorded scenarios still reproduce bit-for-bit. |
 | 6 | `wasm-pack build …` | The Rust core still compiles to WASM and the JS glue regenerates. |
 | 7 | `pnpm --dir web typecheck` | The TypeScript side still matches the WASM surface. |
-| 8 | `pnpm --dir web test:e2e` | 243 tests in Chrome, Edge and Firefox, with no console or page errors. |
+| 8 | `pnpm --dir web test:unit` | The pure TypeScript — projection, camera, clock, controls, schemas — is correct without a browser. |
+| 9 | `pnpm --dir web test:e2e` | The browser suite in Chrome, Edge and Firefox, with no console or page errors. |
 
-The full chain takes about **9½ minutes**, nearly all of it step 8. Any single
+The full chain takes about **9½ minutes**, nearly all of it step 9. Any single
 step runs on its own:
 
 ```sh
@@ -214,10 +215,11 @@ While working, use:
 scripts/check.sh --fast        # pwsh scripts/check.ps1 -Fast
 ```
 
-Same eight steps, with step 8 restricted to Chromium and to the specs not tagged
+Same nine steps, with step 9 restricted to Chromium and to the specs not tagged
 `@slow` — the browser performance measurement and the three brief §46
 demonstrations, which are about half the suite's wall time and cannot be made
-quick without making them mean less. **About two and a half minutes.**
+quick without making them mean less. Step 8 runs in full either way; it takes
+under a second. **About two and a half minutes.**
 
 `--fast` is not the gate. The full chain is what has to be green before a change
 lands, and it is what CI runs on `ubuntu-latest`.
@@ -225,7 +227,6 @@ lands, and it is what CI runs on `ubuntu-latest`.
 ### Not in the gate, but worth running
 
 ```sh
-pnpm --dir web test:unit       # 97 vitest unit tests
 pnpm --dir web build           # the production bundle — the gate only builds dev
 ```
 

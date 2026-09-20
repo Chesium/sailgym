@@ -21,6 +21,23 @@ async function endpoint(page: Page) {
   })
 }
 
+/**
+ * The drawn boom's clew end.
+ *
+ * v2 section 01 bakes `β` into the boom line's projected endpoints, so the
+ * `<g data-testid="boom">` wrapper no longer carries a `rotate(β …)` transform
+ * to compare — emitting a decorative one purely so this assertion kept passing
+ * would be the test-shaped fiction F13.4 forbids. Reading the line's own `x2`
+ * and `y2` is strictly stronger: it asserts that the drawn boom moved, not
+ * that an attribute string differs.
+ */
+async function boomTip(page: Page) {
+  return page.getByTestId('boat-boom').evaluate((element) => {
+    const line = element as SVGLineElement
+    return `${line.x2.baseVal.value},${line.y2.baseVal.value}`
+  })
+}
+
 async function pausedReset(page: Page) {
   await page.getByTestId('clock-pause').click()
   await page.getByTestId('clock-reset').click()
@@ -30,12 +47,12 @@ test.describe('sail', () => {
   test('positive beta rotates the rendered endpoint to starboard', async ({ page }) => {
     await gotoApp(page, { scenario: 'free_sail' })
     await pausedReset(page)
-    const before = await page.getByTestId('boom').getAttribute('transform')
+    const before = await boomTip(page)
     await page.getByTestId('clock-pause').click()
     await expect.poll(async () => (await readSnapshot(page)).beta).toBeGreaterThan(0.4)
     await page.getByTestId('clock-pause').click()
     expect((await endpoint(page)).starboardProjection).toBeGreaterThan(0)
-    expect(await page.getByTestId('boom').getAttribute('transform')).not.toBe(before)
+    expect(await boomTip(page)).not.toBe(before)
   })
 
   test('free sail visibly swings within ten seconds and accelerates under wind', async ({ page }) => {

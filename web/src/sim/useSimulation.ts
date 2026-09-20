@@ -31,14 +31,29 @@ import {
 import { readSnapshot, SNAPSHOT_FIELDS, type Snapshot } from './snapshot'
 import { beginSpan, endSpan, noteRudderCommand } from '../render/perfMarks'
 
-/** The parameters the renderer needs, as `parameters_json()` shapes them. */
+/**
+ * The parameters the renderer needs, as `parameters_json()` shapes them.
+ *
+ * v2 section 01 added `hull.lwl`, `sail.area`, `sail.z_ce`, `board.area`,
+ * `rudder.area` and `sheet.z_boom` for the 3-D boat model. All six were
+ * **already** emitted by `parameters_json()` — the foil sections are
+ * `#[serde(flatten)]`ed, so `area` sits directly under `sail`, `board` and
+ * `rudder` — so no Rust changed and none was permitted to (F8, and the
+ * section's own acceptance criterion 3).
+ */
 export interface RenderParams {
-  hull: { loa: number; beam: number }
-  sail: { boom_length: number; mast_pos_b: { x: number; y: number; z: number } }
-  rudder: { pos_b: { x: number; y: number; z: number } }
-  board: { pos_b: { x: number; y: number; z: number } }
+  hull: { loa: number; beam: number; lwl: number }
+  sail: {
+    area: number
+    boom_length: number
+    z_ce: number
+    mast_pos_b: { x: number; y: number; z: number }
+  }
+  rudder: { pos_b: { x: number; y: number; z: number }; area: number }
+  board: { pos_b: { x: number; y: number; z: number }; area: number }
   sheet: {
     d_sheet: number
+    z_boom: number
     block_pos_b: { x: number; y: number; z: number }
     l_sheet_min: number
     l_sheet_max: number

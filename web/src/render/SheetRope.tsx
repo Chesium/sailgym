@@ -15,19 +15,26 @@
  * core uses, with the parameters read from `parameters_json()`.
  */
 
+import { rollToH } from './project3d'
+import type { Vec3 } from './model3d'
+
 export interface SheetRigDims {
   /** m, mast foot along `+x` from the CG */
   mastX: number
   /** m, boom attachment distance from the mast, `d_sheet` */
   dSheet: number
-  /** m, block position in `B`; the view is top-down so `z` is not drawn */
-  block: { x: number; y: number }
+  /** m, boom height above the CG, `z_boom` */
+  zBoom: number
+  /** m, block position in `B`, including its height on the deck */
+  block: { x: number; y: number; z: number }
 }
 
 export interface SheetRopeProps {
   rig: SheetRigDims
   /** rad, boom angle (F2.1) */
   beta: number
+  /** rad, roll (F3). Both ends are projected through the same `R_x(φ)`. */
+  phi: number
   /** m, available sheet length `L` — snapshot field `lSheet` */
   lSheet: number
   /** m, geometric rope path `ℓ(β)` — diagnostics field `sheet_rope_length` */
@@ -39,20 +46,45 @@ const SAG_FRACTION = 0.35
 
 /**
  * Boom attachment in `B`, from `b̂(β) = (−cos β, −sin β)` (F2.1). The same
- * expression as `geometry.boomDirection`, at `d_sheet` rather than the clew.
+ * expression as `geometry.boomDirection`, at `d_sheet` rather than the clew,
+ * and at the boom's true height.
  */
-export function attachPoint(rig: SheetRigDims, beta: number): { x: number; y: number } {
+export function attachPointB(rig: SheetRigDims, beta: number): Vec3 {
   return {
     x: rig.mastX - rig.dSheet * Math.cos(beta),
     y: -rig.dSheet * Math.sin(beta),
+    z: rig.zBoom,
   }
+}
+
+/**
+ * The attachment and the block as the SVG draws them: rolled into `H` by `φ`
+ * and projected orthographically, exactly as the boat is (v2 section 01).
+ *
+ * Orthographic projection is linear, so the attachment still lies on the drawn
+ * boom line at `d_sheet / boom_length` of its length — which is how
+ * `tests/e2e/sheet.spec.ts` locates it, and why that spec stays honest at any
+ * heel without being touched.
+ */
+export function attachPoint(
+  rig: SheetRigDims,
+  beta: number,
+  phi: number,
+): { x: number; y: number } {
+  const p = rollToH(attachPointB(rig, beta), phi)
+  return { x: p.x, y: p.y }
+}
+
+export function blockPoint(rig: SheetRigDims, phi: number): { x: number; y: number } {
+  const p = rollToH(rig.block, phi)
+  return { x: p.x, y: p.y }
 }
 
 /** The SVG path, in boat-fixed metres. Straight when taut, bowed when slack. */
 export function ropePath(props: SheetRopeProps): string {
-  const { rig, beta, lSheet, ropeLength } = props
-  const a = attachPoint(rig, beta)
-  const b = rig.block
+  const { rig, beta, phi, lSheet, ropeLength } = props
+  const a = attachPoint(rig, beta, phi)
+  const b = blockPoint(rig, phi)
   const slack = Math.max(0, lSheet - ropeLength)
   if (slack <= 0) {
     return `M ${a.x},${a.y} L ${b.x},${b.y}`
@@ -79,10 +111,10 @@ export function ropePath(props: SheetRopeProps): string {
 }
 
 export function SheetRope(props: SheetRopeProps) {
-  const { rig, beta, lSheet, ropeLength } = props
+  const { rig, beta, phi, lSheet, ropeLength } = props
   const slack = Math.max(0, lSheet - ropeLength)
-  const block = rig.block
-  const attach = attachPoint(rig, beta)
+  const block = blockPoint(rig, phi)
+  const attach = attachPoint(rig, beta, phi)
   return (
     <g data-testid="sheet">
       <path

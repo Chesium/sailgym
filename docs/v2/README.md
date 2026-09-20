@@ -107,10 +107,9 @@ acceptance criteria cite but that `scripts/check` never ran.
 9. pnpm --dir web test:e2e
 ```
 
-This is an amendment to `v1/00-foundations.md` F12, which fixes the chain at
-eight steps. It is recorded here, in section 01's `Normative deltas`, and — by
-task 1.8 — in F12 itself, with the date and the approval. **No other F12
-change is authorised.**
+This amends `v1/00-foundations.md` F12, whose chain had 8 steps. It is recorded
+here, in section 01's `Normative deltas`, and — by task 1.8 — in F12 itself,
+with the date and the approval. **No other F12 change is authorised.**
 
 Every section must leave the app runnable and the whole chain green. No
 exceptions and no "will fix next section".

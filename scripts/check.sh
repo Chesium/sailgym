@@ -3,15 +3,16 @@
 #
 # Linux/CI equivalent of scripts/check.ps1; keep the two in step.
 # Usage:
-#   scripts/check.sh          run the whole chain (F12, eight steps)
+#   scripts/check.sh          run the whole chain (F12, nine steps)
 #   scripts/check.sh 3        run step 3 only
 #   scripts/check.sh --fast   the pre-commit subset; see below
 #
-# `--fast` runs the same eight steps with step 8 restricted to Chromium and to
+# `--fast` runs the same nine steps with step 9 restricted to Chromium and to
 # the specs that are not tagged `@slow` — the browser performance measurement
 # and the three brief §46 demonstrations, which between them account for about
 # half of the browser suite's wall time and none of which can be made quick
-# without making it mean less. **`--fast` is not the gate.** It is what to run
+# without making it mean less. Step 8, the vitest run, is not restricted: it
+# takes well under a second. **`--fast` is not the gate.** It is what to run
 # while working; the full chain is what has to be green before a section is
 # finished (F13.7), and it is what CI runs. Section 10's measured times for
 # both are in `docs/v1/progress/10-handoff.md` and `docs/v1/acceptance.md`.
@@ -35,10 +36,11 @@ step_names=(
     'cargo test -p sailgym-physics --test regression'
     'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'
     'pnpm --dir web typecheck'
+    'pnpm --dir web test:unit'
     'pnpm --dir web test:e2e'
 )
 if [[ $fast -eq 1 ]]; then
-    step_names[7]='pnpm --dir web test:e2e --project=chromium --grep-invert @slow'
+    step_names[8]='pnpm --dir web test:e2e --project=chromium --grep-invert @slow'
 fi
 total=${#step_names[@]}
 
@@ -57,7 +59,12 @@ run_step() {
         5) cargo test -p sailgym-physics --test regression ;;
         6) "$script_dir/build-wasm.sh" ;;
         7) pnpm --dir web typecheck ;;
-        8)
+        # Added 2026-09-20 by human approval (normative delta D1; see
+        # docs/v2/prds/01-boat-3d-svg.md). The vitest suite was cited by every
+        # section's acceptance criteria from M1 onwards and run by none of
+        # them; the Playwright step moved from 8 to 9 to make room.
+        8) pnpm --dir web test:unit ;;
+        9)
             if [[ $fast -eq 1 ]]; then
                 pnpm --dir web test:e2e --project=chromium --grep-invert @slow
             else

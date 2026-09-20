@@ -30,7 +30,7 @@ pwsh scripts/check.ps1 -Step 3
 scripts/check.sh 3            # a single step
 ```
 
-Eight steps, in order, failing fast. What each one proves:
+Nine steps, in order, failing fast. What each one proves:
 
 | # | Step | Proves |
 |---|---|---|
@@ -41,7 +41,8 @@ Eight steps, in order, failing fast. What each one proves:
 | 5 | `cargo test -p sailgym-physics --test regression` | Recorded scenarios still reproduce bit-for-bit (determinism). |
 | 6 | `wasm-pack build …` | The Rust core still compiles to WASM and the JS glue regenerates. |
 | 7 | `pnpm --dir web typecheck` | The TypeScript side still matches the WASM surface. |
-| 8 | `pnpm --dir web test:e2e` | The app actually runs in Chrome, Edge and Firefox, with no console or page errors. |
+| 8 | `pnpm --dir web test:unit` | The pure TypeScript — projection, camera, clock, controls, schemas — is correct without a browser. |
+| 9 | `pnpm --dir web test:e2e` | The app actually runs in Chrome, Edge and Firefox, with no console or page errors. |
 
 Every section must leave the app runnable and the gate green. No exceptions and
 no "will fix next section".
