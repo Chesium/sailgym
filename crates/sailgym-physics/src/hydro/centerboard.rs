@@ -153,7 +153,7 @@ mod tests {
         // runs past the boat at `−(u, v)`, and the chord points aft, so
         // F5.1 gives `α = atan2(−v, u)`.
         //
-        // **Note for the human (section 04 handoff §2).** `docs/04-hydro.md`
+        // **Note for the human (section 04 handoff §2).** `docs/v1/04-hydro.md`
         // writes this criterion as `atan2(v, u)`. That sign cannot be right:
         // it would make a boat drifting to port see a positive `α`, hence
         // (F5.3) lift to *port*, which amplifies leeway and contradicts the

@@ -14,7 +14,7 @@
 # without making it mean less. **`--fast` is not the gate.** It is what to run
 # while working; the full chain is what has to be green before a section is
 # finished (F13.7), and it is what CI runs. Section 10's measured times for
-# both are in `docs/progress/10-handoff.md` and `docs/acceptance.md`.
+# both are in `docs/v1/progress/10-handoff.md` and `docs/v1/acceptance.md`.
 
 set -uo pipefail
 

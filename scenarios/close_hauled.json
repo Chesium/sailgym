@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "close_hauled",
-  "description": "Stable close-hauled sailing: a uniform 3.5 m/s westerly with the boat heading north-west, 45 degrees off the wind, and the sheet at the setting that measured best in docs/progress/07-handoff.md. R2 does not fire here - the boat settles at about 1.8 m/s with under 7 degrees of heel.",
+  "description": "Stable close-hauled sailing: a uniform 3.5 m/s westerly with the boat heading north-west, 45 degrees off the wind, and the sheet at the setting that measured best in docs/v1/progress/07-handoff.md. R2 does not fire here - the boat settles at about 1.8 m/s with under 7 degrees of heel.",
   "seed": 20250902,
   "parameter_overrides": {},
   "initial_state": {

@@ -14,7 +14,7 @@
 //!
 //! [`mirror_state`] is the backbone of the port/starboard symmetry invariant
 //! (brief §35). Its definition follows directly from F2 and is given in
-//! task 4.1 of `docs/04-hydro.md`.
+//! task 4.1 of `docs/v1/04-hydro.md`.
 
 use crate::dynamics::{ForceModel, Generalized, Load};
 use crate::environment::wind::{ProceduralWind, WindConfig, WindMode};

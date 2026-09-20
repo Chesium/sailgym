@@ -1,7 +1,7 @@
 # Section 02 — State, Integrator, Clock, Controls, SVG Boat, Determinism (M1)
 
-**Prerequisite reading:** `docs/00-foundations.md` (all — F2, F3, F4, F9 especially),
-`docs/progress/01-handoff.md`, `docs/brief.md` §5, §13, §21, §22, §25, §27, §28, §34.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (all — F2, F3, F4, F9 especially),
+`docs/v1/progress/01-handoff.md`, `docs/v1/brief.md` §5, §13, §21, §22, §25, §27, §28, §34.
 
 ## Goal
 
@@ -393,7 +393,7 @@ snapshot sequences are equal to within 0 ULP.
    - `frames::rot_x_horizontal_vector` (heel gives `cos φ`)
    - `controls.spec.ts` "D steers starboard" (`δr > 0` ⇒ `ψ̇ < 0`)
    - `integrator::zero_force_zero_motion` (rest equilibrium, brief §35)
-8. `docs/progress/02-handoff.md` written, explicitly listing every parameter in
+8. `docs/v1/progress/02-handoff.md` written, explicitly listing every parameter in
    F7 that section 02 left unused, so section 04 knows what is untouched.
 
 ## Risks touched

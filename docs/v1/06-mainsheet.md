@@ -1,7 +1,7 @@
 # Section 06 — Physical Mainsheet (M5)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F6.8, F6.9, F11/R1),
-`docs/progress/05-handoff.md`, `docs/brief.md` §11, §12.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F6.8, F6.9, F11/R1),
+`docs/v1/progress/05-handoff.md`, `docs/v1/brief.md` §11, §12.
 
 ## Goal
 
@@ -225,7 +225,7 @@ back into physics.
    `grep -rn "\.beta = " crates/sailgym-physics/src` matches only `state.rs` and
    `integrator.rs`.
 6. **R1 recorded**: the 3×3 stability table from 6.2 is in
-   `docs/progress/06-handoff.md`, with an explicit statement of whether the
+   `docs/v1/progress/06-handoff.md`, with an explicit statement of whether the
    default `k_sheet` and `dt` are in the stable region and by what margin.
 7. Camera and sheet controls do not conflict (E2E asserted in 6.3).
 8. Determinism and all earlier invariants still green.

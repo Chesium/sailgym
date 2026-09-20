@@ -713,7 +713,7 @@ fn sheet_does_no_negative_work() {
     // the project uses. That is an integrator limit, not an accounting error:
     // the per-step rise falls off as `dt³` (0.138 J at `dt = 0.01`, 3.1e-6 J
     // at `dt = 0.00125`). The measurements and what they mean for R1 are in
-    // `docs/progress/06-handoff.md`; the bound below is unchanged.
+    // `docs/v1/progress/06-handoff.md`; the bound below is unchanged.
     let p = params();
     let c = Controls::default();
     let mut rng = Lcg(0x0E0E_5555_6666_7777);
@@ -1204,7 +1204,7 @@ fn deterministic_replay() {
 
 // ---------------------------------------------------------------------------
 // Section 10 — completing the brief §35 set, and the audit that keeps
-// `docs/invariants.md` honest (task 10.1)
+// `docs/v1/invariants.md` honest (task 10.1)
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -1281,7 +1281,7 @@ fn tension_never_negative() {
     );
 }
 
-/// `docs/invariants.md` lists every test in this suite, and every test it lists
+/// `docs/v1/invariants.md` lists every test in this suite, and every test it lists
 /// exists (task 10.1).
 ///
 /// The table is the brief §35 audit: an invariant with no row cannot be
@@ -1296,7 +1296,7 @@ fn tension_never_negative() {
 #[test]
 fn documented_invariants_exist() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let doc_path = root.join("docs/invariants.md");
+    let doc_path = root.join("docs/v1/invariants.md");
     let doc = std::fs::read_to_string(&doc_path)
         .unwrap_or_else(|e| panic!("{}: {e}", doc_path.display()));
 
@@ -1315,7 +1315,7 @@ fn documented_invariants_exist() {
     }
     assert!(
         listed.len() >= 20,
-        "docs/invariants.md names only {} tests; the brief §35 set is larger than that",
+        "docs/v1/invariants.md names only {} tests; the brief §35 set is larger than that",
         listed.len()
     );
 
@@ -1328,7 +1328,7 @@ fn documented_invariants_exist() {
         });
         assert!(
             source.contains(&format!("fn {name}(")),
-            "docs/invariants.md names {file}::{name}, which does not exist"
+            "docs/v1/invariants.md names {file}::{name}, which does not exist"
         );
     }
 
@@ -1358,6 +1358,6 @@ fn documented_invariants_exist() {
     }
     assert!(
         undocumented.is_empty(),
-        "tests in tests/invariants.rs with no row in docs/invariants.md: {undocumented:?}"
+        "tests in tests/invariants.rs with no row in docs/v1/invariants.md: {undocumented:?}"
     );
 }

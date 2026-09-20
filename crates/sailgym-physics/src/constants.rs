@@ -1,4 +1,4 @@
-//! Physical constants (`docs/00-foundations.md` F1).
+//! Physical constants (`docs/v1/00-foundations.md` F1).
 //!
 //! These are the only numeric physical literals permitted outside
 //! `parameters.rs`; see F7.

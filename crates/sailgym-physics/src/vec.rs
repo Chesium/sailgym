@@ -1,4 +1,4 @@
-//! Minimal 2-D and 3-D vector types (`docs/00-foundations.md` task 1.1).
+//! Minimal 2-D and 3-D vector types (`docs/v1/00-foundations.md` task 1.1).
 //!
 //! All components are `f64`; the physics core uses no `f32` intermediates
 //! (F1, F9.5). Degenerate `normalize` returns exactly `ZERO` rather than

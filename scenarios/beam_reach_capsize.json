@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "beam_reach_capsize",
-  "description": "Beam-on wind with the mainsheet hauled hard in. At 7 m/s the righting moment runs out: hold the sheet and the boat goes over. The wind speed is just above the 6.93 m/s threshold measured in docs/progress/07-handoff.md, so the capsize is reachable in about ten seconds rather than instant.",
+  "description": "Beam-on wind with the mainsheet hauled hard in. At 7 m/s the righting moment runs out: hold the sheet and the boat goes over. The wind speed is just above the 6.93 m/s threshold measured in docs/v1/progress/07-handoff.md, so the capsize is reachable in about ten seconds rather than instant.",
   "seed": 20250901,
   "parameter_overrides": {},
   "initial_state": {

@@ -104,7 +104,7 @@ beta = -pi/2:  alpha = +1.570796,  cl = -0.00000000, cd = 1.860000
 ```
 
 The test now uses `beta = π/2` and asserts the **original** `|cl| < 0.15 &&
-cd > 1.5`, which passes with the whole margin to spare. `docs/05-sail-boom.md`
+cd > 1.5`, which passes with the whole margin to spare. `docs/v1/05-sail-boom.md`
 records the fixture correction and states that the bound is unchanged. This is
 strictly stronger than both the original and the intermediate version.
 
@@ -152,7 +152,7 @@ Tasks 5.4 and 5.5 could not be completed within their literal `Owns:` lists:
 `simulation.rs` owns the wind and had to hand it to the force model;
 `diagnostics.rs` and the WASM `lib.rs` had to expose `diagnostics()` that 5.5 is
 required to read; `units.ts` is named in 5.5's prose but was missing from its
-list. The lists in `docs/05-sail-boom.md` were widened to match what the tasks
+list. The lists in `docs/v1/05-sail-boom.md` were widened to match what the tasks
 actually require. Both are `P-group: S` tasks executed by the section agent, so
 no parallel write conflict was possible. Flagging it because F13.2 is a rule
 about reporting, and this is the report.

@@ -2,10 +2,10 @@
 //!
 //! Pure Rust: this crate must build and test on the host with plain
 //! `cargo test`, and must never depend on `wasm-bindgen` or any JS-facing
-//! crate (`docs/00-foundations.md` F8.1).
+//! crate (`docs/v1/00-foundations.md` F8.1).
 //!
 //! Conventions, equations and parameters are normative in
-//! `docs/00-foundations.md`; nothing here may redefine them.
+//! `docs/v1/00-foundations.md`; nothing here may redefine them.
 
 pub mod aero;
 pub mod constants;

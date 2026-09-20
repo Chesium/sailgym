@@ -6,7 +6,7 @@
 .DESCRIPTION
     Defined once here (and mirrored in scripts/check.sh); every task's
     acceptance criteria call this script rather than an ad-hoc command line
-    (docs/00-foundations.md F12).
+    (docs/v1/00-foundations.md F12).
 
 .PARAMETER Step
     Run a single step, 1-8, instead of the whole chain. Each step is
@@ -22,7 +22,7 @@
     **-Fast is not the gate.** It is what to run while working; the full chain
     is what has to be green before a section is finished (F13.7) and is what CI
     runs. Section 10's measured times for both are in
-    docs/progress/10-handoff.md and docs/acceptance.md.
+    docs/v1/progress/10-handoff.md and docs/v1/acceptance.md.
 
 .EXAMPLE
     pwsh scripts/check.ps1

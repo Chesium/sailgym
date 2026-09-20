@@ -1,7 +1,7 @@
 # Section 09 — Scenario System, Recording and Replay (M8)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F3, F8, F9, F11/R7),
-`docs/progress/08-handoff.md`, `docs/brief.md` §32, §33, §34, §45.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F3, F8, F9, F11/R7),
+`docs/v1/progress/08-handoff.md`, `docs/v1/brief.md` §32, §33, §34, §45.
 
 ## Goal
 
@@ -305,7 +305,7 @@ key sequence, record; reset; repeat; assert the two episodes are frame-identical
 6. Six golden regressions pass, and are proven sensitive to a 0.1 % coefficient change.
 7. R7 handled: toolchain mismatch skips with a clear message.
 8. `reward` placeholder present and zero; the schema is versioned at 1.
-9. `docs/progress/09-handoff.md` written, including the toolchain recorded in the
+9. `docs/v1/progress/09-handoff.md` written, including the toolchain recorded in the
    golden files and the exact control scripts used.
 
 ## Risks touched

@@ -1,6 +1,6 @@
 # Section 01 — Repository, Toolchain, WASM and Playwright Skeleton (M0)
 
-**Prerequisite reading:** `docs/00-foundations.md` (all), `docs/brief.md` §40–43.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (all), `docs/v1/brief.md` §40–43.
 **Predecessor handoff:** none (first section).
 **Brief coverage:** §23, §24, §38, §40, §41, §42, §43.
 
@@ -188,7 +188,7 @@ clear `[n/8] <step>` banner per step.
 
 `CLAUDE.md` is what every future agent reads on entry. It must contain:
 - the gate command and what each step proves;
-- a pointer to `docs/00-foundations.md` as normative;
+- a pointer to `docs/v1/00-foundations.md` as normative;
 - the file-ownership rule (F13.2);
 - the "never tune a coefficient to make a scenario look better" rule (brief §43);
 - the handoff-note requirement (F13.6).
@@ -216,7 +216,7 @@ All must pass before section 02 is dispatched.
 5. `cargo tree -p sailgym-physics` contains no `wasm-bindgen` and no JS-facing crate.
 6. `grep -riE "rho|9\.8|1\.225|1025" crates/sailgym-physics/src --include=*.rs` matches
    only `constants.rs`.
-7. `docs/progress/01-handoff.md` exists and follows F13.6.
+7. `docs/v1/progress/01-handoff.md` exists and follows F13.6.
 
 ## Risks touched
 

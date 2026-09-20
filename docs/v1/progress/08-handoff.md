@@ -4,8 +4,8 @@ Written per F13.6 on 2026-09-20. **M7 is complete.** All six tasks landed, the
 eight-step gate passes end to end and exits 0, and brief §30's whole list is
 both drawn and readable as a number in the browser.
 
-Read this before starting section 09 (`docs/09-scenarios-replay.md`). Nothing
-below redefines anything in `docs/00-foundations.md`.
+Read this before starting section 09 (`docs/v1/09-scenarios-replay.md`). Nothing
+below redefines anything in `docs/v1/00-foundations.md`.
 
 Five things want a human eye rather than just a read.
 
@@ -286,7 +286,7 @@ receives.
 8.1 is `P-group: S`; 8.2–8.6 were executed by the section agent rather than
 delegated, so no parallel write conflict was possible. Flagged because F13.2 is
 a rule about *reporting*, and this is the report. The task lists in
-`docs/08-debug-params.md` were **not** edited.
+`docs/v1/08-debug-params.md` were **not** edited.
 
 ### 2.5 `every_parameter_field_is_tagged` was rescoped, not weakened
 
@@ -689,7 +689,7 @@ every overlay and chart enabled.
 | 6 | Sail Mode shows exactly the brief §29 set | **Passed** — seven wrappers, zero `diag-*`, every debug component absent by name |
 | 7 | Frame-time figures recorded for all three configurations | **Passed** — §4, nine rows, plus the before-and-after of §2.8 |
 | 8 | Determinism, invariants and `no_shortcuts` still green | **Passed** — 8 / 20 / 5, unchanged |
-| 9 | `docs/progress/08-handoff.md` written | **Passed** — this file |
+| 9 | `docs/v1/progress/08-handoff.md` written | **Passed** — this file |
 
 ### 7.4 Exact tool versions
 

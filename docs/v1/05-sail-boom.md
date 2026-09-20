@@ -1,7 +1,7 @@
 # Section 05 — Apparent Wind, Sail Aerodynamics, Dynamic Boom (M4)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F5, F6.2, F6.3, F6.4, F6.9),
-`docs/progress/04-handoff.md`, `docs/brief.md` §8, §9, §10.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F5, F6.2, F6.3, F6.4, F6.9),
+`docs/v1/progress/04-handoff.md`, `docs/v1/brief.md` §8, §9, §10.
 
 ## Goal
 
@@ -180,7 +180,7 @@ special-cased.
     > the fixture reaches a 0.562 m/s peak and roughly 82° final heel, so the
     > original 1.5 m/s is unreachable in M4. This is a *staging* weakening, not
     > a physics change; no coefficient was tuned. Recorded in
-    > `docs/progress/05-handoff.md` for sign-off. If rejected, the remedy is to
+    > `docs/v1/progress/05-handoff.md` for sign-off. If rejected, the remedy is to
     > move this criterion to section 07, not to add a righting force here.
   - `energy_bounded`: with wind on, total mechanical energy stays finite and
     bounded over 60 s across 20 random initial conditions. Energy may *increase* —
@@ -263,7 +263,7 @@ scripted input — never a special case in the boom code.
    A `cos φ` in `sail.rs` means the correction was applied twice.
 7. `grep -rn "let phi = 0" crates/` returns nothing.
 8. Determinism suite still green.
-9. `docs/progress/05-handoff.md` written, stating explicitly that the boom is
+9. `docs/v1/progress/05-handoff.md` written, stating explicitly that the boom is
    currently unrestrained and what section 06 must change.
 
 ## Risks touched

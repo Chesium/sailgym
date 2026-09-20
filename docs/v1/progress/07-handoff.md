@@ -4,8 +4,8 @@ Written per F13.6 on 2026-09-19. **M6 is complete.** All six tasks landed, the
 eight-step gate passes end to end, and the primary demonstration of brief §46
 works in the browser from step 1 to step 16.
 
-Read this before starting section 08 (`docs/08-debug-params.md`). Nothing below
-redefines anything in `docs/00-foundations.md`.
+Read this before starting section 08 (`docs/v1/08-debug-params.md`). Nothing below
+redefines anything in `docs/v1/00-foundations.md`.
 
 Four things need a human eye rather than just a read. Two of them are the same
 root cause.
@@ -221,7 +221,7 @@ than a second module root created. Same module, different spelling.
 7.1 and 7.3 are `P-group: S` and the rest were executed by the section agent
 rather than delegated, so no parallel write conflict was possible. Flagged
 because F13.2 is a rule about *reporting*, and this is the report. The task
-lists in `docs/07-roll-capsize.md` were **not** edited.
+lists in `docs/v1/07-roll-capsize.md` were **not** edited.
 
 ### 2.3 Four existing tests had their accounting or their fixture corrected
 
@@ -369,13 +369,13 @@ per `CLAUDE.md` and F13.
 
 The passages, verbatim.
 
-`docs/00-foundations.md` §F6.7:
+`docs/v1/00-foundations.md` §F6.7:
 
 > The peak is pinned in value but not exactly in location; `fit` must reject
 > parameter sets that produce a non-monotonic `GZ` on `[0, φ_p]` or a sign
 > change before `φ_v`.
 
-`docs/07-roll-capsize.md`, task 7.1:
+`docs/v1/07-roll-capsize.md`, task 7.1:
 
 > `fit` must reject parameter sets that produce a non-monotonic `GZ` on `[0, φ_p]`
 > or a sign change before `φ_v` (F6.7).
@@ -652,7 +652,7 @@ Close-hauled capsize does not appear until **6.5 m/s** (at `l_sheet = 1.5 m`),
 and at 3.5 m/s the margin is a factor of nearly four in wind speed.
 
 **R2 does not fire. `sailor_pos_b.y` is not needed, and none was added.**
-`docs/README.md`'s open item requiring human sign-off can be closed: the
+`docs/v1/README.md`'s open item requiring human sign-off can be closed: the
 escalation it describes is unnecessary. Section 09 can author `close_hauled` at
 3.5 m/s as F11 anticipated, and has room to go to 5 m/s if it wants more life in
 the boat.

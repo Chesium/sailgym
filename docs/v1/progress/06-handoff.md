@@ -4,8 +4,8 @@ Written per F13.6 on 2026-09-19. **M5 is complete.** All five tasks landed, the
 eight-step gate passes end to end, and brief §46 steps 4–6 and 11–14 are
 demonstrable in the browser.
 
-Read this before starting section 07 (`docs/07-roll-capsize.md`). Nothing below
-redefines anything in `docs/00-foundations.md`.
+Read this before starting section 07 (`docs/v1/07-roll-capsize.md`). Nothing below
+redefines anything in `docs/v1/00-foundations.md`.
 
 Four things in here need a human eye rather than just a read:
 
@@ -186,7 +186,7 @@ range, 2.70 m) so the e2e specs have room to both haul and ease.
 6.2 is `P-group: S` and 6.3/6.4 were executed by the section agent rather than
 delegated, so no parallel write conflict was possible. Flagging it because
 F13.2 is a rule about *reporting*, and this is the report. The task lists in
-`docs/06-mainsheet.md` were **not** edited.
+`docs/v1/06-mainsheet.md` were **not** edited.
 
 ### 2.3 Four M4 fixtures started with the sheet hauled hard in
 
@@ -671,7 +671,7 @@ probe was deleted and is not part of the tree.
 - **R2** — re-measured with the sheet in place: 406 N·m at **4.59 m/s** hauled,
   8.60 m/s at `l_sheet = 3.0 m` (§7). This supersedes section 05's 7.50 m/s for
   the hauled case. **No agent may add `sailor_pos_b.y` without the human
-  sign-off `docs/README.md` demands.**
+  sign-off `docs/v1/README.md` demands.**
 - **R3** (sign drift) — extended: `mirror_symmetry` in `mainsheet.rs`, and the
   section 04/05 mirror trajectories still pass with the sheet live.
 - **R4** — closed; the M1 placeholder remains deleted.

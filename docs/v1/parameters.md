@@ -29,8 +29,8 @@ What the prototype *does* claim is what brief §36 asks of a v1:
 
 1. public ILCA/Laser specifications for the basic dimensions;
 2. physically motivated coefficients and deliberately simplified models;
-3. analytical and symmetry invariants, enforced — `docs/invariants.md`;
-4. convergence tests — `docs/convergence.md`;
+3. analytical and symmetry invariants, enforced — `docs/v1/invariants.md`;
+4. convergence tests — `docs/v1/convergence.md`;
 5. behaviour inspected interactively — brief §29's Debug Mode;
 6. every approximate coefficient isolated and configurable — this file, and the
    live panel it is generated alongside.
@@ -53,7 +53,7 @@ make the replacement straightforward:
 - **towing-tank resistance data** → the eight `resistance.*` coefficients of
   F6.6, which are one `hull_loads` function behind a named-parameter interface.
   The known limit is recorded as R6 and measured in
-  `docs/progress/04-handoff.md` §4: no planing regime, so resistance is
+  `docs/v1/progress/04-handoff.md` §4: no planing regime, so resistance is
   over-predicted above ≈ 5 m/s, which `diagnostics.hull_model_warning` surfaces
   in the browser.
 - **published Laser VPPs** → target boat speeds by true wind angle, which the
@@ -79,21 +79,21 @@ table has to include the parts that are not right yet:
    climbs back to +0.78 m at 140°, so past about 82° of heel the shipped boat is
    pushed back upright: it can be knocked down but cannot be sailed over and
    cannot be inverted by wind at any speed. `gm ≈ 0.55 m` makes the group
-   self-consistent. Measured in full in `docs/progress/07-handoff.md` §4.
+   self-consistent. Measured in full in `docs/v1/progress/07-handoff.md` §4.
    **Not changed** — it is a physical coefficient with a scenario effect and
    changing it invalidates all six golden trajectories, so it is the human's
    call (brief §43, F13.5).
 2. **`sheet.l_sheet_min = 0.90 m` is shorter than the shortest geometric rope
    path, `ℓ(0) = 1.0404 m`,** so a fully hauled sheet carries ≈ 2.8 kN of
    permanent pre-tension and the boom is undamped by the sheet at `β = 0`.
-   `docs/progress/06-handoff.md` §4. **Not changed**, same reason.
+   `docs/v1/progress/06-handoff.md` §4. **Not changed**, same reason.
 3. **The hull has no planing regime** (R6, above).
 
 ## Parameters changed since F7 — the brief §43 record
 
 **No F7 coefficient has been changed by any section.** That is not a claim
 resting on the handoff notes: `provenance.rs::shipped_values_match_the_f7_table`
-parses the F7 tables out of `docs/00-foundations.md` and compares every numeric
+parses the F7 tables out of `docs/v1/00-foundations.md` and compares every numeric
 row against the value `BoatParameters::ilca7()` actually ships. A coefficient
 cannot move without `00-foundations.md` moving with it, and F13.1 puts that
 edit with the human.
@@ -103,14 +103,14 @@ or deletions rather than changes of value:
 
 | Change | Section | Why | Recorded in |
 |---|---|---|---|
-| `sail.camber_blend` **added**, DEFERRED, 0.2 rad | 02 | F5.3's `FoilParams` requires `α_b` and the F7 table omits it. With `alpha_camber = 0` the camber hook is inert, so the value has no physical effect in v1; it is non-zero only so `tanh(α / α_b)` is defined at `α = 0`. Not a tuned coefficient — no scenario, test or visual depends on it. | `docs/progress/02-handoff.md` §2.7 |
-| `sim.scaffold_thrust` **deleted** | 04 | The M1 placeholder force model's constant thrust. Never physics, never in F7; task 4.5 mandates its deletion together with `forces/scaffold.rs`. R4 closed. | `docs/progress/04-handoff.md` §2.9, §6 |
+| `sail.camber_blend` **added**, DEFERRED, 0.2 rad | 02 | F5.3's `FoilParams` requires `α_b` and the F7 table omits it. With `alpha_camber = 0` the camber hook is inert, so the value has no physical effect in v1; it is non-zero only so `tanh(α / α_b)` is defined at `α = 0`. Not a tuned coefficient — no scenario, test or visual depends on it. | `docs/v1/progress/02-handoff.md` §2.7 |
+| `sim.scaffold_thrust` **deleted** | 04 | The M1 placeholder force model's constant thrust. Never physics, never in F7; task 4.5 mandates its deletion together with `forces/scaffold.rs`. R4 closed. | `docs/v1/progress/04-handoff.md` §2.9, §6 |
 
 One tag changed, and no value with it:
 
 | Change | Section | Why | Recorded in |
 |---|---|---|---|
-| `board.area` and `rudder.area` **retagged KNOWN → ASSUMED** | 10 | The three surfaces share one `FoilSection` declaration, whose `area` doc comment named two tags; `catalogue()` took the first and displayed KNOWN for all three. F7 tags `sail.area` KNOWN and the other two ASSUMED. `FoilSection`'s field list is pinned by F5.3, so `area` cannot be split out (F13.1); each owner now states the tag on its own `section` field and `catalogue()` resolves it. The values are untouched. | `docs/progress/08-handoff.md` §5 (the defect), `docs/progress/10-handoff.md` (the fix) |
+| `board.area` and `rudder.area` **retagged KNOWN → ASSUMED** | 10 | The three surfaces share one `FoilSection` declaration, whose `area` doc comment named two tags; `catalogue()` took the first and displayed KNOWN for all three. F7 tags `sail.area` KNOWN and the other two ASSUMED. `FoilSection`'s field list is pinned by F5.3, so `area` cannot be split out (F13.1); each owner now states the tag on its own `section` field and `catalogue()` resolves it. The values are untouched. | `docs/v1/progress/08-handoff.md` §5 (the defect), `docs/v1/progress/10-handoff.md` (the fix) |
 
 ## Constants that are not parameters
 

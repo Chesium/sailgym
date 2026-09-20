@@ -1,8 +1,8 @@
 # Section 03 — Handoff (M2: wind field and deck.gl visualization)
 
 **Written per F13.6.** Read this before starting section 04
-(`docs/04-hydro.md`). Conventions remain normative in
-`docs/00-foundations.md`; nothing below redefines them.
+(`docs/v1/04-hydro.md`). Conventions remain normative in
+`docs/v1/00-foundations.md`; nothing below redefines them.
 
 Status: **complete, with one acceptance criterion missed and measured.**
 `pwsh scripts/check.ps1` exits 0 end to end (8/8), twice in succession.

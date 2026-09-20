@@ -3,11 +3,11 @@
 Written per F13.6 on 2026-09-20. **M9 is complete, and this is the project
 close-out note.** All eight tasks landed, the eight-step gate passes end to end
 and exits 0, and brief §47's fourteen success criteria are walked one by one in
-`docs/acceptance.md`.
+`docs/v1/acceptance.md`.
 
-Nothing below redefines anything in `docs/00-foundations.md`.
+Nothing below redefines anything in `docs/v1/00-foundations.md`.
 
-Read `docs/acceptance.md` first if you want the verdict, `§9` below if you want
+Read `docs/v1/acceptance.md` first if you want the verdict, `§9` below if you want
 the list of what an RL or validation effort should tackle first, and `§3` if you
 want the places where the PRD and the physics disagreed.
 
@@ -58,11 +58,11 @@ Six things want a human eye rather than just a read.
     zero tension, zero torque and two zero loads, through the same expression
     that carries a loaded one. Both branches of the `max` are asserted to have
     been taken.
-  - `documented_invariants_exist` — reads `docs/invariants.md`, checks every
+  - `documented_invariants_exist` — reads `docs/v1/invariants.md`, checks every
     test it names exists **in the file it names**, and checks every `#[test]` in
     the suite has a row. The document cannot drift from the suite in either
     direction.
-- **`docs/invariants.md`** is new: every brief §35 item, the test, the
+- **`docs/v1/invariants.md`** is new: every brief §35 item, the test, the
   tolerance, and **why that tolerance**, with the measured worst residual behind
   each one. Every figure in the "why" column was measured, not asserted — a
   throwaway probe ran each comparison and reported its worst case before the
@@ -80,8 +80,8 @@ Six things want a human eye rather than just a read.
   (added: the `Rk4` reference's own error is Richardson-estimated and must be
   under 1 % of the smallest RK2 error it is used to measure; it is 0.0004–0.06 %).
 - **`crates/sailgym-bench/src/bin/convergence.rs`** (new) prints the table and
-  writes `docs/convergence.md` with `--write`.
-- **`docs/convergence.md`** — the full table, the observed orders, and an
+  writes `docs/v1/convergence.md` with `--write`.
+- **`docs/v1/convergence.md`** — the full table, the observed orders, and an
   honest account of the one scenario that does not fit the bracket.
 
 ### 10.3 — The rotation and mirror sweep (P-group A)
@@ -108,7 +108,7 @@ Six things want a human eye rather than just a read.
 - Determinism is checked harder than the criterion asks: the two runs must agree
   on the step count **and** on all thirteen fields of the final state, by
   `to_bits()`.
-- **`docs/performance.md`** — every figure, with the machine spec.
+- **`docs/v1/performance.md`** — every figure, with the machine spec.
 
 ### 10.5 — Render performance and the 60 fps target (P-group B)
 
@@ -137,7 +137,7 @@ Six things want a human eye rather than just a read.
 - **`crates/sailgym-physics/tests/provenance.rs`** (new) — five audits:
   `every_field_tagged`, `no_stray_constants`, `no_physics_in_typescript`,
   `docs_match_source`, and the added `shipped_values_match_the_f7_table`.
-- **`docs/parameters.md`** — the catalogue table generated from
+- **`docs/v1/parameters.md`** — the catalogue table generated from
   `parameters.rs`'s own doc comments, wrapped in hand-written prose: brief §36's
   disclaimer, the four tags, the deferred validation routes with what each one
   would replace, the three things most wrong with the parameters today, and the
@@ -147,7 +147,7 @@ Six things want a human eye rather than just a read.
 
 ### 10.8 — The final gate and the acceptance audit (P-group S)
 
-- **`docs/acceptance.md`** — brief §47's fourteen criteria, one row each, with
+- **`docs/v1/acceptance.md`** — brief §47's fourteen criteria, one row each, with
   named evidence and an honest verdict. Eleven **Met**, two **Met with a stated
   limit**, one **Partly met**.
 - **`scripts/check.sh`** and **`scripts/check.ps1`** — step 4 gained
@@ -253,7 +253,7 @@ stronger, because it is what the panel actually shows — and keeps its floor of
 10.1 and 10.8 are `P-group: S`; 10.2–10.7 were executed by the section agent
 rather than delegated, so no parallel write conflict was possible. Flagged
 because F13.2 is a rule about *reporting*, and this is the report. The task
-lists in `docs/10-hardening.md` were **not** edited.
+lists in `docs/v1/10-hardening.md` were **not** edited.
 
 ### 2.5 The 30 s Sail-Mode measurement, and the `@slow` tag
 
@@ -268,7 +268,7 @@ names means the subset cannot go stale when a file is renamed.
 
 Task 10.7 does not ask for it. It exists because every handoff from section 01
 onwards asserts "no coefficient was tuned" and nothing has ever checked it. The
-test parses the F7 tables out of `docs/00-foundations.md` — the normative
+test parses the F7 tables out of `docs/v1/00-foundations.md` — the normative
 document, not a copy — and compares **83 of the 85 numeric rows** against
 `BoatParameters::ilca7()`. The two it cannot parse are `delta_r_self_centre`
 (`true`) and `integrator` (`Rk2Midpoint`); both are asserted by hand rather than
@@ -399,7 +399,7 @@ in strictly under the display's own period. Section 03 met the ceiling, section
 08 met it and wrote it up, and this section met it again with the same numbers.
 Asserted in section 08's reachable form — median ≤ 16.7 ms, 95th percentile
 within one quantum of the median, fewer than 2 % long frames — with **no
-threshold value changed**. `docs/performance.md` has the figures.
+threshold value changed**. `docs/v1/performance.md` has the figures.
 
 ### 3.4 No contradiction was found in the normative documents
 
@@ -414,7 +414,7 @@ thing from two normative documents contradicting each other.
 
 ### 4.1 The invariant margins (task 10.1)
 
-Every tolerance in `docs/invariants.md` carries the worst residual actually
+Every tolerance in `docs/v1/invariants.md` carries the worst residual actually
 observed. The ones that are not exact:
 
 | Invariant | Tolerance | Measured worst | Margin |
@@ -443,12 +443,12 @@ a looser bound would let a genuine frame error through as round-off.
 **No tolerance was loosened in this section.** The one fixture that is restricted
 rather than the bound — `sheet_does_no_negative_work`, whose sheet lengths are
 drawn above `ℓ(0)` — was restricted by section 06 and is restated in
-`docs/invariants.md` with the `dt³` measurements that identify it as integrator
+`docs/v1/invariants.md` with the `dt³` measurements that identify it as integrator
 truncation.
 
 ### 4.2 Convergence (task 10.2)
 
-Full table in `docs/convergence.md`. At the shipped default `dt = 0.005` over
+Full table in `docs/v1/convergence.md`. At the shipped default `dt = 0.005` over
 20 s, against an `Rk4` reference at `dt = 3.125e-4`:
 
 | Scenario | position error | heading error | heel error |
@@ -462,7 +462,7 @@ position bound and **45× inside** the heel bound.
 
 ### 4.3 Performance (task 10.4, 10.5)
 
-Everything is in `docs/performance.md`; the headlines:
+Everything is in `docs/v1/performance.md`; the headlines:
 
 - **Native headless: 3 144–3 532× real time**, against brief §37's ≈ 100×
   target — met with a factor of about 31 in hand. The slowest is `gybe`, the
@@ -554,8 +554,8 @@ test, and `documented_invariants_exist` asserts that from the document's side.
 `timestep_convergence` (order ≥ 1.7 for all three; `[1.7, 2.3]` for two of three,
 with the third's exclusion measured and argued in §3.2, and monotone error
 decrease asserted for all three); `error_at_default_dt` (§4.2);
-`the_reference_is_a_reference` (added). `docs/convergence.md` written by
-`cargo run --release -p sailgym-bench --bin convergence -- --write docs/convergence.md`.
+`the_reference_is_a_reference` (added). `docs/v1/convergence.md` written by
+`cargo run --release -p sailgym-bench --bin convergence -- --write docs/v1/convergence.md`.
 
 **10.3** — `cargo test -p sailgym-physics --test symmetry` → **1 test, 96
 cases**, 0 failed. Worst \|Δ\|: body **1.34e-12** (tol 1e-11), world **2.24e-13**
@@ -566,13 +566,13 @@ no case passes by standing still.
 **10.4** — `cargo run --release -p sailgym-bench --bin bench -- --all --seconds 600`.
 Native ≥ 100× real time: **met, 3 144–3 532×** (§4.3). Deterministic: two runs
 per scenario, identical step counts **and** bit-identical final states.
-In-browser headless measured: **2 255–2 633×**. `docs/performance.md` records
+In-browser headless measured: **2 255–2 633×**. `docs/v1/performance.md` records
 all figures with the machine spec.
 
 **10.5** — `pnpm --dir web test:e2e perf` → **15 passed** (5 tests × 3 browsers).
 Sail-Mode 95th percentile over 30 s: asserted in its reachable form (§3.3).
 Physics independence: **0.31–0.56 %** against 2 %. Input lag: **23.2/28.9/36.0 ms**
-p95 against 50 ms. All figures in `docs/performance.md`.
+p95 against 50 ms. All figures in `docs/v1/performance.md`.
 
 **10.6** — `pnpm --dir web test:e2e demonstrations` → **9 passed** (3 × 3
 browsers). Each test asserts its full ordered chain; none asserts only an
@@ -585,7 +585,7 @@ named constants, no offender), `no_physics_in_typescript` (45 hand-written
 TypeScript files, clean), `docs_match_source`, and
 `shipped_values_match_the_f7_table` (83 rows, all equal).
 
-**10.8** — `docs/acceptance.md` has a row per brief §47 criterion with named
+**10.8** — `docs/v1/acceptance.md` has a row per brief §47 criterion with named
 evidence; the gate runs the complete chain and exits 0; the total is recorded
 and the subset documented (§6.2).
 
@@ -619,7 +619,7 @@ failure observed, and the change reverted.
 | `provenance::no_physics_in_typescript` | `export const PROBE_RHO_AIR = 1.225` in `web/src/sim/units.ts` | **FAILED** — `sim/units.ts:61: 1.225 in …` |
 | `provenance::shipped_values_match_the_f7_table` | `resistance.y_v` 40.0 → 40.4 (1 %) | **FAILED** — `resistance.y_v: shipped 40.4, F7 says 40 (40.0 N·s/m)` |
 | `provenance::every_field_tagged` | a second tag word added to `sail.boom_length`'s doc comment | **FAILED** — `sail.boom_length: documentation names 2 tags ["KNOWN", "ASSUMED"] — exactly one is required` |
-| `provenance::docs_match_source` | one value edited in the generated region of `docs/parameters.md` | **FAILED**, with the regeneration command in the message |
+| `provenance::docs_match_source` | one value edited in the generated region of `docs/v1/parameters.md` | **FAILED**, with the regeneration command in the message |
 | `invariants::documented_invariants_exist` | a new `#[test]` in `invariants.rs` with no row in the document | **FAILED**, naming the undocumented test |
 | `invariants::documented_invariants_exist` | a document row renamed to a test that does not exist | **FAILED**, naming the missing test |
 
@@ -736,7 +736,7 @@ than asserted (§2.6).
 
 One **tag** changed, with no value behind it: `board.area` and `rudder.area`
 KNOWN → ASSUMED, which is what F7 already said and what section 08 §5 recorded
-as a defect. §2.3, and `docs/parameters.md`'s change table.
+as a defect. §2.3, and `docs/v1/parameters.md`'s change table.
 
 No new constant was added to the physics crate. `parameters.rs` gained
 `TagOverride` and `tag_overrides`, which are parsing machinery and hold no
@@ -755,7 +755,7 @@ number.
   timestep in the one configuration where the sheet's own damping vanishes.
   **Keep `dt = 0.005`.**
 - **R2 — the boat may be too tender: closed by section 07 and unchanged.** No
-  `sailor_pos_b.y` exists. `docs/README.md`'s open item requiring human sign-off
+  `sailor_pos_b.y` exists. `docs/v1/README.md`'s open item requiring human sign-off
   can be closed.
 - **R3 — sign-convention drift: the guard is now systematic.** The ad-hoc mirror
   tests are joined by a **96-case** sweep over every shipped scenario, eight
@@ -768,7 +768,7 @@ number.
   measured directly: 0.4–0.5 ms a frame on a GPU, 2 ms on Firefox's software
   path. Unchanged from section 08.
 - **R6 — the hull model has no planing regime: quantified and surfaced.**
-  `docs/performance.md` states the speed above which its resistance is
+  `docs/v1/performance.md` states the speed above which its resistance is
   untrustworthy — **≈ 5 m/s**, where the quadratic term already carries 90 % of
   the total — and `diagnostics.hull_model_warning` publishes it to the panel.
   Task 10.4's risk item asks for exactly this.
@@ -860,7 +860,7 @@ The close-out note task 10.8 asks for. In order.
     side effect of adding `zustand`. Verified green many times since; revert
     with a pin if you would rather it had not.
 11. **Task 10.6's demonstration-1 chain and task 10.2's order bracket** are
-    stated in `docs/10-hardening.md` in forms the physics contradicts (§3.1,
+    stated in `docs/v1/10-hardening.md` in forms the physics contradicts (§3.1,
     §3.2). The PRD text should be corrected; **it has not been edited.**
 12. **`CLAUDE.md`'s gate table under-describes step 4.** It still reads "The
     physical invariants still hold (brief section 35)", and step 4 now also runs

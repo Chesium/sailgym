@@ -1,4 +1,4 @@
-//! Procedural wind field (`docs/00-foundations.md` F6.1, brief §18).
+//! Procedural wind field (`docs/v1/00-foundations.md` F6.1, brief §18).
 //!
 //! One field, three modes:
 //!

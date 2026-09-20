@@ -5,8 +5,8 @@ the eight-step gate passes end to end and exits 0, the six brief §32 scenarios
 ship and load, episodes record and replay from stored data, and the six golden
 regressions are in the tree with R7 handled.
 
-Read this before starting section 10 (`docs/10-hardening.md`). Nothing below
-redefines anything in `docs/00-foundations.md`.
+Read this before starting section 10 (`docs/v1/10-hardening.md`). Nothing below
+redefines anything in `docs/v1/00-foundations.md`.
 
 Six things want a human eye rather than just a read.
 
@@ -406,7 +406,7 @@ snapshot element stays numeric.
 9.1 is `P-group: S`; 9.2–9.7 were executed by the section agent rather than
 delegated, so no parallel write conflict was possible. Flagged because F13.2 is
 a rule about *reporting*, and this is the report. The task lists in
-`docs/09-scenarios-replay.md` were **not** edited.
+`docs/v1/09-scenarios-replay.md` were **not** edited.
 
 ### 2.10 The E2E probe on `window.__sailgym`
 
@@ -667,7 +667,7 @@ worst |Δ| **0** at every sample of every scenario. Sensitivity and the R7 skip:
 | 6 | Six golden regressions pass, proven sensitive to a 0.1 % change | **Passed** — six pass; a 0.1 % `y_v` change fails **all six**, §4 |
 | 7 | R7 handled: toolchain mismatch skips with a clear message | **Passed** — §4's quoted skip, and §5 states the platform the goldens came from |
 | 8 | `reward` placeholder present and zero; schema versioned at 1 | **Passed** — `reward_placeholder_zero`, and `schema_version` checked before decoding in both formats and in both directions |
-| 9 | `docs/progress/09-handoff.md` written | **Passed** — this file |
+| 9 | `docs/v1/progress/09-handoff.md` written | **Passed** — this file |
 
 ### 6.4 Exact tool versions
 
@@ -748,7 +748,7 @@ Recommendations from earlier sections remain recorded and **not acted on**:
   timestep are compatible.
 - **R2 — closed by section 07 and unchanged.** `close_hauled` ships at 3.5 m/s
   as F11 anticipated. No `sailor_pos_b.y` exists and none was added.
-  `docs/README.md`'s open item requiring human sign-off can be closed.
+  `docs/v1/README.md`'s open item requiring human sign-off can be closed.
 - **R3 (sign drift)** — the two human-facing angle conventions
   (`heading_deg`, `boom_deg_to_port`) are converted in one function with a
   hand-computed test for each and a round-trip test against the inverse. No new

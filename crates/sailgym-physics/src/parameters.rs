@@ -1,4 +1,4 @@
-//! `BoatParameters` — the complete F7 catalogue (`docs/00-foundations.md`).
+//! `BoatParameters` — the complete F7 catalogue (`docs/v1/00-foundations.md`).
 //!
 //! **No numeric physical literal may live outside this module and
 //! `constants.rs`** (F7). Section 10 greps for violations.

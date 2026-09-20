@@ -8,12 +8,12 @@ by a React/TypeScript front end. You steer with the tiller and trim with the
 mainsheet, and that is all you control. The boom angle, the heel, the leeway,
 the tack, the gybe and the capsize are consequences.
 
-`docs/brief.md` is the specification this was built to, and it is worth reading
+`docs/v1/brief.md` is the specification this was built to, and it is worth reading
 if you want to know why anything here is the way it is. §1 states the purpose;
 what follows is what the code actually does.
 
 **Status: prototype complete (M9).** All ten milestones have landed, the full
-test gate is green, and `docs/acceptance.md` walks the brief's fourteen success
+test gate is green, and `docs/v1/acceptance.md` walks the brief's fourteen success
 criteria one by one with an honest verdict on each.
 
 ---
@@ -43,7 +43,7 @@ The same physics crate runs natively with no browser at all, at roughly
 **This prototype does not claim quantitative ILCA accuracy**, and brief §36 says
 so explicitly. Most coefficients are physically motivated estimates rather than
 measurements. Every one of them is tagged KNOWN / ASSUMED / TUNABLE / DEFERRED
-in `docs/parameters.md`, which also lists what is most wrong today and what
+in `docs/v1/parameters.md`, which also lists what is most wrong today and what
 would have to be measured to fix it.
 
 Deliberately out of scope (brief §44): currents, waves, heave and pitch, sail
@@ -236,7 +236,7 @@ tuned to make a scenario look better. Two things enforce it, and both will stop
 you:
 
 - `provenance::shipped_values_match_the_f7_table` parses the parameter tables
-  out of `docs/00-foundations.md` and compares every numeric row against what
+  out of `docs/v1/00-foundations.md` and compares every numeric row against what
   the code actually ships. A coefficient cannot move unless the normative
   document moves with it.
 - `tests/regression.rs` compares six recorded 30-second trajectories. A **0.1 %**
@@ -244,7 +244,7 @@ you:
   simulated time.
 
 If a change is genuine, record the reason, the source and the assumption — in
-the `parameters.rs` doc comment and in `docs/parameters.md` — and regenerate the
+the `parameters.rs` doc comment and in `docs/v1/parameters.md` — and regenerate the
 goldens afterwards:
 
 ```sh
@@ -264,7 +264,7 @@ simulator — and later RL work — possible (brief §45).
 cargo run --release -p sailgym-bench --bin bench -- --scenario close_hauled --seconds 600
 cargo run --release -p sailgym-bench --bin bench -- --all
 
-# The time-step convergence study; --write regenerates docs/convergence.md
+# The time-step convergence study; --write regenerates docs/v1/convergence.md
 cargo run --release -p sailgym-bench --bin convergence
 
 # Wind-field sampling and raw step-rate microbenchmarks
@@ -280,15 +280,15 @@ code, and the binaries say so on stderr if you forget.
 
 | File | What it is |
 |---|---|
-| `docs/brief.md` | The original specification. **Authoritative on scope.** |
-| `docs/00-foundations.md` | Normative: frames, sign conventions, equations, the parameter catalogue, the WASM surface. Nothing may redefine it. |
-| `docs/acceptance.md` | The brief's fourteen success criteria, with evidence and a verdict on each. **Start here for the honest state of things.** |
-| `docs/parameters.md` | Every parameter, its value, its provenance tag and its rationale — plus what is most wrong with them today. |
-| `docs/invariants.md` | Every physical invariant, its test, its tolerance, and why that tolerance is the right number. |
-| `docs/convergence.md` | The time-step convergence study. |
-| `docs/performance.md` | Every performance figure, with the machine that produced it. |
-| `docs/01-skeleton.md` … `docs/10-hardening.md` | One executable PRD per milestone. |
-| `docs/progress/` | A handoff note per milestone: what landed, what deviated, what fired. |
+| `docs/v1/brief.md` | The original specification. **Authoritative on scope.** |
+| `docs/v1/00-foundations.md` | Normative: frames, sign conventions, equations, the parameter catalogue, the WASM surface. Nothing may redefine it. |
+| `docs/v1/acceptance.md` | The brief's fourteen success criteria, with evidence and a verdict on each. **Start here for the honest state of things.** |
+| `docs/v1/parameters.md` | Every parameter, its value, its provenance tag and its rationale — plus what is most wrong with them today. |
+| `docs/v1/invariants.md` | Every physical invariant, its test, its tolerance, and why that tolerance is the right number. |
+| `docs/v1/convergence.md` | The time-step convergence study. |
+| `docs/v1/performance.md` | Every performance figure, with the machine that produced it. |
+| `docs/v1/01-skeleton.md` … `docs/v1/10-hardening.md` | One executable PRD per milestone. |
+| `docs/v1/progress/` | A handoff note per milestone: what landed, what deviated, what fired. |
 | `CLAUDE.md` | Entry point for coding agents. |
 
 ---
@@ -302,7 +302,7 @@ crates/sailgym-bench/     native headless benchmarks and the golden generator
 web/                      Vite + React + TypeScript app and Playwright specs
 scenarios/                the six scenario documents
 scripts/                  build-wasm.(ps1|sh), check.(ps1|sh)
-docs/                     brief, foundations, PRDs, measurements, progress notes
+docs/v1/                     brief, foundations, PRDs, measurements, progress notes
 ```
 
 Two boundaries are load-bearing and are mechanically enforced:
@@ -321,7 +321,7 @@ Two boundaries are load-bearing and are mechanically enforced:
 
 Recorded here rather than left to be discovered. All three are physical
 judgements that need a human decision, and all three are written up in full in
-`docs/progress/`:
+`docs/v1/progress/`:
 
 1. **The boat cannot be inverted.** With the shipped stability parameters, the
    righting arm regains positive stability past about 82° of heel, so the boat

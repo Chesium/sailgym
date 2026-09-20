@@ -7,10 +7,10 @@ React/TypeScript front end. Read this file first, then the normative docs below.
 
 | File | Authority |
 |---|---|
-| `docs/brief.md` | Authoritative on **scope**. |
-| `docs/00-foundations.md` | **Normative** on conventions, frames, sign conventions, equations, parameters and the WASM surface. |
-| `docs/NN-<name>.md` | The executable PRD for one section (milestone). |
-| `docs/progress/NN-handoff.md` | Written on completing section NN; read by section NN+1. |
+| `docs/v1/brief.md` | Authoritative on **scope**. |
+| `docs/v1/00-foundations.md` | **Normative** on conventions, frames, sign conventions, equations, parameters and the WASM surface. |
+| `docs/v1/NN-<name>.md` | The executable PRD for one section (milestone). |
+| `docs/v1/progress/NN-handoff.md` | Written on completing section NN; read by section NN+1. |
 
 `00-foundations.md` outranks the section PRDs. The brief outranks everything on
 scope. **No agent may redefine anything in `00-foundations.md`.** If you find a
@@ -72,7 +72,7 @@ handoff note.
 JS-facing crate.
 
 **Write a handoff note** (F13.6). On completing a section, write
-`docs/progress/NN-handoff.md` recording: what landed; what deviated from the PRD
+`docs/v1/progress/NN-handoff.md` recording: what landed; what deviated from the PRD
 and why; any risk from the F11 register that fired; any parameter changed and
 why; and anything the next section must know.
 
@@ -85,5 +85,5 @@ crates/sailgym-bench/     native headless benchmark / golden-trajectory generato
 web/                      Vite + React + TypeScript app and Playwright specs
 scenarios/                scenario JSON
 scripts/                  build-wasm.(ps1|sh), check.(ps1|sh)
-docs/                     brief, foundations, section PRDs, progress notes
+docs/v1/                     brief, foundations, section PRDs, progress notes
 ```

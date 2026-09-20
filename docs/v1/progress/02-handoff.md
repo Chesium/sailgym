@@ -1,8 +1,8 @@
 # Section 02 — Handoff (M1: state, integrator, clock, controls, SVG, determinism)
 
 **Written per F13.6.** Read this before starting section 03
-(`docs/03-wind-field.md`). Conventions remain normative in
-`docs/00-foundations.md`; nothing below redefines them.
+(`docs/v1/03-wind-field.md`). Conventions remain normative in
+`docs/v1/00-foundations.md`; nothing below redefines them.
 
 Status: **complete.** `pwsh scripts/check.ps1` exits 0 end to end (8/8).
 

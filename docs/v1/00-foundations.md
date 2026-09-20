@@ -5,10 +5,10 @@ single source of truth for conventions, symbols, equations, parameters, and the
 WASM surface. Every section PRD and every task subagent reads this file first.
 
 Rule: **no agent may redefine anything in this document.** If an implementation
-contradiction is found, stop, record it in `docs/progress/NN-handoff.md`, and
+contradiction is found, stop, record it in `docs/v1/progress/NN-handoff.md`, and
 escalate to the human. Do not silently pick a different convention.
 
-Source brief: `docs/brief.md`. References of the form "brief §10" point there.
+Source brief: `docs/v1/brief.md`. References of the form "brief §10" point there.
 
 ---
 
@@ -855,7 +855,7 @@ sailgym/
 │   ├── tests/e2e/      *.spec.ts
 │   └── package.json  vite.config.ts  playwright.config.ts
 ├── scenarios/          *.json
-├── docs/               brief.md  00-foundations.md … 10-hardening.md  progress/
+├── docs/v1/               brief.md  00-foundations.md … 10-hardening.md  progress/
 └── scripts/            build-wasm.(sh|ps1)  check.(sh|ps1)
 ```
 
@@ -951,7 +951,7 @@ Read this before dispatching or executing any task.
    coefficient must change, record the reason, source and assumption in the
    section handoff note and in the `parameters.rs` doc comment.
 6. **Handoff note.** On completing a section, write
-   `docs/progress/NN-handoff.md` with: what landed, what deviated from the PRD
+   `docs/v1/progress/NN-handoff.md` with: what landed, what deviated from the PRD
    and why, any risk from F11 that fired, any parameter changed and why, and
    anything the next section must know. Section N+1 reads N's handoff.
 7. **Every section leaves the app runnable and `scripts/check` green.** No

@@ -1,8 +1,8 @@
 # Section 04 — Handoff (M3: hull, centreboard and rudder hydrodynamics)
 
 **Written per F13.6.** Read this before starting section 05
-(`docs/05-sail-boom.md`). Conventions remain normative in
-`docs/00-foundations.md`; nothing below redefines them.
+(`docs/v1/05-sail-boom.md`). Conventions remain normative in
+`docs/v1/00-foundations.md`; nothing below redefines them.
 
 Status: **complete, with two items escalated to the human** (§2.4 and §2.5).
 `scripts/check.sh` exits 0 end to end (8/8), twice in succession. R4 is closed.
@@ -160,7 +160,7 @@ a foundations edit and is yours to make.
 
 ### 2.5 ESCALATION — two board acceptance criteria in `04-hydro.md` have the wrong sign
 
-`docs/04-hydro.md`, task 4.2, writes:
+`docs/v1/04-hydro.md`, task 4.2, writes:
 
 > `alpha_equals_leeway_angle`: with `r = p = 0`, `alpha` equals `atan2(v, u)`
 > within 1e-9. (Sign check: positive `v` — drift to port — gives positive
@@ -338,12 +338,12 @@ Every command below was run on this host and its exit status observed.
 $ git ls-files | grep scaffold                                   -> nothing (exit 1)
 $ grep -rni "scaffold" crates/ web/ --include=*.rs --include=*.ts --include=*.tsx
                                                                  -> nothing (exit 1)
-$ git grep -n "scaffold_thrust" -- .                             -> 7 hits, all under docs/
+$ git grep -n "scaffold_thrust" -- .                             -> 7 hits, all under docs/v1/
 ```
 
-The third grep's only matches are `docs/02-kinematics-svg.md`,
-`docs/04-hydro.md` (the criterion itself) and `docs/progress/02-handoff.md`,
-i.e. nothing outside `docs/` as required. An early draft of this section left
+The third grep's only matches are `docs/v1/02-kinematics-svg.md`,
+`docs/v1/04-hydro.md` (the criterion itself) and `docs/v1/progress/02-handoff.md`,
+i.e. nothing outside `docs/v1/` as required. An early draft of this section left
 the word "scaffold" in four explanatory comments; they were reworded to "M1
 placeholder force model" so the grep stays a real check rather than matching
 prose about the thing it is looking for.

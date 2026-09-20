@@ -1,7 +1,7 @@
 # Section 04 — Hull, Centreboard and Rudder Hydrodynamics (M3)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F4, F5, F6.5, F6.6 especially),
-`docs/progress/03-handoff.md`, `docs/brief.md` §14, §15, §35.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F4, F5, F6.5, F6.6 especially),
+`docs/v1/progress/03-handoff.md`, `docs/v1/brief.md` §14, §15, §35.
 
 ## Goal
 
@@ -215,7 +215,7 @@ declaration, and the `scaffold_thrust` parameter.
 - `git ls-files | grep scaffold` returns **nothing**.
 - `grep -rni "scaffold" crates/ web/ --include=*.rs --include=*.ts --include=*.tsx`
   returns **nothing**.
-- `grep -rn "scaffold_thrust" .` returns nothing outside `docs/`.
+- `grep -rn "scaffold_thrust" .` returns nothing outside `docs/v1/`.
 - `cargo test -p sailgym-physics forces::`:
   - `summation_order_documented`: a test reads `forces/mod.rs` and asserts the six
     calls appear in the order above. Crude, but it makes an accidental reorder
@@ -284,8 +284,8 @@ keys lets the rudder self-centre and the boat straighten.
    `grep -rn "fn cl\|fn cd\|C_L\|lift_coefficient" crates/sailgym-physics/src`
    matches only `foil.rs`.
 7. The `F7` parameter values used are unchanged, or every change is recorded in
-   `docs/progress/04-handoff.md` with reason, source and assumption (brief §43).
-8. `docs/progress/04-handoff.md` written, including the measured `resistance_anchor`
+   `docs/v1/progress/04-handoff.md` with reason, source and assumption (brief §43).
+8. `docs/v1/progress/04-handoff.md` written, including the measured `resistance_anchor`
    value and any R6 commentary.
 
 ## Risks touched

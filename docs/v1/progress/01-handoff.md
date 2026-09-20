@@ -1,8 +1,8 @@
 # Section 01 — Handoff (M0: repository, toolchain, WASM, Playwright)
 
 **Written per F13.6.** Read this before starting section 02
-(`docs/02-kinematics-svg.md`). Conventions remain normative in
-`docs/00-foundations.md`; nothing below redefines them.
+(`docs/v1/02-kinematics-svg.md`). Conventions remain normative in
+`docs/v1/00-foundations.md`; nothing below redefines them.
 
 Status: **complete.** `pwsh scripts/check.ps1` exits 0 end to end.
 
@@ -226,7 +226,7 @@ Single-step execution verified both ways: `pwsh scripts/check.ps1 -Step 1` and
 | 4 | `pnpm --dir web test:e2e` green on Chrome, Edge and Firefox | **pass** — 6/6 across `chromium`, `msedge` (system Edge 153.0.4234.32), `firefox` (Playwright Firefox 155.0) |
 | 5 | `cargo tree -p sailgym-physics` has no `wasm-bindgen` and no JS-facing crate | **pass** — tree is `serde` + `serde_json` only; a case-insensitive grep for `wasm`/`js-sys`/`web-sys` matches 0 lines |
 | 6 | `grep -riE "rho\|9\.8\|1\.225\|1025" crates/sailgym-physics/src --include=*.rs` matches only `constants.rs` | **pass** — exactly 3 matches, all in `constants.rs` |
-| 7 | `docs/progress/01-handoff.md` exists per F13.6 | **pass** — this file |
+| 7 | `docs/v1/progress/01-handoff.md` exists per F13.6 | **pass** — this file |
 
 ---
 

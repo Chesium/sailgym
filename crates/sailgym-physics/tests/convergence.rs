@@ -3,7 +3,7 @@
 //! The study — scripts, runner, error norms and the order estimate — lives in
 //! `tests/convergence/study.rs` and is shared verbatim with
 //! `crates/sailgym-bench/src/bin/convergence.rs`, which writes
-//! `docs/convergence.md`. The document and these assertions therefore describe
+//! `docs/v1/convergence.md`. The document and these assertions therefore describe
 //! the same runs and cannot drift apart.
 //!
 //! Gate step 4 runs this target.
@@ -22,7 +22,7 @@ const ORDER_HI: f64 = 2.3;
 /// `beam_reach_capsize` converges *faster* than second order and is asserted
 /// one-sidedly. See [`timestep_convergence`] for the measurement and the
 /// reasoning; it is the exclusion section acceptance criterion 3 permits, and
-/// it is recorded in `docs/convergence.md` and the section 10 handoff.
+/// it is recorded in `docs/v1/convergence.md` and the section 10 handoff.
 const SUPERCONVERGENT: &str = "beam_reach_capsize";
 
 fn describe(scenario: &str, rows: &[ConvergenceResult]) -> String {

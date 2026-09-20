@@ -20,7 +20,7 @@ import type { SimHandle } from '../../src/sim/loadWasm'
  *    whose rendered rudder reflects it, which is brief §37's "no visible input
  *    lag from the WASM/UI architecture" turned into a number.
  *
- * And, for `docs/performance.md`, a fifth: the in-browser **headless** stepping
+ * And, for `docs/v1/performance.md`, a fifth: the in-browser **headless** stepping
  * rate with no rendering at all (task 10.4's browser half).
  *
  * **What this measures and what it does not.** `requestAnimationFrame` is
@@ -112,7 +112,7 @@ async function steadyWind(page: Page) {
 
 function report(label: string, browser: string, s: FrameStats, attempt: number): void {
   // Printed so the figures land in the run log and can be copied into
-  // `docs/performance.md`, which the acceptance criteria require. Every
+  // `docs/v1/performance.md`, which the acceptance criteria require. Every
   // attempt is printed, not only the one that is asserted on.
   console.log(
     `[perf] ${browser} ${label} #${attempt}: frames=${s.frames} p50=${s.p50.toFixed(2)}ms ` +
@@ -294,7 +294,7 @@ test.describe('frame time @slow', () => {
     // the single percentile would: the median is at or under 16.7 ms, the
     // 95th percentile is within one reporting quantum of the median (so the
     // tail is jitter, not stalls), and long frames are rare. The measured
-    // figures are in `docs/performance.md`.
+    // figures are in `docs/v1/performance.md`.
     expect(sail.p50, 'Sail Mode median frame time').toBeLessThanOrEqual(16.7)
     expect(
       toQuantum(sail.p95 - sail.p50),
@@ -506,7 +506,7 @@ test.describe('headless stepping', () => {
     )
     expect(result.seconds, 'the benchmark must have taken measurable time').toBeGreaterThan(0)
     // A floor, not the target: brief §37's 100× is aspirational and is judged
-    // natively in `docs/performance.md`. This asserts only that the browser
+    // natively in `docs/v1/performance.md`. This asserts only that the browser
     // build is in the same league as the native one rather than an order of
     // magnitude adrift.
     expect(result.realTime, 'in-browser headless real-time factor').toBeGreaterThan(100)

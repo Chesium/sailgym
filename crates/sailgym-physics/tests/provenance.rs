@@ -14,7 +14,7 @@
 //! | [`every_field_tagged`] | a parameter whose tag is missing, or ambiguous |
 //! | [`no_stray_constants`] | a physical literal loose in the source |
 //! | [`no_physics_in_typescript`] | a density, a `g`, or `½ρV²` on the JS side |
-//! | [`docs_match_source`] | `docs/parameters.md` drifting from `parameters.rs` |
+//! | [`docs_match_source`] | `docs/v1/parameters.md` drifting from `parameters.rs` |
 //! | [`shipped_values_match_the_f7_table`] | a coefficient quietly tuned since F7 |
 //!
 //! Gate step 4 runs this target.
@@ -494,13 +494,13 @@ fn no_physics_in_typescript() {
 // shipped_values_match_the_f7_table
 // ---------------------------------------------------------------------------
 
-/// Parse the F7 tables of `docs/00-foundations.md` into `name -> value text`.
+/// Parse the F7 tables of `docs/v1/00-foundations.md` into `name -> value text`.
 ///
 /// Rows look like `| \`loa\` | 4.23 m | KNOWN | brief §3 |`. Only the F7
 /// section is read, so the risk registers and the equation tables elsewhere in
 /// the document cannot be mistaken for parameters.
 fn f7_table() -> BTreeMap<String, String> {
-    let path = repo_root().join("docs/00-foundations.md");
+    let path = repo_root().join("docs/v1/00-foundations.md");
     let doc = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let start = doc
         .find("## F7. Parameter catalogue")
@@ -663,7 +663,7 @@ fn shipped_values_match_the_f7_table() {
 
     assert!(
         wrong.is_empty(),
-        "shipped parameters disagree with the F7 table in `docs/00-foundations.md`. \
+        "shipped parameters disagree with the F7 table in `docs/v1/00-foundations.md`. \
          If one of these is a deliberate change, brief §43 requires the reason, the source \
          and the assumption to be recorded — in the `parameters.rs` doc comment, in the \
          section handoff, and in F7 itself:\n  {}",
@@ -697,7 +697,7 @@ fn shipped_values_match_the_f7_table() {
 // docs_match_source
 // ---------------------------------------------------------------------------
 
-/// The generated region of `docs/parameters.md`.
+/// The generated region of `docs/v1/parameters.md`.
 const BEGIN: &str =
     "<!-- BEGIN GENERATED — regenerate with `cargo test -p sailgym-physics --test provenance` -->";
 const END: &str = "<!-- END GENERATED -->";
@@ -747,7 +747,7 @@ fn render_table() -> String {
 
 #[test]
 fn docs_match_source() {
-    // Task 10.7: "`docs/parameters.md` regenerated matches the committed copy —
+    // Task 10.7: "`docs/v1/parameters.md` regenerated matches the committed copy —
     // the doc cannot drift from the code."
     //
     // Only the fenced region is generated. The prose around it — brief §36's
@@ -758,31 +758,31 @@ fn docs_match_source() {
     // Set `SAILGYM_UPDATE_DOCS=1` to rewrite the region instead of asserting on
     // it. That is the regeneration path, and it is deliberately explicit: a
     // test that silently rewrote the file it checks would prove nothing.
-    let path = repo_root().join("docs/parameters.md");
+    let path = repo_root().join("docs/v1/parameters.md");
     let doc = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let start = doc
         .find(BEGIN)
-        .unwrap_or_else(|| panic!("docs/parameters.md must contain the BEGIN marker"))
+        .unwrap_or_else(|| panic!("docs/v1/parameters.md must contain the BEGIN marker"))
         + BEGIN.len();
     let end = doc[start..]
         .find(END)
         .map(|i| start + i)
-        .expect("docs/parameters.md must contain the END marker");
+        .expect("docs/v1/parameters.md must contain the END marker");
 
     let want = format!("\n\n{}\n", render_table().trim_end());
     let have = &doc[start..end];
 
     if std::env::var("SAILGYM_UPDATE_DOCS").is_ok() {
         let updated = format!("{}{}{}", &doc[..start], want, &doc[end..]);
-        std::fs::write(&path, updated).expect("write docs/parameters.md");
-        eprintln!("provenance: rewrote the generated region of docs/parameters.md");
+        std::fs::write(&path, updated).expect("write docs/v1/parameters.md");
+        eprintln!("provenance: rewrote the generated region of docs/v1/parameters.md");
         return;
     }
 
     assert_eq!(
         have.trim(),
         want.trim(),
-        "docs/parameters.md is out of date. Regenerate it with:\n  \
+        "docs/v1/parameters.md is out of date. Regenerate it with:\n  \
          SAILGYM_UPDATE_DOCS=1 cargo test -p sailgym-physics --test provenance docs_match_source"
     );
 
@@ -802,7 +802,7 @@ fn docs_match_source() {
     ] {
         assert!(
             doc.contains(needle),
-            "docs/parameters.md must mention {needle:?} (brief §36)"
+            "docs/v1/parameters.md must mention {needle:?} (brief §36)"
         );
     }
 }

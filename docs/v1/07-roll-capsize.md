@@ -1,7 +1,7 @@
 # Section 07 — Roll Dynamics, Righting Moment, Capsize (M6)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F6.4, F6.7, F6.10, F11/R2),
-`docs/progress/06-handoff.md`, `docs/brief.md` §16, §17, §46.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F6.4, F6.7, F6.10, F11/R2),
+`docs/v1/progress/06-handoff.md`, `docs/v1/brief.md` §16, §17, §46.
 
 ## Goal
 
@@ -260,7 +260,7 @@ the top of this document. Each is a source grep asserted as a test:
    clamping or `NaN` (brief §17).
 7. Task 7.3 touched no file under `aero/`, `hydro/` or `rigging/` — confirming
    the F6.4 contract held.
-8. `docs/progress/07-handoff.md` records: the measured free-decay roll period,
+8. `docs/v1/progress/07-handoff.md` records: the measured free-decay roll period,
    the wind speed and sheet setting at which capsize first occurs, and the
    outcome of R2.
 

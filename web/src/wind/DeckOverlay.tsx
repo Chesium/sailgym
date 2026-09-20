@@ -1,7 +1,7 @@
 /**
  * The application's single deck.gl surface (brief section 19, section 39).
  *
- * R5 in `docs/00-foundations.md` is about exactly this file: one `Deck`
+ * R5 in `docs/v1/00-foundations.md` is about exactly this file: one `Deck`
  * instance, created lazily, never torn down and rebuilt. Toggling the wind
  * layers changes the `layers` prop; it does not mount or unmount `DeckGL`, so
  * no WebGL context is ever created more than once.

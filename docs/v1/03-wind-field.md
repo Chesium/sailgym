@@ -1,7 +1,7 @@
 # Section 03 — Wind Field and deck.gl Visualization (M2)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F6.1, F8.2, F9),
-`docs/progress/02-handoff.md`, `docs/brief.md` §18, §19, §20, §39.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F6.1, F8.2, F9),
+`docs/v1/progress/02-handoff.md`, `docs/v1/brief.md` §18, §19, §20, §39.
 
 ## Goal
 
@@ -278,7 +278,7 @@ Integration-level tests that belong outside the module:
    `grep -rnE "sin\(|cos\(|stream function|curl" web/src/wind/` matches only
    `particles.ts` advection and the arrow glyph rotation.
 7. Section 02's determinism suite still green — the new RNG did not perturb it.
-8. `docs/progress/03-handoff.md` records: measured `sample` throughput, measured
+8. `docs/v1/progress/03-handoff.md` records: measured `sample` throughput, measured
    grid-sample time, measured frame time with the wind layer, and whether R5
    fired.
 

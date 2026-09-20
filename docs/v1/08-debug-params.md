@@ -1,7 +1,7 @@
 # Section 08 — Debug Instrumentation and Live Parameter Editing (M7)
 
-**Prerequisite reading:** `docs/00-foundations.md` (F7, F8.2),
-`docs/progress/07-handoff.md`, `docs/brief.md` §29, §30, §31.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (F7, F8.2),
+`docs/v1/progress/07-handoff.md`, `docs/v1/brief.md` §29, §30, §31.
 
 ## Goal
 
@@ -248,7 +248,7 @@ all three figures.
 6. Sail Mode shows exactly the brief §29 set and nothing more.
 7. Frame-time figures recorded for all three configurations.
 8. All earlier suites — determinism, invariants, no_shortcuts — still green.
-9. `docs/progress/08-handoff.md` written.
+9. `docs/v1/progress/08-handoff.md` written.
 
 ## Risks touched
 

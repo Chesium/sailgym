@@ -35,10 +35,10 @@ and a green `scripts/check`.
 
 One agent per section, in order. Suggested prompt:
 
-> You are the section agent for `docs/NN-<name>.md`.
+> You are the section agent for `docs/v1/NN-<name>.md`.
 >
-> 1. Read `docs/00-foundations.md` in full, then your section PRD in full, then
->    `docs/progress/<NN-1>-handoff.md`. Do not skim; the conventions in
+> 1. Read `docs/v1/00-foundations.md` in full, then your section PRD in full, then
+>    `docs/v1/progress/<NN-1>-handoff.md`. Do not skim; the conventions in
 >    foundations are normative and you may not redefine them.
 > 2. Execute tasks in `P-group` order (alphabetical). Tasks marked **`P-group: S`
 >    you must implement yourself** — they are the contract and integration tasks.
@@ -48,7 +48,7 @@ One agent per section, in order. Suggested prompt:
 > 3. After each group, run `pwsh scripts/check.ps1` before starting the next.
 > 4. Verify every acceptance criterion literally. They are commands and numeric
 >    assertions, not descriptions.
-> 5. On completion, write `docs/progress/NN-handoff.md` per F13.6 and report
+> 5. On completion, write `docs/v1/progress/NN-handoff.md` per F13.6 and report
 >    which section acceptance criteria passed, which did not, and why.
 >
 > Never tune a physical coefficient to make a scenario look better (brief §43).

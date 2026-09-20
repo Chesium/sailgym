@@ -884,7 +884,7 @@ mod sheet_integrated {
 
     /// **R1 gate (F11).** 60 s of a hauled beam reach over the 3x3 grid of
     /// timestep and sheet stiffness the section PRD names. The measured table
-    /// is in `docs/progress/06-handoff.md`; run with `--nocapture` to
+    /// is in `docs/v1/progress/06-handoff.md`; run with `--nocapture` to
     /// reproduce it.
     #[test]
     fn sheet_stiffness_stability() {

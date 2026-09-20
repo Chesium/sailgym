@@ -1,7 +1,7 @@
 # Section 10 — Invariants, Convergence, Performance, Demonstrations (M9)
 
-**Prerequisite reading:** `docs/00-foundations.md` (all), all prior handoff notes,
-`docs/brief.md` §35, §36, §37, §43, §46, §47.
+**Prerequisite reading:** `docs/v1/00-foundations.md` (all), all prior handoff notes,
+`docs/v1/brief.md` §35, §36, §37, §43, §46, §47.
 
 ## Goal
 
@@ -20,12 +20,12 @@ regenerate the affected goldens deliberately.
 
 ### 10.1 — Complete the invariant suite with tolerances
 **P-group: S**
-**Owns:** `crates/sailgym-physics/tests/invariants.rs`, `docs/invariants.md`
+**Owns:** `crates/sailgym-physics/tests/invariants.rs`, `docs/v1/invariants.md`
 
 Every item in brief §35 must be present with an explicit, justified tolerance.
 Audit the accumulated suite against the brief's list and fill every gap.
 
-`docs/invariants.md` is a table: invariant, brief reference, test name, tolerance,
+`docs/v1/invariants.md` is a table: invariant, brief reference, test name, tolerance,
 and **why that tolerance** — "1e-9 because RK2 round-off over 6000 steps at
 `dt = 0.005` accumulates to roughly 1e-11" is acceptable; "1e-9 seemed fine" is
 not. A tolerance chosen to make a failing test pass is a defect, and the
@@ -50,7 +50,7 @@ Required final set (some already exist from sections 04–09):
 **Acceptance criteria**
 - `cargo test -p sailgym-physics --test invariants` green; every brief §35 item
   maps to at least one named test, asserted by a test that reads
-  `docs/invariants.md` and checks each listed test name exists in the suite.
+  `docs/v1/invariants.md` and checks each listed test name exists in the suite.
 - No tolerance was loosened during this section. If one was, the handoff note
   states which, from what to what, and why — and that is a finding, not a fix.
 
@@ -84,7 +84,7 @@ pub fn observed_order(results: &[ConvergenceResult]) -> f64;
   trajectories diverge chaotically, say so explicitly and evaluate convergence on
   the pre-capsize window instead — documenting the window. Do **not** widen the
   order tolerance to accommodate chaos.
-- The full convergence table is written to `docs/convergence.md`.
+- The full convergence table is written to `docs/v1/convergence.md`.
 
 ---
 
@@ -108,7 +108,7 @@ rotations × mirrored/unmirrored, each run 20 s with a scripted control sequence
 
 ### 10.4 — Headless performance benchmark
 **P-group: B**
-**Owns:** `crates/sailgym-bench/src/bin/bench.rs`, `docs/performance.md`
+**Owns:** `crates/sailgym-bench/src/bin/bench.rs`, `docs/v1/performance.md`
 **Depends:** 10.1
 
 Brief §37: at least approximately **100× real time** for a single headless
@@ -129,7 +129,7 @@ foil evaluation, integration) so the next optimisation has a target.
   secondary to correctness and architecture.
 - In-browser headless (physics stepping with rendering disabled) real-time factor
   measured and recorded.
-- `docs/performance.md` records all figures with the machine spec.
+- `docs/v1/performance.md` records all figures with the machine spec.
 - The benchmark is deterministic: two runs report identical step counts.
 
 ---
@@ -155,7 +155,7 @@ input lag" criterion made measurable.
 - Physics independence: at 4× speed with rendering throttled to 20 fps, `t`
   advances at the same rate as at 60 fps within 2 %.
 - Measured input lag under **50 ms** at the 95th percentile.
-- All figures recorded in `docs/performance.md`.
+- All figures recorded in `docs/v1/performance.md`.
 
 ---
 
@@ -200,14 +200,14 @@ uncontrolled sheet handling").
 
 ### 10.7 — Parameter provenance audit
 **P-group: C**
-**Owns:** `docs/parameters.md`, `crates/sailgym-physics/tests/provenance.rs`
+**Owns:** `docs/v1/parameters.md`, `crates/sailgym-physics/tests/provenance.rs`
 **Depends:** 10.1
 
 Brief §36 and §48: every important physical parameter must carry an honest
 KNOWN / ASSUMED / TUNABLE / DEFERRED tag, and the prototype must **not claim
 quantitative ILCA accuracy** (brief §36 last line).
 
-`docs/parameters.md` is generated from `parameters.rs` doc comments: field, value,
+`docs/v1/parameters.md` is generated from `parameters.rs` doc comments: field, value,
 unit, tag, source or rationale, and — for anything changed since F7 — the reason,
 recorded per brief §43.
 
@@ -220,9 +220,9 @@ recorded per brief §43.
   - `no_physics_in_typescript`: `grep` over `web/src` finds no occurrence of
     `1.225`, `1025`, `9.81`, `9.80665`, and no `0.5 *` adjacent to a density
     identifier.
-  - `docs_match_source`: `docs/parameters.md` regenerated matches the committed
+  - `docs_match_source`: `docs/v1/parameters.md` regenerated matches the committed
     copy — the doc cannot drift from the code.
-- `docs/parameters.md` contains an explicit statement that the prototype does not
+- `docs/v1/parameters.md` contains an explicit statement that the prototype does not
   claim validated ILCA performance (brief §36), and lists the deferred validation
   routes from brief §36.
 - Every parameter that changed from its F7 default during sections 02–09 is
@@ -232,7 +232,7 @@ recorded per brief §43.
 
 ### 10.8 — Final gate and success-criteria audit
 **P-group: S**
-**Owns:** `docs/acceptance.md`, `scripts/check.ps1`, `scripts/check.sh`
+**Owns:** `docs/v1/acceptance.md`, `scripts/check.ps1`, `scripts/check.sh`
 **Depends:** all
 
 Walk brief §47's fourteen success criteria one by one. For each, name the test,
@@ -244,7 +244,7 @@ Update `scripts/check.*` to include `convergence`, `symmetry`, `provenance` and
 `no_shortcuts`.
 
 **Acceptance criteria**
-- `docs/acceptance.md` has a row per brief §47 criterion with evidence.
+- `docs/v1/acceptance.md` has a row per brief §47 criterion with evidence.
 - `pwsh scripts/check.ps1` runs the complete chain and exits 0.
 - Total gate wall time recorded; if it exceeds 10 minutes, split it into a fast
   pre-commit subset and a full subset, and document both.
@@ -255,7 +255,7 @@ Update `scripts/check.*` to include `convergence`, `symmetry`, `provenance` and
 
 1. `pwsh scripts/check.ps1` exits 0 end to end, including every suite added here.
 2. Every brief §35 invariant is implemented with a **justified** tolerance in
-   `docs/invariants.md`.
+   `docs/v1/invariants.md`.
 3. RK2 convergence order in `[1.7, 2.3]` demonstrated for at least two of three
    scenarios, with any exclusion documented and justified.
 4. All three brief §46 demonstrations pass as automated tests asserting ordered
@@ -264,9 +264,9 @@ Update `scripts/check.*` to include `convergence`, `symmetry`, `provenance` and
    target; browser 95th-percentile frame time and input lag measured and recorded.
 6. `no_stray_constants` and `no_physics_in_typescript` pass — the F7 and brief §23
    boundaries are mechanically enforced.
-7. `docs/acceptance.md` completed with an honest verdict on each of brief §47's
+7. `docs/v1/acceptance.md` completed with an honest verdict on each of brief §47's
    fourteen criteria.
-8. `docs/progress/10-handoff.md` written as a project-close note: what works,
+8. `docs/v1/progress/10-handoff.md` written as a project-close note: what works,
    what is approximate, what an RL or validation effort should tackle first.
 
 ## Risks touched

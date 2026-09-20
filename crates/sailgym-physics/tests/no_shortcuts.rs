@@ -18,7 +18,7 @@
 //!
 //! Section 07 introduced each forbidden pattern into the source in turn,
 //! confirmed the matching test failed, and reverted it. The runs are recorded
-//! in `docs/progress/07-handoff.md`. An audit that cannot fail is not an audit.
+//! in `docs/v1/progress/07-handoff.md`. An audit that cannot fail is not an audit.
 
 use std::path::{Path, PathBuf};
 

@@ -3,7 +3,7 @@
 //! Only air in v1 — the brief defers water currents entirely (brief §18), so
 //! the water is still and there is no `current.rs`.
 //!
-//! This module declares the [`WindField`] contract (`docs/00-foundations.md`
+//! This module declares the [`WindField`] contract (`docs/v1/00-foundations.md`
 //! F6.1) and the **one** conversion between the meteorological "from" bearing
 //! used by scenario JSON and the UI, and the world-frame velocity vector used
 //! by the physics. That conversion exists here and nowhere else; the

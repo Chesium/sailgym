@@ -10,7 +10,7 @@
 //! * `crates/sailgym-physics/tests/convergence.rs` — asserts the order and the
 //!   absolute error at the default timestep;
 //! * `crates/sailgym-bench/src/bin/convergence.rs` — prints the full table and
-//!   writes `docs/convergence.md`.
+//!   writes `docs/v1/convergence.md`.
 //!
 //! ## What the script had to avoid, and why that is not tuning
 //!

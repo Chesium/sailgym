@@ -175,7 +175,7 @@ function legacyFixture(sim: SimHandle, name: string): string {
     // brief §46's `beam_reach_capsize`: a northerly on the port beam with the
     // sheet hard in, which is where the boat starts. 7 m/s is just over the
     // measured threshold — 6.90 m/s recovers, 6.95 m/s goes over (see
-    // `docs/progress/07-handoff.md`) — so this is a capsize the boat is
+    // `docs/v1/progress/07-handoff.md`) — so this is a capsize the boat is
     // *driven* into, not one it is placed in.
     wind.speed = 7
     wind.bearing_deg = 0

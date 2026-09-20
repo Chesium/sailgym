@@ -39,7 +39,7 @@ import type { Diagnostics } from '../../src/sim/diagnostics'
  *   in which the heeling moment *grew* with heel would be a model with no
  *   `R_x(φ)` in it.
  *
- * Both are recorded in `docs/progress/10-handoff.md` rather than resolved by
+ * Both are recorded in `docs/v1/progress/10-handoff.md` rather than resolved by
  * relaxing an assertion into vagueness.
  */
 
@@ -372,7 +372,7 @@ test.describe('brief §46 demonstration 1 — capsize and recovery @slow', () =>
     //
     // Both links are still asserted, and the gap between them is bounded, so
     // "the sail depowers" remains part of the claim rather than being dropped.
-    // The deviation is recorded in `docs/progress/10-handoff.md`.
+    // The deviation is recorded in `docs/v1/progress/10-handoff.md`.
     const tensionGone = firstTime(recover.samples, released, (s) => s.tension < 1)
     const boomOut = firstTime(recover.samples, released, (s) => Math.abs(s.beta) > 0.5)
     const forceFell = firstTime(

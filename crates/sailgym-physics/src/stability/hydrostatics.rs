@@ -147,7 +147,7 @@ impl GzCurve {
     /// Unimodality is the reading under which every one of those holds, and it
     /// still rejects the pathology the clause names: a curve that dips and
     /// climbs again on the way to the peak. The contradiction is recorded in
-    /// `docs/progress/07-handoff.md` for human resolution; no convention was
+    /// `docs/v1/progress/07-handoff.md` for human resolution; no convention was
     /// redefined here.
     pub fn fit(gm: f64, phi_p: f64, gz_max: f64, phi_v: f64) -> Result<Self, ParamError> {
         let range = |reason: String, field: &'static str| ParamError::OutOfRange { field, reason };
@@ -412,7 +412,7 @@ mod tests {
         // The curve does change sign at `φ_v`, as F6.7 requires, but only over
         // a 1.6°-wide window. This test states the measured facts so that the
         // day someone corrects `stability.gm` it fails and points here.
-        // Recorded in full in `docs/progress/07-handoff.md`.
+        // Recorded in full in `docs/v1/progress/07-handoff.md`.
         let s = params().stability;
         let g = default_curve();
 

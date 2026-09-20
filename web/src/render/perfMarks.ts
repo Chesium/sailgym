@@ -27,7 +27,7 @@
  * the entries are cleared as they are read, so the buffer cannot grow. Four
  * spans at 60 Hz is ~720 User Timing operations a second; measured cost on the
  * section 10 host is under 0.05 ms a frame, against a 16.7 ms budget. The
- * figures are in `docs/performance.md`. Recording is on by default because an
+ * figures are in `docs/v1/performance.md`. Recording is on by default because an
  * instrument that is off is an instrument nobody reads; it is switched off
  * wholesale by {@link setPerfEnabled} if it ever stops being free.
  */

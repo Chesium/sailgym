@@ -1,4 +1,4 @@
-//! Deterministic PCG32, implemented in-crate (`docs/00-foundations.md` F9.2).
+//! Deterministic PCG32, implemented in-crate (`docs/v1/00-foundations.md` F9.2).
 //!
 //! F9.2 forbids depending on an external RNG whose algorithm may change across
 //! versions: a silent algorithm change would invalidate every golden
