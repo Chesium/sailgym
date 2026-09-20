@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "beam_reach_capsize",
-  "description": "Beam-on wind with the mainsheet hauled hard in. At 7 m/s the righting moment runs out: hold the sheet and the boat goes over. The wind speed is just above the 6.93 m/s threshold measured in docs/v1/progress/07-handoff.md, so the capsize is reachable in about ten seconds rather than instant.",
+  "description": "Beam-on wind with the mainsheet hauled hard in. At 9 m/s the righting moment runs out: hold the sheet and the boat goes over in about ten seconds. The wind speed sits in the middle of the window measured in docs/v2/physics-validation.md: above 8.45 m/s the boat capsizes if the sheet is held, and below 9.65 m/s it recovers if the sheet is released at four seconds. The initial sheet length is the geometric minimum of v2 F18.1b, so the boom starts two-blocked on the centreline with no preload.",
   "seed": 20250901,
   "parameter_overrides": {},
   "initial_state": {
@@ -11,11 +11,11 @@
     "heel_deg": 0.0,
     "speed": 0.0,
     "boom_deg_to_port": 0.0,
-    "sheet_length": 0.9
+    "sheet_length": 1.0404326023342405
   },
   "wind": {
     "mode": "uniform",
-    "speed": 7.0,
+    "speed": 9.0,
     "bearing_deg": 0.0,
     "variation": 0.15,
     "length_scale": 120.0,

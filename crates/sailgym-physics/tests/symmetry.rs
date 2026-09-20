@@ -55,14 +55,57 @@ const HORIZON_S: f64 = 20.0;
 /// diagonal ones (where they are not), rather than only one kind.
 const ROTATIONS_DEG: [f64; 8] = [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0];
 
-/// Body-frame quantities must be **unchanged** by a world rotation, to here.
-/// This is the tightest bound in the file and it is the one that matters:
-/// "unchanged" is the actual content of the invariant, and a looser bound
-/// would let a genuine frame error through as round-off.
-const TOL_BODY: f64 = 1e-11;
+/// Body-frame quantities must be **unchanged** by a world rotation, to here,
+/// over the **early** window — every step before the script first releases the
+/// sheet, which is the first instant any case crosses the mainsheet's take-up
+/// boundary.
+///
+/// This is **v1's bound, unchanged**, and it is the one that carries the content
+/// of the invariant: nothing in this window has crossed the take-up boundary
+/// yet, so a genuine frame error cannot hide behind amplified round-off.
+/// Measured worst residual over the window, across all 96 cases: **7.3e-13**, a
+/// margin of ≈ 14.
+const TOL_BODY_EARLY: f64 = 1e-11;
+
+/// Body-frame quantities must be unchanged by a world rotation to here over the
+/// **whole** 20 s horizon.
+///
+/// v1 asserted 1e-11 over the whole horizon and measured 1.34e-12
+/// (`docs/v1/progress/10-handoff.md`). **v2 section 08 raised it to 1e-10, and
+/// the reason is recorded rather than assumed.** F18.1b made the mainsheet's tension discontinuous at take-up, so
+/// a trajectory that works the sheet is no longer Lipschitz in its state: two
+/// runs that differ only in the last bits — which is what rotating the world by
+/// 45° does — can land on opposite sides of `e = 0` at a step and diverge from
+/// there. The measurement says exactly that and nothing more:
+///
+/// | window | worst `|Δ|` |
+/// |---|---|
+/// | before the release cue (11 s, all 96 cases) | 7.3e-13 |
+/// | whole horizon, the four scenarios that settle | ≤ 5.1e-12 |
+/// | whole horizon, `beam_reach_capsize` / `sheet_release_recovery` | **2.6e-11** |
+///
+/// The two that exceed 1e-11 are the two that start two-blocked at
+/// `l_sheet_min`, i.e. **on** the take-up boundary, and their excursions are
+/// confined to the steps after the release and haul cues. 1e-10 is four times
+/// the worst measurement. `TOL_BODY_EARLY` is what keeps the file honest: v1's
+/// bound is still asserted, unchanged, over the first 11 s of all 96 cases,
+/// which is where a frame error would show.
+const TOL_BODY: f64 = 1e-10;
 
 /// World position must rotate by exactly the applied angle, to here.
 const TOL_WORLD: f64 = 1e-9;
+
+/// The end of the early window, in simulated seconds: the first cue that
+/// releases the sheet, which is the first thing in the script that can take the
+/// rope across `e = 0`. Derived from [`SCRIPT`] rather than written down, so
+/// moving a cue moves the window with it.
+fn early_horizon_s() -> f64 {
+    SCRIPT
+        .iter()
+        .find(|c| c.release)
+        .map(|c| c.t)
+        .expect("the symmetry script must release the sheet at least once")
+}
 
 /// Every quantity of a mirrored case must match the F2 mirror map, to here.
 const TOL_MIRROR: f64 = 1e-9;
@@ -241,8 +284,10 @@ fn run_case(
 fn rotation_and_mirror_sweep() {
     let mut cases = 0usize;
     let mut worst_body = 0.0f64;
+    let mut worst_early = 0.0f64;
     let mut worst_world = 0.0f64;
     let mut worst_mirror = 0.0f64;
+    let early_horizon = early_horizon_s();
     // Every case must be a case: a scenario that never moved would pass any
     // symmetry test at all.
     let mut moved = 0usize;
@@ -286,7 +331,19 @@ fn rotation_and_mirror_sweep() {
 
                     // 1. Body-frame quantities: unchanged by a rotation,
                     //    negated (or not) by a mirror. Never rotated.
-                    let body_tol = if mirror { TOL_MIRROR } else { TOL_BODY };
+                    //
+                    //    Two bounds, not one: the tight `TOL_BODY_EARLY` over
+                    //    the window before the script first releases the sheet,
+                    //    and the measured `TOL_BODY` over the whole horizon.
+                    //    See the constants for why.
+                    let early = (i as f64) * params.sim.dt < early_horizon;
+                    let body_tol = if mirror {
+                        TOL_MIRROR
+                    } else if early {
+                        TOL_BODY_EARLY
+                    } else {
+                        TOL_BODY
+                    };
                     for (got_v, want_v, name) in [
                         (b.u, want.u, "u"),
                         (b.v, want.v, "v"),
@@ -303,6 +360,9 @@ fn rotation_and_mirror_sweep() {
                             worst_mirror = worst_mirror.max(e);
                         } else {
                             worst_body = worst_body.max(e);
+                            if early {
+                                worst_early = worst_early.max(e);
+                            }
                         }
                         assert!(
                             e < body_tol,
@@ -351,8 +411,18 @@ fn rotation_and_mirror_sweep() {
         moved, 6,
         "only {moved} of 6 scenarios travelled more than a metre"
     );
+    // The early window has to be a window, or the tight bound is asserting
+    // nothing; and it has to have produced a measurable residual, or the
+    // comparison is between two identical runs.
+    assert!(early_horizon > 0.0 && early_horizon < HORIZON_S);
+    assert!(
+        worst_early > 0.0,
+        "no rotated case differed from its baseline at all in the early window; \
+         the sweep is comparing a trajectory with itself"
+    );
     eprintln!(
         "symmetry: {cases} cases, worst |Δ| — body {worst_body:.3e} (tol {TOL_BODY:.0e}), \
+         body over the first {early_horizon} s {worst_early:.3e} (tol {TOL_BODY_EARLY:.0e}), \
          world {worst_world:.3e} (tol {TOL_WORLD:.0e}), mirror {worst_mirror:.3e} \
          (tol {TOL_MIRROR:.0e})"
     );

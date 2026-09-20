@@ -74,29 +74,44 @@ make the replacement straightforward:
 Recorded here rather than left to be discovered, because an honest provenance
 table has to include the parts that are not right yet:
 
-1. **`stability.gm = 1.00 m` is inconsistent with `gz_max = 0.30 m` at
-   `phi_peak = 45°`.** The fitted `GZ` peaks at 32.5° instead of 45° and then
-   climbs back to +0.78 m at 140°, so past about 82° of heel the shipped boat is
-   pushed back upright: it can be knocked down but cannot be sailed over and
-   cannot be inverted by wind at any speed. `gm ≈ 0.55 m` makes the group
-   self-consistent. Measured in full in `docs/v1/progress/07-handoff.md` §4.
-   **Not changed** — it is a physical coefficient with a scenario effect and
-   changing it invalidates all six golden trajectories, so it is the human's
-   call (brief §43, F13.5).
-2. **`sheet.l_sheet_min = 0.90 m` is shorter than the shortest geometric rope
-   path, `ℓ(0) = 1.0404 m`,** so a fully hauled sheet carries ≈ 2.8 kN of
-   permanent pre-tension and the boom is undamped by the sheet at `β = 0`.
-   `docs/v1/progress/06-handoff.md` §4. **Not changed**, same reason.
-3. **The hull has no planing regime** (R6, above).
+1. ~~**`stability.gm = 1.00 m` is inconsistent with `gz_max = 0.30 m` at
+   `phi_peak = 45°`.**~~ **Fixed by v2 section 08.** The v1 text read: the
+   fitted `GZ` peaks at 32.5° instead of 45° and then climbs back to +0.78 m at
+   140°, so past about 82° of heel the shipped boat is pushed back upright; it
+   can be knocked down but cannot be sailed over and cannot be inverted by wind
+   at any speed; `gm ≈ 0.55 m` makes the group self-consistent. v2 F18.1a added
+   the missing constraint (`GZ'(φ_p) = 0`, which needs a fourth harmonic) and
+   the domain rules, and v2 F18.1c moved `stability.gm` to the 0.55 m this
+   entry named. `docs/v2/physics-validation.md` §1 carries the before and after.
+2. ~~**`sheet.l_sheet_min = 0.90 m` is shorter than the shortest geometric rope
+   path, `ℓ(0) = 1.0404 m`**~~ **Fixed by v2 section 08.** The v1 text read: a
+   fully hauled sheet carries ≈ 2.8 kN of permanent pre-tension and the boom is
+   undamped by the sheet at `β = 0`. v2 F18.1b derives the stop from the
+   geometry, rejects a catalogue below it, and moved the default onto
+   `min_rope_path` exactly. `docs/v2/physics-validation.md` §2.
+3. **The hull has no planing regime** (R6, above). Unchanged.
 
 ## Parameters changed since F7 — the brief §43 record
 
-**No F7 coefficient has been changed by any section.** That is not a claim
+**No F7 coefficient was changed by any v1 section, and exactly two have been
+changed since — both by v2 section 08, both recorded.** That is not a claim
 resting on the handoff notes: `provenance.rs::shipped_values_match_the_f7_table`
 parses the F7 tables out of `docs/v1/00-foundations.md` and compares every numeric
 row against the value `BoatParameters::ilca7()` actually ships. A coefficient
-cannot move without `00-foundations.md` moving with it, and F13.1 puts that
+cannot move without a recorded delta moving with it, and F13.1 puts that
 edit with the human.
+
+| Path | v1 (F7) | now | Recorded in |
+|---|---|---|---|
+| `stability.gm` | 1.00 m | 0.55 m | v2 F18.1c; the F7 value is infeasible against v2 F18.1a's constraints |
+| `sheet.l_sheet_min` | 0.90 m | 1.0404326023342405 m | v2 F18.1c; the F7 value is below the rig's own shortest rope path |
+
+The override table lives in `docs/v2/00-foundations.md` between the
+`F7-OVERRIDES` markers and is **read by the audit**, which additionally refuses
+a row that names no F7 parameter, a row whose value equals F7's, a row with no
+recorded reason, and more than eight rows in total
+(`provenance.rs::v2_overrides_are_real_overrides`). Everything not in that table
+is still compared against F7 itself.
 
 Two entries in the catalogue differ from the F7 *table*, and both are additions
 or deletions rather than changes of value:
@@ -217,12 +232,12 @@ field (`scenarios/*.json`). Wind defaults are in
 | `sheet.block_pos_b.x` | -2.1 | m, in B | ASSUMED | transom block position. |
 | `sheet.block_pos_b.y` | 0 | m, in B | ASSUMED | transom block position. |
 | `sheet.block_pos_b.z` | 0.1 | m, in B | ASSUMED | transom block position. |
-| `sheet.l_sheet_min` | 0.9 | m | ASSUMED | shortest available sheet length. |
+| `sheet.l_sheet_min` | 1.0404326023342405 | m | ASSUMED | shortest available sheet length: the boom two-blocked on the centreline. **Geometry-derived** (v2 F18.1b): it is `rigging::mainsheet::min_rope_path`, the shortest path the rope can take over all boom angles, so the fully hauled sheet holds the boom at `β_min` with *zero* tension. v1 shipped 0.90 m against a 1.0404 m shortest path, which F4.3's clamp turned into a permanent 2.81 kN preload; `BoatParameters::validate` now rejects that, and `mainsheet::tests::min_is_the_minimum` pins this value to the geometry exactly. |
 | `sheet.l_sheet_max` | 4.5 | m | ASSUMED | longest available sheet length. |
 | `sheet.sheet_haul_rate` | 1.5 | m/s | TUNABLE | hauling rate under player command. |
 | `sheet.sheet_ease_rate` | 3 | m/s | TUNABLE | easing rate under player command. |
 | `sheet.sheet_release_rate` | 6 | m/s | TUNABLE | emergency release rate (Space), brief §12. |
-| `stability.gm` | 1 | m | ASSUMED | metacentric height, the slope of `GZ` at `φ = 0`. |
+| `stability.gm` | 0.55 | m | ASSUMED | metacentric height, the slope of `GZ` at `φ = 0`.  v1 shipped 1.00 m. Under v2 F18.1a's four constraints that value makes `phi_peak` a local **minimum** of the curve, with maxima at 31.8° and 61.2° either side of it, so `GzCurve::fit` rejects it: a slope of 1.00 m/rad at the origin cannot reach only 0.30 m by 45°. The admissible interval for this `phi_peak`, `gz_max` and `phi_vanish` is `[0.535, 0.561]` m (`docs/v2/physics-validation.md` §1.5), and 0.55 m is the value `docs/v1/progress/07-handoff.md` already recorded as the self-consistent one for that set. `Δ·g·GZ_max = 406 N·m` is unchanged. |
 | `stability.phi_peak` | 0.785 | rad | ASSUMED | angle of maximum righting arm (45°). |
 | `stability.gz_max` | 0.3 | m | ASSUMED | maximum righting arm. |
 | `stability.phi_vanish` | 1.396 | rad | ASSUMED | angle of vanishing stability (80°). |

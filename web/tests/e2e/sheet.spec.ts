@@ -21,13 +21,18 @@ async function sheetParams(page: Page) {
     try {
       const p = JSON.parse(sim.parameters_json() as string) as {
         sail: { boom_length: number; mast_pos_b: { x: number } }
-        sheet: { d_sheet: number; block_pos_b: { x: number; y: number } }
+        sheet: {
+          d_sheet: number
+          block_pos_b: { x: number; y: number }
+          l_sheet_min: number
+        }
       }
       return {
         dSheet: p.sheet.d_sheet,
         block: p.sheet.block_pos_b,
         mastX: p.sail.mast_pos_b.x,
         boomLength: p.sail.boom_length,
+        lSheetMin: p.sheet.l_sheet_min,
       }
     } finally {
       sim.free()
@@ -156,17 +161,20 @@ test.describe('mainsheet rope', () => {
     const params = await sheetParams(page)
     await page.locator('[data-testid="world-view"]').click({ position: { x: 10, y: 10 } })
 
-    // Haul right in first. At `l_sheet_min = 0.90 m` the rope is shorter than
-    // the shortest geometric path (`ℓ(0) = 1.04 m`), so it is loaded and
-    // straight for any boom angle — no sag is possible while the sheet is
-    // there, which is what makes this a stable reference.
+    // Haul right in first. v2 F18.1b makes `l_sheet_min` the shortest path the
+    // rope can take, so at the stop the rope is straight for every boom angle
+    // and no sag is possible — which is what makes this a stable reference.
+    // The stop is read from the core rather than named here (F7, F8): v1's
+    // 0.90 m was *below* the geometric path and is the defect this section
+    // corrected.
+    const atTheStop = params.lSheetMin + 1e-9
     const haulRightIn = async () => {
       await page.mouse.move(VIEW.x, VIEW.y)
       await page.mouse.down()
       await page.mouse.move(VIEW.x, VIEW.y + 250, { steps: 5 })
       await expect
         .poll(async () => (await readSnapshot(page)).lSheet, { timeout: 10_000 })
-        .toBeLessThan(0.91)
+        .toBeLessThan(atTheStop)
       const geometry = await ropeGeometry(page, params)
       await page.mouse.up()
       return geometry

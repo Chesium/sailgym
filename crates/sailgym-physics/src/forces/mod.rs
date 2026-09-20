@@ -505,15 +505,31 @@ mod tests {
         assert!(heeled.gz > 0.0);
         assert!(heeled.k_restore < 0.0);
 
-        // The sheet is live from section 06. The default state is sheeted
-        // hard in, so the rope is loaded — and its two ends cancel exactly in
-        // the generalised sum (see the module note).
-        assert!(breezy.sheet_tension > 0.0);
-        assert_eq!(breezy.sheet.f, -breezy.sheet_hull.f);
+        // The sheet is live from section 06. v2 F18.1b made `l_sheet_min` the
+        // geometric minimum of `ℓ(β)`, so the default state is two-blocked at
+        // exactly zero extension and carries **no** tension — where v1 carried
+        // a permanent 2.81 kN preload nobody had asked for.
+        assert_eq!(breezy.sheet_tension, 0.0);
+        assert_eq!(breezy.sheet.f, Vec3::ZERO);
+        // Take the boom off the centreline and the rope loads. Its two ends are
+        // equal and opposite, so the *forces* still cancel exactly in the
+        // generalised sum; the moments do not, and must not — two opposed
+        // forces at different points are a couple, which is how the sheet load
+        // reaches heel and yaw (see the module note).
+        let loaded = evaluate(
+            &BoatState { beta: 0.2, ..st },
+            &Controls::default(),
+            &p,
+            &uniform_wind(5.0, 180.0),
+            0.0,
+        );
+        assert!(loaded.sheet_tension > 0.0);
+        assert_eq!(loaded.sheet.f, -loaded.sheet_hull.f);
         let mut sheet_total = Generalized::default();
-        sheet_total.add(breezy.sheet, st.phi);
-        sheet_total.add(breezy.sheet_hull, st.phi);
-        assert_eq!(sheet_total, Generalized::default());
+        sheet_total.add(loaded.sheet, st.phi);
+        sheet_total.add(loaded.sheet_hull, st.phi);
+        assert_eq!(sheet_total.x, 0.0);
+        assert_eq!(sheet_total.y, 0.0);
     }
 }
 

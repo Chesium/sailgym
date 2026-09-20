@@ -25,9 +25,26 @@
 //! `gen_golden` refuses to run while `crates/sailgym-physics/src` has
 //! uncommitted changes, so goldens cannot be regenerated to paper over a
 //! physics change in progress.
+//!
+//! ## The identity record (v2 F18.1d)
+//!
+//! A toolchain says which compiler; it does not say which equations. Each
+//! golden now also carries `ModelIdentity` — the declared model version and
+//! git's content id for `crates/sailgym-physics/src` — and, when that identity
+//! is not a baseline, the `--declare` text `gen_golden` required before it
+//! would write the file.
+//!
+//! [`compare`] prints both identities every run and **fails** a file whose
+//! identity is `dirty` or `unknown` and declares nothing: that is RV51, golden
+//! laundering, and it is the one shape of this file that is not reviewable. It
+//! does not fail on a *different* clean identity, because the trajectory
+//! comparison below is the authority on whether the physics moved and an
+//! identity mismatch with matching trajectories means only that some source
+//! file changed without changing any of these six trajectories.
 
 use std::path::{Path, PathBuf};
 
+use sailgym_physics::identity::ModelIdentity;
 use sailgym_physics::recording::ToolchainInfo;
 use sailgym_physics::scenario::load_shipped;
 use sailgym_physics::state::{STATE_FIELDS, STATE_LEN};
@@ -78,6 +95,41 @@ fn compare(scenario: &str) {
         path.display()
     );
     assert_eq!(golden.scenario, scenario);
+
+    // v2 F18.1d / RV51. A file generated from a tree git could not identify is
+    // allowed — the commit that corrects the physics has to carry its own
+    // fixtures — but it has to say so, and say what it was correcting.
+    let identity = ModelIdentity::current();
+    assert_eq!(
+        golden.identity.model_version,
+        identity.model_version,
+        "{} was recorded under model v{}, this build is model v{}. A golden from a \
+         different declared model is not a regression fixture for this one; regenerate \
+         deliberately and record the migration.",
+        path.display(),
+        golden.identity.model_version,
+        identity.model_version,
+    );
+    if !golden.identity.source.is_known() {
+        assert!(
+            !golden.declared_changes.trim().is_empty(),
+            "{} records a non-baseline source identity ({}) and declares no changes. \
+             That is a fixture nobody can review (RV51): regenerate with \
+             `--allow-dirty --declare \"<what is changing>\"`, or from a clean tree.",
+            path.display(),
+            golden.identity.source.describe(),
+        );
+        eprintln!(
+            "{scenario}: golden recorded from a NON-BASELINE tree — {}\n  declared: {}",
+            golden.identity.describe(),
+            golden.declared_changes.lines().next().unwrap_or("").trim(),
+        );
+    }
+    eprintln!(
+        "{scenario}: golden identity {} | this build {}",
+        golden.identity.describe(),
+        identity.describe(),
+    );
 
     // R7. The one branch in this file, and it prints rather than passing
     // quietly.

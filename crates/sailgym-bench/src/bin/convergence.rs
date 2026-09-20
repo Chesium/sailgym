@@ -76,7 +76,12 @@ fn header(doc: &mut String, horizon: f64) {
     let _ = writeln!(
         doc,
         "The observed order is the least-squares slope of `ln(error)` against `ln(dt)` over \
-         the whole sweep. RK2 midpoint is second order, so 2.0 is the expected value.\n"
+         the whole sweep. RK2 midpoint is second order, so 2.0 is the expected value **where \
+         the model is smooth**. v2 F18.1b made the mainsheet's tension law discontinuous at \
+         take-up, and a discontinuous right-hand side has no order of accuracy across the \
+         event: for a trajectory that crosses the boundary the slope below is a description, \
+         not a criterion, and `tests/convergence.rs` asserts the crossing count and the \
+         crossing times instead. See \"Reading these numbers\".\n"
     );
     let _ = writeln!(
         doc,
@@ -135,43 +140,58 @@ fn footer(doc: &mut String) {
         doc,
         "## Reading these numbers\n\n\
          A halving of `dt` quarters a second-order method's error, so the ratio columns \
-         should read ≈ 4× and the observed order ≈ 2.\n\n\
-         **`close_hauled` and `gybe` do exactly that.** Both sit inside the `[1.7, 2.3]` \
-         bracket task 10.2 states, in position, heading and heel, and the ratio columns are \
-         close to 4× at every step of the sweep.\n\n\
-         **`beam_reach_capsize` converges faster than second order, and that is the one \
-         exclusion in this study.** The measured order is ≈ 2.85 in position and ≈ 3.04 in \
-         heading over the full 20 s. Three things were checked before it was written off:\n\n\
-         1. *Is it the reference?* No. Re-running the entire study against `Rk4` at \
-            `dt = 7.8125e-5` — a quarter of the reference step — moves every observed order \
-            by less than 0.01. `tests/convergence.rs::the_reference_is_a_reference` keeps \
-            that honest by Richardson-estimating the reference's own error, which is under \
-            0.1 % of the smallest RK2 error it is used to measure.\n\
-         2. *Is it the capsize, as task 10.2 guesses?* Not in the way the PRD expects. The \
-            suggested remedy is to evaluate on the pre-capsize window; measured over `0-8 s`, \
-            where the boat is at 65° of heel and has not yet tripped `phi_capsize`, the order \
-            is **3.64** in position — further from 2, not closer. Re-cutting the window does \
-            not address it, so the window was left at the full 20 s.\n\
-         3. *Is it chaotic divergence?* No: divergence would show as an error that stops \
-            falling, and every column here falls monotonically with `dt`. \
-            `timestep_convergence` asserts that monotonicity for all three scenarios.\n\n\
-         What it is: this scenario heels onto the strongly attracting quasi-equilibrium at \
-         ≈ 87-91° that `docs/v1/progress/07-handoff.md` §4 documents, where roll damping is \
-         large and the heeling and righting moments nearly balance. Truncation error injected \
-         into that contracting direction is squeezed out rather than accumulated, so the \
-         global error over a fixed horizon falls off faster than the method's formal order.\n\n\
-         The order bracket was **not** widened (task 10.2 forbids it). The lower bound — the \
-         half that could catch a defect, an integrator less accurate than claimed — is \
-         asserted for all three scenarios exactly as written. The upper bound is excluded for \
-         `beam_reach_capsize` alone, because an order above it means the integrator is doing \
-         better than the criterion demands.\n\n\
-         The error columns do not fall on a perfectly straight line, for two further reasons \
-         worth knowing: the coarsest step is not yet fully asymptotic, which biases a fitted \
-         slope downwards; and the model has several `C0` kinks a trajectory can cross — the \
-         mainsheet's `max(0, ·)` take-up (F6.8), the boom's soft stop (F6.9) and the actuator \
-         clamps (F4.3). Crossing one at a slightly different instant costs `O(dt²)` in the \
-         state, which is second order and so harmless to the order estimate, but it is \
-         visible as scatter.\n\n\
+         should read ≈ 4× and the observed order ≈ 2 — **where the model is smooth**.\n\n\
+         **v2 section 08 changed which scenarios those are.** F18.1b replaced \
+         `T = max(0, k·e + c·ė)` with a law that is exactly zero on the closed slack set \
+         `{{e ≤ 0}}`, because the old expression gave a rope hanging 0.5 m loose 5 kN of pull. \
+         The corrected law is right and it is **discontinuous at take-up**: `T → c·ė` as \
+         `e → 0⁺` against `T = 0` at `e = 0`. Across such a step RK2's two stages can sit on \
+         opposite sides of the boundary, and the step is then not a consistent approximation \
+         to anything.\n\n\
+         So the three scenarios now split two ways, and the split is measured rather than \
+         assumed — `tests/convergence.rs::sheet_events` counts the crossings of each \
+         trajectory at each `dt`:\n\n\
+         - **`beam_reach_capsize` never crosses** after its first step, and converges at \
+           second order. The table's figure is the least-squares slope over the whole sweep; \
+           `tests/convergence.rs` brackets the **asymptotic** slope over the finest three \
+           rows instead, because `dt = 0.01` is not yet asymptotic here (its Richardson ratio \
+           against `dt = 0.005` is 2.08 where the next two are 3.27 and 3.68) and including \
+           it biases a fitted slope downwards. Asymptotic: **1.81** in position, **2.27** in \
+           heading. This is the scenario that used to \
+           be the awkward one. v1 measured **2.85** here and excluded its upper bound, because \
+           the boat heeled onto a strongly attracting quasi-equilibrium at ≈ 87-91° and \
+           truncation error injected into that contracting direction was squeezed out rather \
+           than accumulated. That quasi-equilibrium was an artefact of v1's `GZ` curve coming \
+           back to zero and then turning **positive** past 81.6° of heel; F18.1a's curve is \
+           negative on the whole of `(φ_v, π)`, the attractor is gone, the order is ordinary, \
+           and the `SUPERCONVERGENT` exclusion has been deleted. The error at the shipped \
+           `dt = 0.005` also fell by about thirteen times, from 7.9 mm to 0.6 mm over 20 s.\n\
+         - **`close_hauled` and `gybe` each cross five times** and no order is asserted for \
+           them. The least-squares slope reads ≈ 0.43 for both; reporting that as an \
+           \"order of accuracy\" would be reporting a number that means nothing. What is \
+           asserted instead is stronger about the model than an order would be: the *sequence \
+           of physical events* must be the same at every timestep in the sweep, and each event \
+           must land at the same instant to within `O(dt)`. Measured worst spread across the \
+           whole sweep: **0.019 s** on `close_hauled`, **0.041 s** on `gybe`.\n\n\
+         **The cost is stated, not hidden.** Where the rope takes up or lets go, the error at \
+         the shipped timestep is one to two decades larger than v1's: `close_hauled` goes from \
+         **0.09 mm to 2.4 mm** and `gybe` from **0.008 mm to 0.08 mm**, over a 20 s run of a \
+         4.23 m boat. Both remain far inside the 0.05 m bound \
+         `tests/convergence.rs::error_at_default_dt` asserts, which is unchanged and still \
+         applies to every scenario — a discontinuity is a reason to stop claiming an order, \
+         not a reason to stop claiming accuracy. If that error ever matters, the remedy is \
+         event detection or sub-stepping the rigging DOF (F11 R1's own mitigation order), \
+         **not** a change to `k_sheet` or `c_sheet` (brief §43, RV50).\n\n\
+         The `Rk4` reference is checked by direct refinement rather than by Richardson \
+         extrapolation, for the same reason: `|y(2h) − y(h)|/15` assumes fourth order, which \
+         the event denies, and it flattered the reference by about four times on `gybe` \
+         (0.59 % against a measured 6.80 %). \
+         `tests/convergence.rs::the_reference_is_a_reference` now refines the reference \
+         fourfold and requires the gap to be under 10 % of the smallest RK2 error it \
+         measures.\n\n\
+         The order bracket `[1.7, 2.3]` was **not** widened (task 10.2 forbids it). It is \
+         asserted, in position and heading, for every scenario that does not cross the \
+         take-up boundary.\n\n\
          ## The control script\n\n\
          One fixed 20 s script drives all three scenarios; it is \
          `crates/sailgym-physics/tests/convergence/study.rs::SCRIPT`. Two of its properties \

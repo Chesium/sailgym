@@ -551,6 +551,118 @@ fn f7_numbers(cell: &str) -> Option<Vec<f64>> {
     head.parse::<f64>().ok().map(|v| vec![v])
 }
 
+/// The **explicit** v2 overrides of the F7 table, read from the fenced region
+/// of `docs/v2/00-foundations.md` (F18.1c).
+///
+/// A row here says "this F7 default was changed by a recorded v2 delta, to
+/// this value, for this reason". Nothing else may differ from F7, and a row
+/// whose value equals F7's is a stale row rather than an override — both are
+/// asserted below, which is what stops this hatch from making the F7 audit
+/// vacuous.
+fn v2_overrides() -> BTreeMap<String, (f64, String)> {
+    const BEGIN: &str = "<!-- BEGIN F7-OVERRIDES -->";
+    const END: &str = "<!-- END F7-OVERRIDES -->";
+
+    let path = repo_root().join("docs/v2/00-foundations.md");
+    let doc = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let start = doc
+        .find(BEGIN)
+        .unwrap_or_else(|| panic!("{} must contain {BEGIN}", path.display()))
+        + BEGIN.len();
+    let end = doc[start..]
+        .find(END)
+        .map(|i| start + i)
+        .unwrap_or_else(|| panic!("{} must contain {END}", path.display()));
+
+    let mut out = BTreeMap::new();
+    for line in doc[start..end].lines() {
+        let t = line.trim();
+        if !t.starts_with('|') {
+            continue;
+        }
+        let cells: Vec<&str> = t.trim_matches('|').split('|').map(|c| c.trim()).collect();
+        if cells.len() < 5 {
+            continue;
+        }
+        let path = cells[0].trim_matches('`').trim();
+        if path.is_empty() || path == "Path" || path.starts_with('-') {
+            continue;
+        }
+        let value: f64 = cells[2]
+            .replace('\u{2212}', "-")
+            .trim()
+            .parse()
+            .unwrap_or_else(|e| panic!("v2 override {path}: `{}` is not a number: {e}", cells[2]));
+        assert!(
+            cells[4].len() > 60,
+            "v2 override {path} has no reason recorded (brief §43): {:?}",
+            cells[4]
+        );
+        assert!(
+            TAGS.contains(&cells[3]),
+            "v2 override {path} carries tag {:?}, which is not one of {TAGS:?}",
+            cells[3]
+        );
+        out.insert(path.to_string(), (value, cells[1].to_string()));
+    }
+    out
+}
+
+#[test]
+fn v2_overrides_are_real_overrides() {
+    // The hatch, audited. Every row must name a real parameter, must differ
+    // from the F7 value it claims to replace, and the whole table must stay
+    // small enough to read: an override list is a decision record, and a long
+    // one means the F7 catalogue has silently forked.
+    let overrides = v2_overrides();
+    let table = f7_table();
+    let shipped = BoatParameters::ilca7();
+
+    assert!(
+        !overrides.is_empty(),
+        "docs/v2/00-foundations.md F18.1c declares no overrides, but section 08 changed two \
+         defaults. Either the table or the catalogue is wrong."
+    );
+    assert!(
+        overrides.len() <= 8,
+        "{} v2 overrides. That is not a delta list any more; fold them into F7 and have the \
+         human sign the change there",
+        overrides.len()
+    );
+
+    for (path, (value, v1_cell)) in &overrides {
+        shipped
+            .get_path(path)
+            .unwrap_or_else(|e| panic!("v2 override names `{path}`, which does not exist: {e}"));
+        let leaf = path.rsplit('.').next().expect("a dotted path");
+        let row = table
+            .get(leaf)
+            .or_else(|| table.get(path.as_str()))
+            .unwrap_or_else(|| panic!("v2 override `{path}` overrides no F7 row"));
+        let f7 = f7_numbers(row)
+            .unwrap_or_else(|| panic!("the F7 row for `{path}` is not numeric: {row}"))[0];
+        assert!(
+            (f7 - value).abs() > 1e-9,
+            "v2 override `{path}` claims {value}, which is the F7 value. A row that changes \
+             nothing is stale; delete it."
+        );
+        // The "v1" column has to quote the value it is replacing, or the table
+        // is a claim about a number nobody checked.
+        let quoted = f7_numbers(v1_cell).unwrap_or_else(|| {
+            panic!("v2 override `{path}`: the v1 column `{v1_cell}` is not a number")
+        })[0];
+        assert!(
+            (quoted - f7).abs() <= (f7.abs() * 5e-3).max(1e-9),
+            "v2 override `{path}` says v1 was {quoted}; F7 says {f7}"
+        );
+    }
+    eprintln!(
+        "provenance: {} explicit v2 override(s) — {:?}",
+        overrides.len(),
+        overrides.keys().collect::<Vec<_>>()
+    );
+}
+
 #[test]
 fn shipped_values_match_the_f7_table() {
     // brief §43 and F13.5: **no coefficient may be silently tuned.** Every
@@ -567,6 +679,13 @@ fn shipped_values_match_the_f7_table() {
         "the F7 parser found only {} rows in 00-foundations.md",
         table.len()
     );
+    // v2 section 08 changed two F7 defaults. Each one is a recorded delta with
+    // a reason (F18.1c), read here so the audit compares against the contract
+    // in force rather than against a superseded one — and `overridden` counts
+    // them, so the escape hatch cannot quietly grow (see
+    // `v2_overrides_are_real_overrides`).
+    let overrides = v2_overrides();
+    let mut overridden = 0usize;
 
     let shipped = BoatParameters::ilca7();
     let by_leaf: BTreeMap<String, Vec<ParamMeta>> =
@@ -651,15 +770,40 @@ fn shipped_values_match_the_f7_table() {
         let path = scalars[0];
         let got = shipped.get_path(path).expect("a resolvable path");
         compared += 1;
-        let want = values[0];
+        let want = match overrides.get(path.as_str()) {
+            Some((v2, _)) => {
+                overridden += 1;
+                *v2
+            }
+            None => values[0],
+        };
         // The F7 table rounds (`155 kg·m²`, `0.262 rad (15°)`), so the
         // comparison is relative and generous enough for the printed precision
         // — but far too tight for a coefficient that has actually been tuned.
         let tolerance = (want.abs() * 5e-3).max(1e-9);
         if (got - want).abs() > tolerance {
-            wrong.push(format!("{path}: shipped {got}, F7 says {want} ({cell})"));
+            let source = if overrides.contains_key(path.as_str()) {
+                "the v2 F18.1c override table"
+            } else {
+                "F7"
+            };
+            wrong.push(format!(
+                "{path}: shipped {got}, {source} says {want} ({cell})"
+            ));
         }
     }
+
+    // Every override has to have been *used*. A row naming a path the F7
+    // parser never reaches would silently exempt nothing, and would look like
+    // a decision that had been recorded when it had not.
+    assert_eq!(
+        overridden,
+        overrides.len(),
+        "{} of the {} v2 overrides were never applied: the F7 table has no comparable row \
+         for them, so recording them there proves nothing",
+        overrides.len() - overridden,
+        overrides.len()
+    );
 
     assert!(
         wrong.is_empty(),
@@ -688,7 +832,8 @@ fn shipped_values_match_the_f7_table() {
     );
     eprintln!(
         "provenance: {compared} F7 values compared against the shipped catalogue, all equal \
-         ({} rows not numeric or not addressable: {skipped:?})",
+         ({overridden} through a recorded v2 override, {} rows not numeric or not \
+         addressable: {skipped:?})",
         skipped.len()
     );
 }

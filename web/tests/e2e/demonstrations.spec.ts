@@ -292,13 +292,18 @@ test.describe('brief §46 demonstration 1 — capsize and recovery @slow', () =>
     expect(Math.abs(first.phi), 'the boat did not start upright').toBeLessThan(0.1)
 
     // brief §46 step 5: the sheet restrains the boom. `beam_reach_capsize`
-    // starts at `l_sheet_min`, which is shorter than the shortest geometric
-    // rope path (section 06 handoff §4), so the rope is loaded from `t = 0`
-    // and a haul command cannot shorten it further: what "hauling and holding"
-    // does here is keep it loaded, and the assertion is that it *is*.
+    // starts at `l_sheet_min`, which **v2 F18.1b made the shortest geometric
+    // rope path** rather than 0.14 m below it: the boom is pinned on the
+    // centreline from `t = 0` but the rope carries nothing until the sail
+    // pushes the boom off it, and a haul command cannot shorten it further.
+    // So the restraint is asserted on the boom angle at every sample, and the
+    // load on every sample after the first half-second — the v1 version of
+    // this line was asserting the 2.81 kN preload that section 08 removed.
     for (const s of hold.samples) {
-      expect(s.tension, `tension went to zero at t = ${s.t}`).toBeGreaterThan(0)
       expect(Math.abs(s.beta), `the boom left the centreline at t = ${s.t}`).toBeLessThan(0.2)
+      if (s.t > 0.5) {
+        expect(s.tension, `tension went to zero at t = ${s.t}`).toBeGreaterThan(0)
+      }
     }
 
     // brief §46 step 6: the sail stays powered. See the file comment: at 90°
@@ -507,9 +512,34 @@ test.describe('brief §46 demonstration 3 — gybe @slow', () => {
       ['boom reaches the other side', filledOtherSide],
     ])
 
+    /**
+     * Load-time on the rope: `∑ T · Δt` over the trace, in N·s.
+     *
+     * **Not the peak.** v2 F18.1b made the sheet's take-up discontinuous, so
+     * the eased gybe's transient is very nearly an impulse: measured at the
+     * physics timestep it reaches 2524 N, and the same run sampled at the
+     * animation frame rate reads anywhere between 398 N and 2524 N depending
+     * on where a frame happens to land. A peak that varies sixfold with the
+     * sampling phase is not a statistic to compare two runs with — swept over
+     * ten sampling phases the eased/hauled peak comparison ranges from 0.13 to
+     * 0.65 and changes sign, which is what made this assertion flaky.
+     *
+     * The impulse is the same physical claim and it survives the sampling: over
+     * the same sweep it reads 150-237 N·s eased against 5240-5270 N·s hauled,
+     * a relative difference of **0.955 to 0.972** against the 0.3 the criterion
+     * asks for. And it is the more honest statement of what a sailor sees: a
+     * sheet held in carries load continuously through the turn, a sheet left
+     * eased carries almost none until the boom arrives at the stop.
+     */
+    const impulse = (t: Trace) =>
+      t.samples.reduce((a, s, i) => (i === 0 ? 0 : a + s.tension * (s.t - t.samples[i - 1].t)), 0)
+
     const easedPeakRate = Math.max(...samples.map((s) => Math.abs(s.betaDot)))
     const easedPeakTension = Math.max(...samples.map((s) => s.tension))
+    const easedImpulse = impulse(eased.trace)
     expect(easedPeakRate, 'peak boom rate as it crossed').toBeGreaterThan(2)
+    // The transient itself, against the run's own quiet baseline. This one is
+    // a factor of ~19 even when the sampling misses the spike entirely.
     expect(
       easedPeakTension,
       `peak tension against a pre-gybe mean of ${preMeanTension.toFixed(1)} N`,
@@ -519,10 +549,12 @@ test.describe('brief §46 demonstration 3 — gybe @slow', () => {
     const hauled = await gybe(page, true)
     const hauledPeakRate = Math.max(...hauled.trace.samples.map((s) => Math.abs(s.betaDot)))
     const hauledPeakTension = Math.max(...hauled.trace.samples.map((s) => s.tension))
+    const hauledImpulse = impulse(hauled.trace)
     console.log(
       `[demo] demo 3: eased peak |beta_dot| ${easedPeakRate.toFixed(2)} rad/s, ` +
-        `peak T ${easedPeakTension.toFixed(0)} N; hauled ${hauledPeakRate.toFixed(2)} rad/s, ` +
-        `${hauledPeakTension.toFixed(0)} N`,
+        `peak T ${easedPeakTension.toFixed(0)} N, impulse ${easedImpulse.toFixed(0)} N.s; ` +
+        `hauled ${hauledPeakRate.toFixed(2)} rad/s, ${hauledPeakTension.toFixed(0)} N, ` +
+        `${hauledImpulse.toFixed(0)} N.s`,
     )
 
     // brief §46: "result differs visibly between controlled and uncontrolled
@@ -533,8 +565,8 @@ test.describe('brief §46 demonstration 3 — gybe @slow', () => {
       'peak boom rate, controlled against uncontrolled',
     ).toBeGreaterThan(0.3)
     expect(
-      relative(easedPeakTension, hauledPeakTension),
-      'peak sheet tension, controlled against uncontrolled',
+      relative(easedImpulse, hauledImpulse),
+      'sheet load-time (N.s), controlled against uncontrolled',
     ).toBeGreaterThan(0.3)
 
     // With the sheet hauled the boom is held near the centreline instead of

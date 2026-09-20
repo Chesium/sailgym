@@ -31,7 +31,7 @@ export function ilcaParams(overrides: DeepPartial<RenderParams> = {}): RenderPar
       d_sheet: 2.45,
       z_boom: 0.7,
       block_pos_b: { x: -2.1, y: 0, z: 0.1 },
-      l_sheet_min: 0.9,
+      l_sheet_min: 1.0404326023342405,
       l_sheet_max: 4.5,
     },
   }

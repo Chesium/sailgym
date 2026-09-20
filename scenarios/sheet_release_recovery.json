@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "sheet_release_recovery",
-  "description": "The same setup as beam_reach_capsize, byte for byte in every physical field. Ease or release the mainsheet instead of holding it: the tension drops, the boom swings out, the sail depowers and the hydrostatic righting moment brings the boat back up. Nothing in the model knows the sheet was released.",
+  "description": "The same setup as beam_reach_capsize, byte for byte in every physical field. Ease or release the mainsheet instead of holding it: the tension drops, the boom swings out, the sail depowers and the hydrostatic righting moment brings the boat back up. Released at four seconds it recovers from 65 degrees of heel; held, it goes over. Nothing in the model knows the sheet was released.",
   "seed": 20250901,
   "parameter_overrides": {},
   "initial_state": {
@@ -11,11 +11,11 @@
     "heel_deg": 0.0,
     "speed": 0.0,
     "boom_deg_to_port": 0.0,
-    "sheet_length": 0.9
+    "sheet_length": 1.0404326023342405
   },
   "wind": {
     "mode": "uniform",
-    "speed": 7.0,
+    "speed": 9.0,
     "bearing_deg": 0.0,
     "variation": 0.15,
     "length_scale": 120.0,

@@ -144,13 +144,15 @@ test.describe('scenarios', () => {
     await page.getByTestId('clock-pause').click()
     await page.getByTestId('clock-reset').click()
 
-    // Hauled hard in, beam-on to a 7 m/s northerly: the apparent wind is on
-    // the beam and the sheet is short.
+    // Hauled hard in, beam-on to a 9 m/s northerly: the apparent wind is on
+    // the beam and the sheet is at its stop. v2 F18.1b made that stop the
+    // geometric minimum of the rope path, and the scenario wind moved to 9 m/s
+    // with the corrected GZ curve (docs/v2/physics-validation.md §4.6).
     const start = await readSnapshot(page)
     expect(start.psi).toBeCloseTo(0, 9)
-    expect(start.lSheet).toBeCloseTo(0.9, 9)
+    expect(start.lSheet).toBeCloseTo(1.0404326023342405, 9)
     const readout = page.getByTestId('wind-readout')
-    expect(Number(await readout.getAttribute('data-speed'))).toBeCloseTo(7, 6)
+    expect(Number(await readout.getAttribute('data-speed'))).toBeCloseTo(9, 6)
     expect(Number(await readout.getAttribute('data-bearing'))).toBeCloseTo(0, 6)
 
     // …and `close_hauled` is a different boat in a different breeze, with the

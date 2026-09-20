@@ -550,7 +550,15 @@ pub struct SheetParams {
     /// m, in B. ASSUMED — transom block position.
     #[serde(with = "vec3_serde")]
     pub block_pos_b: Vec3,
-    /// m. ASSUMED — shortest available sheet length.
+    /// m. ASSUMED — shortest available sheet length: the boom two-blocked on
+    /// the centreline. **Geometry-derived** (v2 F18.1b): it is
+    /// `rigging::mainsheet::min_rope_path`, the shortest path the rope can
+    /// take over all boom angles, so the fully hauled sheet holds the boom at
+    /// `β_min` with *zero* tension. v1 shipped 0.90 m against a 1.0404 m
+    /// shortest path, which F4.3's clamp turned into a permanent 2.81 kN
+    /// preload; `BoatParameters::validate` now rejects that, and
+    /// `mainsheet::tests::min_is_the_minimum` pins this value to the geometry
+    /// exactly.
     pub l_sheet_min: f64,
     /// m. ASSUMED — longest available sheet length.
     pub l_sheet_max: f64,
@@ -570,7 +578,7 @@ impl Default for SheetParams {
             d_sheet: 2.45,
             z_boom: 0.70,
             block_pos_b: Vec3::new(-2.10, 0.0, 0.10),
-            l_sheet_min: 0.90,
+            l_sheet_min: 1.040_432_602_334_240_5,
             l_sheet_max: 4.50,
             sheet_haul_rate: 1.5,
             sheet_ease_rate: 3.0,
@@ -611,6 +619,15 @@ impl SheetParams {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StabilityParams {
     /// m. ASSUMED — metacentric height, the slope of `GZ` at `φ = 0`.
+    ///
+    /// v1 shipped 1.00 m. Under v2 F18.1a's four constraints that value makes
+    /// `phi_peak` a local **minimum** of the curve, with maxima at 31.8° and
+    /// 61.2° either side of it, so `GzCurve::fit` rejects it: a slope of
+    /// 1.00 m/rad at the origin cannot reach only 0.30 m by 45°. The
+    /// admissible interval for this `phi_peak`, `gz_max` and `phi_vanish` is
+    /// `[0.535, 0.561]` m (`docs/v2/physics-validation.md` §1.5), and 0.55 m is
+    /// the value `docs/v1/progress/07-handoff.md` already recorded as the
+    /// self-consistent one for that set. `Δ·g·GZ_max = 406 N·m` is unchanged.
     pub gm: f64,
     /// rad. ASSUMED — angle of maximum righting arm (45°).
     pub phi_peak: f64,
@@ -628,7 +645,7 @@ pub struct StabilityParams {
 impl Default for StabilityParams {
     fn default() -> Self {
         Self {
-            gm: 1.00,
+            gm: 0.55,
             phi_peak: 0.785,
             gz_max: 0.30,
             phi_vanish: 1.396,
@@ -758,6 +775,16 @@ impl BoatParameters {
                 reason: "waterline length exceeds length overall".into(),
             });
         }
+        positive(self.sheet.d_sheet, "sheet.d_sheet")?;
+        if self.sheet.c_sheet < 0.0 || !self.sheet.c_sheet.is_finite() {
+            return Err(ParamError::OutOfRange {
+                field: "sheet.c_sheet",
+                reason: format!(
+                    "must be finite and non-negative, got {}",
+                    self.sheet.c_sheet
+                ),
+            });
+        }
         if self.sheet.l_sheet_min >= self.sheet.l_sheet_max {
             return Err(ParamError::OutOfRange {
                 field: "sheet.l_sheet_min",
@@ -770,12 +797,40 @@ impl BoatParameters {
                 reason: "must not be negative".into(),
             });
         }
+        // v2 F18.1b. A sheet shorter than the shortest path the rope can take
+        // is not a trim setting, it is a permanent preload that F4.3's clamp
+        // makes unreachable: v1 shipped 0.90 m against a 1.0404 m minimum and
+        // therefore 2.81 kN of tension before the sailor touched anything.
+        // Prestretch is not modelled (`docs/v2/physics-validation.md` §2.3).
+        let (min_rope, beta_min) = crate::rigging::mainsheet::min_rope_path(self);
+        if self.sheet.l_sheet_min < min_rope {
+            return Err(ParamError::OutOfRange {
+                field: "sheet.l_sheet_min",
+                reason: format!(
+                    "is {} m, below the shortest rope path the rig can take, {min_rope} m at \
+                     beta = {beta_min} rad. A sheet shorter than its own geometry is a \
+                     permanent {:.0} N preload, not a trim setting",
+                    self.sheet.l_sheet_min,
+                    self.sheet.k_sheet * (min_rope - self.sheet.l_sheet_min)
+                ),
+            });
+        }
         // F6.7 solves the GZ curve from these; the ordering is what makes the
         // 3×3 system meaningful.
         if self.stability.phi_peak <= 0.0 || self.stability.phi_peak >= self.stability.phi_vanish {
             return Err(ParamError::OutOfRange {
                 field: "stability.phi_peak",
                 reason: "require 0 < phi_peak < phi_vanish".into(),
+            });
+        }
+        if self.stability.phi_vanish >= std::f64::consts::PI {
+            return Err(ParamError::OutOfRange {
+                field: "stability.phi_vanish",
+                reason: format!(
+                    "require phi_vanish < pi; inversion is an equilibrium of the v2 F18.1a \
+                     curve and cannot also be the vanishing angle, got {}",
+                    self.stability.phi_vanish
+                ),
             });
         }
         if self.stability.t_capsize < 0.0 {

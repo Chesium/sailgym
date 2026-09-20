@@ -223,14 +223,18 @@ mod tests {
         assert!(beyond_pi, "never reached inversion: {}", sim.state().phi);
 
         // The sign contract, stated on both sides of inversion. `GZ` is odd
-        // and 2π-periodic, so just past `π` it is negative: the moment pushes
-        // the boat on round rather than back, and `φ = π` is an unstable
-        // equilibrium, not a trap.
-        assert!(curve.gz(PI - 0.05) > 0.0);
+        // and 2π-periodic, and under v2 F18.1a it is **negative** on the whole
+        // of `(φ_v, π)`: rule 5 forbids the boat regaining positive stability
+        // between the vanishing angle and inversion. So `φ = π` is a *stable*
+        // equilibrium — a turtled dinghy stays turtled — where v1's curve made
+        // it unstable and rolled the boat back upright from 140° of heel.
+        // Righting a capsized boat stays deferred; this asserts the sign, not
+        // a recovery model.
+        assert!(curve.gz(PI - 0.05) < 0.0);
         // `PI` is not exactly π in binary, so `GZ` there is the rounding of
         // zero rather than zero itself.
         assert!(curve.gz(PI).abs() < 1e-15, "gz(pi) = {}", curve.gz(PI));
-        assert!(curve.gz(PI + 0.05) < 0.0);
+        assert!(curve.gz(PI + 0.05) > 0.0);
         for phi in [3.3, 4.0, 5.5, -3.3, -4.9] {
             assert!(
                 (curve.gz(phi) - curve.gz(phi - std::f64::consts::TAU)).abs() < 1e-12,

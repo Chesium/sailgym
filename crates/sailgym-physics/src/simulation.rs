@@ -250,15 +250,12 @@ impl Simulation {
     ///
     /// The scenario loader and the WASM wrapper both need this; it is the
     /// bulk sibling of [`Simulation::set_parameter`] and applies the same two
-    /// checks (F7 consistency, and that the F6.7 `GZ` curve fits).
+    /// checks through the same one entry point: `BoatParameters::validate`
+    /// (F7 consistency, including v2 F18.1b's geometry-consistent sheet stop)
+    /// and `GzCurve::fit_catalogue` (v2 F18.1a's six curve rules).
     pub fn set_parameters(&mut self, p: BoatParameters) -> Result<(), ParamError> {
         p.validate()?;
-        GzCurve::fit(
-            p.stability.gm,
-            p.stability.phi_peak,
-            p.stability.gz_max,
-            p.stability.phi_vanish,
-        )?;
+        GzCurve::fit_catalogue(&p)?;
         self.params = p;
         self.refresh_forces();
         Ok(())
@@ -280,12 +277,7 @@ impl Simulation {
         let mut probe = self.params;
         let reset_required = probe.set_path(path, value)?;
         probe.validate()?;
-        GzCurve::fit(
-            probe.stability.gm,
-            probe.stability.phi_peak,
-            probe.stability.gz_max,
-            probe.stability.phi_vanish,
-        )?;
+        GzCurve::fit_catalogue(&probe)?;
         self.params = probe;
         self.refresh_forces();
         Ok(reset_required)
@@ -437,5 +429,103 @@ mod tests {
         assert_eq!(sim.params().get_path("sail.area"), Ok(8.0));
         assert_eq!(sim.set_parameter("sim.dt", 0.01), Ok(true));
         assert!(sim.set_parameter("nope", 1.0).is_err());
+    }
+
+    /// v2 F18.1a/F18.1b: every path that admits parameters from outside the
+    /// crate runs the **same** two checks, and a rejected call leaves the
+    /// running simulation exactly as it was — state, parameters and the cached
+    /// force breakdown.
+    #[test]
+    fn a_rejected_edit_changes_nothing() {
+        use crate::scenario::load_shipped;
+
+        let mut sim = Simulation::new(BoatParameters::ilca7(), 3);
+        sim.load_scenario(&load_shipped("close_hauled").expect("a shipped scenario"))
+            .expect("close_hauled loads");
+        sim.advance(400);
+        let state = *sim.state();
+        let params = *sim.params();
+        let forces = *sim.forces();
+        let steps = sim.steps();
+
+        let unchanged = |sim: &Simulation, what: &str| {
+            assert_eq!(
+                sim.state().to_array(),
+                state.to_array(),
+                "{what}: state moved"
+            );
+            assert_eq!(*sim.params(), params, "{what}: parameters moved");
+            assert_eq!(*sim.forces(), forces, "{what}: cached forces moved");
+            assert_eq!(sim.steps(), steps, "{what}: step counter moved");
+        };
+
+        // 1. An unknown path.
+        assert!(sim.set_parameter("no.such.path", 1.0).is_err());
+        unchanged(&sim, "unknown path");
+
+        // 2. A non-finite value.
+        assert!(sim.set_parameter("sail.area", f64::NAN).is_err());
+        unchanged(&sim, "NaN value");
+
+        // 3. A value the F7 consistency rules reject.
+        assert!(sim.set_parameter("sail.area", -1.0).is_err());
+        unchanged(&sim, "negative area");
+
+        // 4. A sheet stop below the geometric minimum (v2 F18.1b).
+        let why = sim
+            .set_parameter("sheet.l_sheet_min", 0.9)
+            .expect_err("0.9 m is below the shortest rope path");
+        assert!(format!("{why}").contains("l_sheet_min"), "{why}");
+        unchanged(&sim, "sheet stop below the rope path");
+
+        // 5. A stability set the v2 F18.1a curve rules reject: v1's own
+        //    `GM = 1.00 m` makes phi_peak a local minimum.
+        let why = sim
+            .set_parameter("stability.gm", 1.0)
+            .expect_err("GM = 1.00 m must be rejected");
+        assert!(format!("{why}").contains("stability"), "{why}");
+        unchanged(&sim, "infeasible GM");
+
+        // 6. The bulk sibling, with the same catalogue.
+        let mut bad = params;
+        bad.stability.gm = 1.0;
+        assert!(sim.set_parameters(bad).is_err());
+        unchanged(&sim, "set_parameters");
+
+        // 7. A scenario whose overrides are infeasible.
+        let mut sc = load_shipped("free_sail").expect("a shipped scenario");
+        sc.parameter_overrides
+            .insert("stability.gm".to_string(), 1.0);
+        assert!(sim.load_scenario(&sc).is_err());
+        unchanged(&sim, "load_scenario with an infeasible override");
+
+        // 8. ... and one whose initial sheet length is outside the clamp range.
+        let mut sc = load_shipped("free_sail").expect("a shipped scenario");
+        sc.initial_state.sheet_length = 0.5;
+        assert!(sc.validate().is_err());
+        assert!(sim.restart_scenario(&sc).is_err());
+        unchanged(&sim, "restart_scenario with a short sheet");
+
+        // And an edit that *is* valid still lands, so none of the above is
+        // passing because the setter stopped working.
+        assert_eq!(sim.set_parameter("stability.gm", 0.545), Ok(false));
+        assert_eq!(sim.params().get_path("stability.gm"), Ok(0.545));
+    }
+
+    /// A fresh simulation starts with the sheet two-blocked and **unloaded**
+    /// (v2 F18.1b): `l_sheet_min` is the geometric minimum, so `e = 0` exactly.
+    #[test]
+    fn the_initial_state_carries_no_sheet_preload() {
+        use crate::rigging::mainsheet::{min_rope_path, sheet_output};
+
+        let p = BoatParameters::ilca7();
+        let st = Simulation::initial_state(&p);
+        let (l_min, beta_min) = min_rope_path(&p);
+        assert_eq!(st.l_sheet, l_min);
+        assert_eq!(st.beta, beta_min);
+        let out = sheet_output(&st, 0.0, &p);
+        assert_eq!(out.extension, 0.0);
+        assert_eq!(out.tension, 0.0);
+        assert_eq!(Simulation::new(p, 0).forces().sheet_tension, 0.0);
     }
 }

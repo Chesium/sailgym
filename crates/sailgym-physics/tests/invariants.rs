@@ -45,8 +45,10 @@ fn steps_for(seconds: f64, p: &BoatParameters) -> u32 {
 
 /// At rest with the sheet fully eased, so the boom is unrestrained.
 ///
-/// `Simulation::initial_state` starts at `l_sheet_min`, which since section 06
-/// is a loaded rope. Fixtures that mean "free boom" say so with this.
+/// `Simulation::initial_state` starts at `l_sheet_min`, which under v2 F18.1b
+/// is the **geometric** minimum: the boom is two-blocked on the centreline at
+/// exactly zero extension, so the rope carries no load but pins the boom.
+/// Fixtures that mean "free boom" say so with this.
 fn boom_free_state(p: &BoatParameters) -> BoatState {
     BoatState {
         l_sheet: p.sheet.l_sheet_max,
@@ -699,26 +701,24 @@ fn sheet_unilateral_constraint() {
     }
 }
 
-#[test]
-fn sheet_does_no_negative_work() {
-    // Zero wind, no sheet command, kinetic energy put into the boom. The rope
-    // and the gooseneck may take energy out; nothing may put any in.
-    //
-    // The sheet lengths are drawn above `ℓ(0) = 1.0404 m`, so the rope is
-    // slack with the boom on the centreline and every load it carries comes
-    // with the damping that accompanies `dℓ/dβ ≠ 0`. `l_sheet_min = 0.90 m`
-    // is *below* that, and a sheet hauled to it is permanently stretched at
-    // the one angle where the element has no damping at all — an undamped
-    // 43 rad/s mode that RK2 cannot integrate to this tolerance at any `dt`
-    // the project uses. That is an integrator limit, not an accounting error:
-    // the per-step rise falls off as `dt³` (0.138 J at `dt = 0.01`, 3.1e-6 J
-    // at `dt = 0.00125`). The measurements and what they mean for R1 are in
-    // `docs/v1/progress/06-handoff.md`; the bound below is unchanged.
-    let p = params();
+/// True when the sheet is carrying load at this state and command — the taut
+/// branch of v2 F18.1b, evaluated exactly as `forces::evaluate` evaluates it.
+fn sheet_is_taut(st: &BoatState, c: &Controls, p: &BoatParameters) -> bool {
+    sheet_output(st, sheet_rate(c, st, p), p).extension > 0.0
+}
+
+/// Ten 20 s episodes of the sheet transient, with the take-up steps found
+/// rather than avoided. Returns `(worst rise at a take-up or let-go step,
+/// worst rise anywhere else, number of transitions)`, in joules.
+fn sheet_energy_excursions(dt: f64, episodes: u64, seconds: f64) -> (f64, f64, usize) {
+    let mut p = params();
+    p.sim = sailgym_physics::parameters::SimParams { dt, ..p.sim };
     let c = Controls::default();
     let mut rng = Lcg(0x0E0E_5555_6666_7777);
     let free_at_centre = rope_path_length(0.0, &p);
-    for episode in 0..10 {
+    let (mut worst_event, mut worst_quiet) = (0.0_f64, 0.0_f64);
+    let mut transitions = 0usize;
+    for episode in 0..episodes {
         let mut sim = Simulation::new(p, episode);
         sim.set_wind(sailgym_physics::environment::wind::WindConfig {
             speed: 0.0,
@@ -734,26 +734,425 @@ fn sheet_does_no_negative_work() {
         );
         sim.set_controls(c);
         let mut previous = mechanical_energy(sim.state(), &p);
-        let first = previous;
-        let mut rope_took_up = false;
-        assert!(previous > 0.0);
-        for i in 0..steps_for(20.0, &p) {
+        let mut was_taut = sheet_is_taut(sim.state(), &c, &p);
+        for _ in 0..(seconds / dt) as u32 {
             sim.advance(1);
-            let e = mechanical_energy(sim.state(), &p);
-            assert!(
-                e <= previous + 1e-9,
-                "episode {episode}, step {i}: energy rose {previous} -> {e}"
-            );
-            previous = e;
-            rope_took_up |= sheet_tension(sim.state(), &c, &p) > 0.0;
+            let taut = sheet_is_taut(sim.state(), &c, &p);
+            let energy = mechanical_energy(sim.state(), &p);
+            let rise = energy - previous;
+            if taut == was_taut {
+                worst_quiet = worst_quiet.max(rise);
+            } else {
+                transitions += 1;
+                worst_event = worst_event.max(rise);
+            }
+            was_taut = taut;
+            previous = energy;
         }
-        // The elastic term has to be exercised, or the test proves nothing.
-        assert!(rope_took_up, "episode {episode}: the rope never took up");
-        assert!(
-            previous < first,
-            "episode {episode}: nothing was dissipated"
+    }
+    (worst_event, worst_quiet, transitions)
+}
+
+#[test]
+fn sheet_does_no_negative_work() {
+    // Zero wind, no sheet command, kinetic energy put into the boom. The rope
+    // and the gooseneck may take energy out; nothing may put any in.
+    //
+    // **v2 F18.1b changed what this can claim, and it is claimed precisely.**
+    // The corrected law is `T = 0` on the closed slack set and
+    // `max(0, k·e + c·ė)` above it, which is *discontinuous* at take-up — the
+    // price of a rope that no longer pulls while slack. Across a take-up step
+    // RK2's two stages can sit on opposite sides of the boundary, and the step
+    // is then not a consistent approximation to anything: it can inject energy.
+    //
+    // So the invariant is split at the event, which is the honest reading of
+    // brief §35 for a non-smooth model:
+    //
+    // * **away from a transition the energy never rises at all** — the bound is
+    //   the same `+1e-9 J` per step the other two dissipation tests use, and
+    //   the measured worst rise is exactly `0.0 J`;
+    // * **at a transition it may rise, and the rise must vanish with `dt`** —
+    //   which is what says the excursion is an integration artefact of the
+    //   event and not a hole in the force model.
+    //
+    // The fixture no longer has to avoid `l_sheet_min`: v2 F18.1b made the
+    // shortest sheet the geometric minimum, so the permanently-stretched,
+    // undamped `β = 0` mode `docs/v1/progress/06-handoff.md` §2.5 recorded
+    // does not exist any more.
+    let (worst_event, worst_quiet, transitions) = sheet_energy_excursions(0.005, 10, 20.0);
+    assert!(
+        worst_quiet <= 1e-9,
+        "energy rose by {worst_quiet} J away from any slack/taut transition"
+    );
+    assert!(
+        transitions > 20,
+        "only {transitions} slack/taut transitions: the event branch is untested"
+    );
+    eprintln!(
+        "sheet_does_no_negative_work: {transitions} transitions, worst rise at one \
+         {worst_event:.6e} J, worst rise elsewhere {worst_quiet:.3e} J"
+    );
+
+    // The event excursion, refined. Halving `dt` twice must cut the worst rise
+    // by at least four — first order or better — or the excursion is not an
+    // event artefact and RV50 has fired.
+    let coarse = sheet_energy_excursions(0.01, 4, 10.0).0;
+    let medium = sheet_energy_excursions(0.005, 4, 10.0).0;
+    let fine = sheet_energy_excursions(0.0025, 4, 10.0).0;
+    eprintln!(
+        "sheet_does_no_negative_work: worst take-up rise {coarse:.4e} -> {medium:.4e} -> \
+         {fine:.4e} J at dt = 0.01, 0.005, 0.0025"
+    );
+    assert!(coarse > 0.0, "no take-up excursion was produced at all");
+    assert!(
+        fine < 0.25 * coarse,
+        "the take-up energy excursion did not fall with dt: {coarse:.4e} -> {fine:.4e} J. \
+         That is RV50: diagnose the law/integrator boundary, do not widen the bound"
+    );
+}
+
+/// **v2 F18.1b, defect 3, along a trajectory.** A slack rope carries no
+/// tension, whatever the extension rate. The old `max(0, k·e + c·ė)` gave a
+/// rope hanging 0.5 m loose 5 kN of pull, and the boom rates of a gybe reach
+/// that regime; this walks 40 wind-driven episodes with the sheet worked hard
+/// and asserts the tension is **exactly** zero at every step the rope is slack.
+#[test]
+fn slack_sheet_carries_no_tension() {
+    let p = params();
+    let mut rng = Lcg(0x51AC_0011_2233_4455);
+    let mut slack_steps = 0usize;
+    let mut taut_steps = 0usize;
+    for episode in 0..40 {
+        let mut sim = Simulation::new(p, episode);
+        sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+            mode: sailgym_physics::environment::wind::WindMode::Gust,
+            speed: rng.range(2.0, 9.0),
+            bearing_deg: rng.range(0.0, 360.0),
+            ..Default::default()
+        });
+        sim.reset(
+            BoatState {
+                psi: rng.range(-3.0, 3.0),
+                u: rng.range(0.0, 4.0),
+                beta: rng.range(-1.7, 1.7),
+                beta_dot: rng.range(-4.0, 4.0),
+                l_sheet: rng.range(p.sheet.l_sheet_min, p.sheet.l_sheet_max),
+                ..Simulation::initial_state(&p)
+            },
+            episode,
+        );
+        let mut c = Controls::default();
+        for i in 0..steps_for(30.0, &p) {
+            if i % 120 == 0 {
+                // Worked hard on purpose: hauling and releasing are what make
+                // `ė` large enough for the old law to fake tension.
+                c = Controls {
+                    rudder_rate_cmd: rng.range(-1.0, 1.0),
+                    sheet_rate_cmd: rng.range(-1.0, 1.0),
+                    sheet_release: rng.unit() < 0.35,
+                };
+                sim.set_controls(c);
+            }
+            sim.advance(1);
+            let st = sim.state();
+            let out = sheet_output(st, sheet_rate(&c, st, &p), &p);
+            if out.extension > 0.0 {
+                taut_steps += 1;
+            } else {
+                slack_steps += 1;
+                assert_eq!(
+                    out.tension, 0.0,
+                    "episode {episode}, step {i}: slack rope (e = {} m) pulls with {} N",
+                    out.extension, out.tension
+                );
+                assert_eq!(out.m_beta, 0.0);
+                assert_eq!(out.boom_load.f, Vec3::ZERO);
+                assert_eq!(out.hull_load.f, Vec3::ZERO);
+            }
+        }
+    }
+    // Both branches must have been walked, or the assertion is about nothing.
+    assert!(slack_steps > 10_000, "only {slack_steps} slack steps");
+    assert!(taut_steps > 10_000, "only {taut_steps} taut steps");
+    eprintln!(
+        "slack_sheet_carries_no_tension: {slack_steps} slack steps, {taut_steps} taut steps, \
+         zero tension on every slack one"
+    );
+}
+
+/// **v2 F18.1b, defect 2, along a trajectory.** A fresh simulation and every
+/// shipped scenario start with the rope unloaded. v1's `l_sheet_min = 0.90 m`
+/// sat 0.1404 m below the shortest path the rig can take, so the boat began
+/// every episode with 2.81 kN of tension nobody had asked for — at the one boom
+/// angle where `dℓ/dβ = 0` and the element has no damping at all.
+#[test]
+fn no_sheet_preload_at_rest() {
+    use sailgym_physics::rigging::mainsheet::min_rope_path;
+
+    let p = params();
+    let (l_min, beta_min) = min_rope_path(&p);
+    assert_eq!(p.sheet.l_sheet_min, l_min);
+
+    let st = Simulation::initial_state(&p);
+    let out = sheet_output(&st, 0.0, &p);
+    assert_eq!(out.extension, 0.0, "the fresh state is not two-blocked");
+    assert_eq!(out.tension, 0.0);
+
+    // And it stays unloaded while nothing disturbs it: no wind, no command.
+    let mut sim = Simulation::new(p, 808);
+    sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+        speed: 0.0,
+        ..Default::default()
+    });
+    sim.reset(st, 808);
+    for i in 0..steps_for(10.0, &p) {
+        sim.advance(1);
+        let out = sheet_output(sim.state(), 0.0, &p);
+        assert_eq!(
+            out.tension, 0.0,
+            "step {i}: the sheet loaded itself from rest, e = {} m",
+            out.extension
         );
     }
+    assert_eq!(sim.state().beta, beta_min, "the boom left the centreline");
+
+    // No shipped scenario starts stretched either — `tack` alone starts
+    // loaded, and it is loaded because its boom is trimmed at 35°.
+    for name in sailgym_physics::scenario::shipped_names() {
+        let sc = sailgym_physics::scenario::load_shipped(name).expect("a shipped scenario");
+        let sp = sc.to_parameters().expect("valid scenario parameters");
+        let out = sheet_output(&sc.to_boat_state(), 0.0, &sp);
+        let expected = if name == "tack" { 100.0 } else { 0.0 };
+        assert!(
+            out.tension <= expected,
+            "{name} starts with {} N of sheet tension",
+            out.tension
+        );
+    }
+}
+
+/// The three v1 defects, reconstructed, each shown **failing** the rule that
+/// replaced it.
+///
+/// v2 section 08's acceptance asks that each original defect fail under the old
+/// implementation and pass under the correction. The old implementation is
+/// gone, so each half of this test rebuilds the one expression that was wrong —
+/// the three-harmonic series, the old tension bracket, the old sheet stop — and
+/// measures it against the corrected rule. Without this the three regressions
+/// above would be assertions nobody had ever seen fail.
+#[test]
+fn the_three_v1_defects_are_reproducible() {
+    use std::f64::consts::PI;
+
+    let p = params();
+    let s = p.stability;
+
+    // --- Defect 1: the three-harmonic fit of F6.7, with v1's GM = 1.00 m ----
+    //
+    // `GZ = c1 sin φ + c2 sin 2φ + c3 sin 3φ`, solved from the slope at the
+    // origin, the value at `φ_p` and the zero at `φ_v` — the whole of v1's
+    // system, written out. `gm = 1.00` is v1's shipped value.
+    let sines3 = |phi: f64| {
+        let (sn, cs) = phi.sin_cos();
+        [sn, 2.0 * sn * cs, sn * (3.0 - 4.0 * sn * sn)]
+    };
+    let det3 = |m: [[f64; 3]; 3]| {
+        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+    };
+    let a3 = [[1.0, 2.0, 3.0], sines3(s.phi_peak), sines3(s.phi_vanish)];
+    let d = det3(a3);
+    let rhs = [1.00, s.gz_max, 0.0];
+    let c3: Vec<f64> = (0..3)
+        .map(|k| {
+            let mut m = a3;
+            for (row, value) in m.iter_mut().zip(rhs) {
+                row[k] = value;
+            }
+            det3(m) / d
+        })
+        .collect();
+    let old_gz = |phi: f64| {
+        let sn = sines3(phi);
+        c3[0] * sn[0] + c3[1] * sn[1] + c3[2] * sn[2]
+    };
+
+    // The defect, measured: positive righting well past the vanishing angle,
+    // peaking above `GZ_max` itself.
+    let mut worst = (0.0_f64, f64::NEG_INFINITY);
+    for i in 1..200_000 {
+        let phi = s.phi_vanish + (PI - s.phi_vanish) * (i as f64) / 200_000.0;
+        if old_gz(phi) > worst.1 {
+            worst = (phi, old_gz(phi));
+        }
+    }
+    assert!(
+        worst.1 > 0.7,
+        "the v1 three-harmonic curve was reconstructed wrongly: worst GZ past phi_v is {}",
+        worst.1
+    );
+    assert!(
+        (worst.0.to_degrees() - 142.2).abs() < 0.5,
+        "the v1 peak past phi_v was at 142.2 deg, this reconstruction says {}",
+        worst.0.to_degrees()
+    );
+    // And the corrected curve, on the same tunables, does not.
+    let curve = GzCurve::from_params(&p);
+    assert!(curve.gz(worst.0) < 0.0);
+    // The rule that rejects it: v1's own `gm = 1.00 m` no longer fits at all.
+    assert!(
+        GzCurve::fit(
+            1.00,
+            s.phi_peak,
+            s.gz_max,
+            s.phi_vanish,
+            GzCurve::gz_envelope(&p)
+        )
+        .is_err(),
+        "GM = 1.00 m must be rejected by the v2 F18.1a rules"
+    );
+    eprintln!(
+        "v1 defect 1 reproduced: three-harmonic GZ = {:.6} m at {:.2} deg, past phi_v; \
+         corrected curve reads {:.6} m there",
+        worst.1,
+        worst.0.to_degrees(),
+        curve.gz(worst.0)
+    );
+
+    // --- Defect 2: the v1 sheet stop --------------------------------------
+    let (l_min, beta_min) = sailgym_physics::rigging::mainsheet::min_rope_path(&p);
+    let v1_stop = 0.90;
+    let preload = p.sheet.k_sheet * (l_min - v1_stop);
+    assert!(
+        (preload - 2808.7).abs() < 1.0,
+        "the v1 preload was 2808.7 N, this reconstruction says {preload}"
+    );
+    assert!(l_min > v1_stop);
+    let mut v1_params = p;
+    v1_params.sheet.l_sheet_min = v1_stop;
+    let why = v1_params
+        .validate()
+        .expect_err("l_sheet_min = 0.90 m must now be rejected");
+    assert!(format!("{why}").contains("l_sheet_min"), "{why}");
+    // The corrected stop carries nothing at the minimising angle.
+    assert_eq!(
+        sheet_output(
+            &BoatState {
+                beta: beta_min,
+                l_sheet: p.sheet.l_sheet_min,
+                ..BoatState::ZERO
+            },
+            0.0,
+            &p
+        )
+        .tension,
+        0.0
+    );
+    eprintln!(
+        "v1 defect 2 reproduced: l_sheet_min = {v1_stop} m against a {l_min} m path, \
+         {preload:.1} N of preload; the corrected stop carries 0 N"
+    );
+
+    // --- Defect 3: the old tension bracket ---------------------------------
+    //
+    // `max(0, k·e + c·ė)` with no slack branch, evaluated on states the model
+    // can actually reach: the sheet command alone supplies `|L̇| ≤ 6 m/s`, and
+    // `(dℓ/dβ)·β̇` supplies far more through a gybe.
+    let mut faked = 0usize;
+    let mut worst_fake = 0.0_f64;
+    for slack in [0.01, 0.05, 0.2, 0.5] {
+        for beta in [-1.2, -0.4, 0.4, 1.2] {
+            let length = rope_path_length(beta, &p);
+            for beta_dot in [2.0, 5.0, 10.0] {
+                let st = BoatState {
+                    beta,
+                    beta_dot,
+                    l_sheet: length + slack,
+                    ..BoatState::ZERO
+                };
+                let out = sheet_output(&st, 0.0, &p);
+                let extension_rate =
+                    sailgym_physics::rigging::mainsheet::drope_dbeta(beta, &p) * beta_dot;
+                let old_law =
+                    (p.sheet.k_sheet * out.extension + p.sheet.c_sheet * extension_rate).max(0.0);
+                // The corrected law is exactly zero on every one of these.
+                assert_eq!(out.tension, 0.0);
+                if old_law > 0.0 {
+                    faked += 1;
+                    worst_fake = worst_fake.max(old_law);
+                }
+            }
+        }
+    }
+    assert!(
+        faked > 10 && worst_fake > 1e3,
+        "the v1 bracket faked tension on only {faked} reachable slack states, worst \
+         {worst_fake} N; the reconstruction is wrong"
+    );
+    eprintln!(
+        "v1 defect 3 reproduced: the old bracket pulls on {faked} slack states here, up to \
+         {worst_fake:.0} N; the corrected law reads 0 N on every one"
+    );
+}
+
+/// **v2 F18.1a, defect 1, along a trajectory.** Past the angle of vanishing
+/// stability the righting arm is negative everywhere up to inversion, so a boat
+/// pushed past `φ_v` keeps going over. v1's curve came back **positive** beyond
+/// 81.6° of heel and reached `+0.785 m` at 142° — 2.6× the whole intended
+/// righting budget — so the model rolled a capsized boat back upright.
+#[test]
+fn past_vanishing_the_boat_keeps_going_over() {
+    let p = params();
+    let curve = GzCurve::from_params(&p);
+
+    // The property, on the curve itself, over the whole supported domain.
+    let n = 200_000;
+    for i in 1..n {
+        let phi = p.stability.phi_vanish
+            + (std::f64::consts::PI - p.stability.phi_vanish) * (i as f64) / (n as f64);
+        assert!(
+            curve.gz(phi) < 0.0,
+            "GZ({phi}) = {} is positive past phi_vanish",
+            curve.gz(phi)
+        );
+        assert!(curve.gz(-phi) > 0.0, "the mirror of the same statement");
+    }
+
+    // And along a trajectory: no wind, no command, released from just past the
+    // unstable equilibrium. The boat must roll on to inversion, not back.
+    let mut sim = Simulation::new(p, 909);
+    sim.set_wind(sailgym_physics::environment::wind::WindConfig {
+        speed: 0.0,
+        ..Default::default()
+    });
+    sim.reset(
+        BoatState {
+            phi: p.stability.phi_vanish + 0.05,
+            ..boom_free_state(&p)
+        },
+        909,
+    );
+    let mut lowest = f64::INFINITY;
+    for i in 0..steps_for(60.0, &p) {
+        sim.advance(1);
+        let phi = sim.state().phi;
+        assert!(sim.state().is_finite(), "step {i}");
+        lowest = lowest.min(phi);
+    }
+    let end = sim.state().phi;
+    assert!(
+        lowest > p.stability.phi_vanish,
+        "the boat rolled back below phi_vanish (to {lowest} rad) instead of going over"
+    );
+    assert!(
+        (end - std::f64::consts::PI).abs() < 0.2,
+        "the boat settled at {end} rad, not inverted"
+    );
+    eprintln!(
+        "past_vanishing_the_boat_keeps_going_over: released at {:.4} rad, settled at {end:.6} rad",
+        p.stability.phi_vanish + 0.05
+    );
 }
 
 #[test]

@@ -332,8 +332,9 @@ impl Scenario {
     /// The fully resolved parameter catalogue: [`BoatParameters::ilca7`] with
     /// the sparse overrides applied in key order.
     ///
-    /// The validation mirrors `Simulation::set_parameter` (section 08 handoff
-    /// §2.1): the catalogue must validate *and* the F6.7 `GZ` curve must fit,
+    /// The validation is the **same** entry point `Simulation::set_parameter`
+    /// and `Simulation::set_parameters` use (v1 section 08 handoff §2.1): the
+    /// catalogue must validate *and* `GzCurve::fit_catalogue` must accept it,
     /// because a `stability` group `fit` rejects yields a boat with no
     /// righting arm at all, silently.
     pub fn to_parameters(&self) -> Result<BoatParameters, ScenarioError> {
@@ -345,13 +346,7 @@ impl Scenario {
             })?;
         }
         p.validate().map_err(ScenarioError::Parameter)?;
-        GzCurve::fit(
-            p.stability.gm,
-            p.stability.phi_peak,
-            p.stability.gz_max,
-            p.stability.phi_vanish,
-        )
-        .map_err(ScenarioError::Parameter)?;
+        GzCurve::fit_catalogue(&p).map_err(ScenarioError::Parameter)?;
         Ok(p)
     }
 
@@ -420,7 +415,22 @@ impl Scenario {
             .map_err(|e| ScenarioError::Wind(e.to_string()))?;
         // Rejects an unknown override path, and an override that makes the
         // catalogue unusable, at load time rather than at the first step.
-        self.to_parameters()?;
+        let p = self.to_parameters()?;
+        // v2 F18.1b. F4.3 clamps `L` to `[l_sheet_min, l_sheet_max]` inside the
+        // derivative, so an initial condition outside that range is a state the
+        // boat never occupies: the first step moves it, and the recorded
+        // initial condition would be a fiction. Checked against the scenario's
+        // **own** resolved catalogue, because `parameter_overrides` may move
+        // the geometry that sets the stop.
+        if s.sheet_length < p.sheet.l_sheet_min || s.sheet_length > p.sheet.l_sheet_max {
+            return Err(ScenarioError::OutOfRange {
+                field: "initial_state.sheet_length",
+                reason: format!(
+                    "must lie in [{}, {}] m, the range F4.3 clamps L to, got {}",
+                    p.sheet.l_sheet_min, p.sheet.l_sheet_max, s.sheet_length
+                ),
+            });
+        }
         Ok(())
     }
 }
@@ -679,6 +689,82 @@ mod tests {
             Err(ScenarioError::Parse(_))
         ));
         assert!(matches!(Scenario::load("[]"), Err(ScenarioError::Parse(_))));
+    }
+
+    /// v2 F18.1b: an initial sheet length outside `[l_sheet_min, l_sheet_max]`
+    /// is a state the boat never occupies, because F4.3 clamps `L` into that
+    /// range inside the derivative. The range is resolved from the scenario's
+    /// **own** catalogue, so an override that moves the geometry moves it too.
+    #[test]
+    fn validate_rejects_a_sheet_outside_the_clamp_range() {
+        let base: serde_json::Value =
+            serde_json::from_str(shipped_source("free_sail").unwrap()).unwrap();
+        let p = BoatParameters::ilca7();
+
+        for (length, what) in [
+            (0.9_f64, "the v1 default, below the geometric minimum"),
+            (p.sheet.l_sheet_max + 0.1, "longer than the sheet"),
+        ] {
+            let mut doc = base.clone();
+            doc["initial_state"]["sheet_length"] = serde_json::json!(length);
+            let err = Scenario::load(&doc.to_string())
+                .expect_err(&format!("sheet_length {length} m: {what}"));
+            assert!(
+                matches!(
+                    &err,
+                    ScenarioError::OutOfRange {
+                        field: "initial_state.sheet_length",
+                        ..
+                    }
+                ),
+                "{what}: {err}"
+            );
+        }
+
+        // Exactly on either stop is fine.
+        for length in [p.sheet.l_sheet_min, p.sheet.l_sheet_max] {
+            let mut doc = base.clone();
+            doc["initial_state"]["sheet_length"] = serde_json::json!(length);
+            Scenario::load(&doc.to_string()).unwrap_or_else(|e| panic!("{length}: {e}"));
+        }
+
+        // And the range follows an override of the rig geometry: a longer boom
+        // attachment distance moves the shortest rope path, which invalidates a
+        // catalogue whose stop no longer reaches it.
+        let mut doc = base.clone();
+        doc["parameter_overrides"] = serde_json::json!({ "sheet.d_sheet": 1.0 });
+        let err = Scenario::load(&doc.to_string())
+            .expect_err("d_sheet = 1.0 m puts the shortest path above l_sheet_min");
+        assert!(
+            matches!(&err, ScenarioError::Parameter(_)),
+            "expected a parameter rejection, got {err}"
+        );
+    }
+
+    /// The shipped six carry **no** initial sheet preload but `tack`, whose
+    /// boom is genuinely trimmed at 35° on 2.0 m of sheet
+    /// (`docs/v2/physics-validation.md` §2.2).
+    #[test]
+    fn the_shipped_six_start_unloaded() {
+        use crate::rigging::mainsheet::sheet_output;
+
+        for name in shipped_names() {
+            let sc = load_shipped(name).unwrap_or_else(|e| panic!("{name}: {e}"));
+            let p = sc.to_parameters().unwrap_or_else(|e| panic!("{name}: {e}"));
+            let out = sheet_output(&sc.to_boat_state(), 0.0, &p);
+            let expected_load = name == "tack";
+            assert_eq!(
+                out.tension > 0.0,
+                expected_load,
+                "{name}: T = {} N at t = 0 (e = {} m)",
+                out.tension,
+                out.extension
+            );
+            eprintln!(
+                "scenario {name}: L0 = {}, e = {:.9} m, T = {:.3} N",
+                sc.initial_state.sheet_length, out.extension, out.tension
+            );
+        }
     }
 }
 

@@ -188,11 +188,13 @@ function legacyFixture(sim: SimHandle, name: string): string {
     state.l_sheet = (sheet.l_sheet_min + sheet.l_sheet_max) / 2
   } else if (name === 'capsize') {
     // brief §46's `beam_reach_capsize`: a northerly on the port beam with the
-    // sheet hard in, which is where the boat starts. 7 m/s is just over the
-    // measured threshold — 6.90 m/s recovers, 6.95 m/s goes over (see
-    // `docs/v1/progress/07-handoff.md`) — so this is a capsize the boat is
-    // *driven* into, not one it is placed in.
-    wind.speed = 7
+    // sheet hard in, which is where the boat starts. 9 m/s is inside the
+    // window v2 section 08 measured — below 7.98 m/s the corrected boat never
+    // goes over, above 9.65 m/s it cannot be saved by releasing at four
+    // seconds (`docs/v2/physics-validation.md` §4.6) — so this is a capsize
+    // the boat is *driven* into, not one it is placed in. It tracks
+    // `scenarios/beam_reach_capsize.json`, which carries the same speed.
+    wind.speed = 9
     wind.bearing_deg = 0
   } else {
     // `knockdown`: already on its ear and still rolling — the state a gust

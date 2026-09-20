@@ -2,7 +2,7 @@
 
 **This document contains no tasks and is not executed by an agent.**
 
-**Status: proposed deltas, not implemented contracts.** The [index](README.md) schedules 08–11 before research sections 02–07. The brief records separate scope decisions. v1 foundations remain the shipped reference; explicit v2 corrections require a recorded decision and evidence, not a silent reinterpretation. No signature is supplied by this planning update.
+**Status: proposed deltas, except F18.1, which section 08 has implemented.** The [index](README.md) schedules 08–11 before research sections 02–07. The brief records separate scope decisions. v1 foundations remain the shipped reference; explicit v2 corrections require a recorded decision and evidence, not a silent reinterpretation. No signature is supplied by this planning update — and none is supplied by F18.1a–d either: they record what section 08 implemented and the evidence for it ([`physics-validation.md`](physics-validation.md), [`progress/08-handoff.md`](progress/08-handoff.md)), and the handoff names the two decisions that still want a human ruling.
 
 F18 records the playable milestone. F14–F17 remain later research proposals, with the corrections below incorporated. Section-number order is not delivery order.
 
@@ -15,7 +15,7 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 | **F15** | Task and course — routes, marks, guidance, passage | blocked on V-A |
 | **F16** | Conformance, digests and the tolerance contract | proposed; section 02 |
 | **F17** | The Python boundary | proposed; sections 03 and 07 |
-| **F18** | Corrected model, input, replay and tasks | proposed; sections 08–11 |
+| **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08; F18.2–4 proposed, sections 09–11 |
 
 ---
 
@@ -381,6 +381,145 @@ in physics**. This is an output buffer, exactly like the wind grid's.
 ### F18.1 Corrected reduced model — section 08
 
 Retain 13 state scalars and force-based RK2 motion. Resolve GZ peak/root/domain constraints, unintended sheet preload and positive slack tension in the shared physics modules. Record exact changed F6/F7 clauses, equation/parameter rationale, before/after evidence and a new model/source identity. Do not choose replacement coefficients by tutorial success. No new degrees of freedom or empirical certification is implied.
+
+The three deltas below are **resolved** and implemented by section 08. Their
+evidence is [`physics-validation.md`](physics-validation.md); their handoff is
+[`progress/08-handoff.md`](progress/08-handoff.md). F3 (state and controls),
+F4 (equations of motion), F5 (the foil model), F8 (the WASM surface) and F9
+(determinism) are **unchanged** — `STATE_LEN` is still 13, the snapshot layout
+is untouched, and no physics moved to TypeScript.
+
+#### F18.1a — D1: the righting-arm curve (replaces F6.7's fit)
+
+`GZ` is a **four**-term odd harmonic series, solved once at parameter-build
+time from four constraints instead of three:
+
+```
+GZ(φ)   = Σ_{n=1..4} c_n · sin(n φ)
+GZ'(φ)  = Σ_{n=1..4} n · c_n · cos(n φ)
+∫₀^φ GZ = Σ_{n=1..4} c_n · (1 − cos(n φ)) / n
+
+Σ n·c_n            = GM        slope at the origin
+Σ c_n sin(n φ_p)   = GZ_max    the peak's value
+Σ n·c_n cos(n φ_p) = 0         the peak is a stationary point       ← the new constraint
+Σ c_n sin(n φ_v)   = 0         the vanishing angle
+```
+
+The human-facing tunables are unchanged: `GM`, `φ_p`, `GZ_max`, `φ_v`.
+`GZ(0) = 0` and oddness are structural. The harmonics are built from one
+`sin_cos` by the Chebyshev recurrences, so every term of `GZ` still carries
+exactly one factor of `sin φ` and `gz(−φ)` is the **bit-exact** negation of
+`gz(φ)`. `gz`, `dgz` and `gz_integral` are the one curve, its analytic
+derivative and its analytic integral — never three approximations.
+
+**Supported heel domain: `φ ∈ [−π, π]`**, extended to every real `φ` by the
+curve's own `2π` periodicity (`state.phi` stays unwrapped, F3). A valid
+configuration has exactly three equilibria per half-turn: `φ = 0` stable,
+`φ = ±φ_v` **unstable**, `φ = ±π` stable (turtled). Righting a turtled boat
+remains deferred, so `±π` is an accepted end state.
+
+`GzCurve::fit` **rejects**, naming the offending field:
+
+1. `GM` or `GZ_max` not finite and positive, or `0 < φ_p < φ_v < π` violated;
+2. a singular system;
+3. `GZ ≤ 0` anywhere on `(0, φ_v)`;
+4. `GZ` not unimodal on `(0, φ_v)`, or its maximum not at `φ_p`;
+5. `GZ ≥ 0` anywhere on `(φ_v, π)` — **no positive stability between the
+   vanishing angle and inversion**;
+6. `|GZ(φ)| > hull.beam / 2` anywhere — a righting arm is a horizontal lever
+   between two points inside the hull, so half the beam is a generous
+   geometric envelope.
+
+Rule 6 makes the fit depend on `hull.beam`, so the one entry point is
+`GzCurve::fit_catalogue(&BoatParameters)`; `GzCurve::fit(gm, φ_p, GZ_max, φ_v, gz_limit)`
+remains for tests and for callers that hold the four tunables directly. Every
+path that admits parameters from outside the crate — `Scenario::to_parameters`,
+`Simulation::set_parameter`, `Simulation::set_parameters` — calls it, and a
+rejected edit leaves the previous simulation and catalogue intact.
+
+Rule 4 **supersedes** F6.7's "reject parameter sets that produce a
+non-monotonic `GZ` on `[0, φ_p]`" together with its "the peak is pinned in
+value but not exactly in location". Those two clauses contradicted each other
+while the peak's location was unconstrained; the fourth harmonic pins the
+location, so both now say the same thing. The contradiction recorded in
+`docs/v1/progress/07-handoff.md` is hereby closed.
+
+#### F18.1b — D2: the unilateral sheet (replaces F6.8's `T`)
+
+```
+T = if e > 0 { max(0, k_sheet·e + c_sheet·ė) } else { 0 }
+```
+
+**The boundary is `e > 0`, strictly.** The slack set `{e ≤ 0}` is closed and
+carries `T = 0` on all of it — `e = 0` included, for either sign of `ė` and for
+`|ė|` arbitrarily large. Stiffness and damping are both properties of stretched
+rope; an element at its natural length transmits nothing. The `max` is retained
+and still load-bearing: it is what stops a **taut** rope from pushing while it
+is eased faster than it is stretched.
+
+`T` is therefore discontinuous at take-up (`T → c_sheet·ė` as `e → 0⁺`,
+`T = 0` at `e = 0`). That is the contact-impact discontinuity every unilateral
+spring–damper has. Convergence across it is measured with event-aware checks,
+never with a smooth-order assertion.
+
+**Geometry-consistent minimum.** With `a = mast.x − block.x`,
+`b = mast.y − block.y`, `h = mast.z + z_boom − block.z`, `R = √(a² + b²)`:
+
+```
+ℓ(β)² = a² + b² + h² + d_sheet² − 2·d_sheet·R·cos(β − atan2(b, a))
+β_min = atan2(b, a)                    (for d_sheet > 0)
+ℓ_min = ℓ(β_min) = √( h² + (R − d_sheet)² )
+```
+
+`rigging::mainsheet::min_rope_path(&p) -> (ℓ_min, β_min)` is the single
+definition and returns `rope_path_length(β_min, &p)`, so the bound and the path
+are the same evaluation. `BoatParameters::validate` requires
+`ℓ_min ≤ l_sheet_min < l_sheet_max`, and `Scenario::validate` requires
+`l_sheet_min ≤ initial_state.sheet_length ≤ l_sheet_max` against the scenario's
+own resolved catalogue. **Prestretch is not modelled**: a rope shorter than the
+path it must follow is a rigging fault, not a trim setting.
+
+#### F18.1c — F7 parameter deltas
+
+Two F7 defaults change. Both are ASSUMED values whose previous numbers are
+shown infeasible in `physics-validation.md` §1.5 and §2.1–2.2; neither was
+chosen from a scenario, a tutorial or a demonstration (v1 brief §43).
+`tests/provenance.rs::shipped_values_match_the_f7_table` reads the table below
+as an explicit override of the F7 table in `docs/v1/00-foundations.md`; every
+other F7 row is still compared against F7 itself.
+
+<!-- BEGIN F7-OVERRIDES -->
+
+| Path | v1 (F7) | v2 | Tag | Reason |
+|---|---|---|---|---|
+| `stability.gm` | 1.00 | 0.55 | ASSUMED | 1.00 m makes `φ_p` a local **minimum** of the four-constraint curve (maxima at 31.80° and 61.20° straddle it), so rule 4 rejects it. The admissible interval for F7's `φ_p`, `GZ_max`, `φ_v` under rules 3–6 is `[0.535, 0.561]` m; 0.55 m is the value `docs/v1/progress/07-handoff.md` and `hydrostatics::tests::consistent_curve` already recorded as self-consistent for this set. `Δ·g·GZ_max = 406 N·m` is unchanged. |
+| `sheet.l_sheet_min` | 0.90 | 1.0404326023342405 | ASSUMED | 0.90 m is 0.1404 m below `ℓ_min`, the shortest path the rig can take, and F4.3 clamps `L` to it — a permanent 2.81 kN preload at the one boom angle where `dℓ/dβ = 0` and the element has no damping. The new value is `min_rope_path` for the F7 geometry, to the last bit. |
+
+<!-- END F7-OVERRIDES -->
+
+Two shipped scenarios move `initial_state.sheet_length` from `0.9` to
+`1.0404326023342405` for the same reason. No other parameter, in F7 or in a
+scenario, is changed by section 08.
+
+#### F18.1d — D3: model identity
+
+`sailgym_physics::identity` exposes a `ModelIdentity` record for sections 10
+and 02 to reuse. It carries a declared `MODEL_VERSION` — the contract version,
+bumped by hand when F6/F7 changes — and a **source** identity taken from git:
+`git rev-parse HEAD:crates/sailgym-physics/src`, the content-addressed tree id
+of the physics source, captured by `build.rs`. Properties:
+
+* it changes when any physics source file's content changes, and **only** then
+  — an unrelated commit that leaves `src/` alone leaves it alone;
+* an uncommitted edit under `src/` marks the identity **dirty**, and a build
+  outside a git checkout marks it **unknown**;
+* `dirty` and `unknown` are not equal to any known baseline and must not
+  authorise a comparison against one.
+
+No cryptographic primitive is implemented here; git's own object hashing is the
+implementation. Parameters travel separately: a parameter digest cannot detect a
+changed equation, and an implementation identity cannot detect a changed
+parameter. Both are required.
 
 ### F18.2 Input ownership — section 09
 

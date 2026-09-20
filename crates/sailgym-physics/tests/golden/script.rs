@@ -18,6 +18,7 @@
 //! an accumulated clock: `advance` is exact in step count and a rounding
 //! difference in a cue boundary would be a silent one-step trajectory change.
 
+use sailgym_physics::identity::ModelIdentity;
 use sailgym_physics::recording::ToolchainInfo;
 use sailgym_physics::scenario::Scenario;
 use sailgym_physics::simulation::Simulation;
@@ -75,13 +76,22 @@ const BEAM_REACH_CAPSIZE: [Cue; 4] = [
     Cue::new(18.0, 0.0, 0.0, false),
 ];
 
-/// Identical for eight seconds, then the human does the other thing:
+/// Identical for four seconds, then the human does the other thing:
 /// brief §46 steps 11–16.
-const SHEET_RELEASE_RECOVERY: [Cue; 5] = [
+///
+/// **v2 section 08 moved the release cue from 8 s to 4 s.** The corrected
+/// `GZ` curve (F18.1a) holds `GZ_max` out to `φ_p = 45°` where v1's had
+/// already peaked at 32.5° and was falling, so the boat carries more righting
+/// through the middle of the curve and the scenario's wind moved with it:
+/// 9 m/s, measured in `docs/v2/physics-validation.md` §4.6. At that wind the
+/// window is real rather than notional — released at 4 s the boat recovers
+/// from 65° of heel, released at 8 s it is already past 73° and goes over —
+/// and a "recovery" fixture that capsized would be a false label on a
+/// regression file.
+const SHEET_RELEASE_RECOVERY: [Cue; 4] = [
     Cue::new(0.0, 0.0, -1.0, false),
-    Cue::new(5.0, 0.0, 0.0, false),
-    Cue::new(8.0, 0.0, 0.0, true),
-    Cue::new(12.0, 0.0, 0.0, false),
+    Cue::new(4.0, 0.0, 0.0, true),
+    Cue::new(8.0, 0.0, 0.0, false),
     Cue::new(20.0, 0.0, -0.5, false),
 ];
 
@@ -186,11 +196,25 @@ pub fn run_golden(sc: &Scenario) -> Vec<[f64; STATE_LEN]> {
 /// `toolchain` is R7's whole point: a golden file is only valid for the build
 /// that produced it, so the file says which build that was and the comparison
 /// **skips with a clear message** on a mismatch rather than failing.
+///
+/// `identity` and `declared_changes` are v2 F18.1d's half of the same idea, and
+/// they answer a different question: not "which compiler" but "which
+/// equations". A golden generated from a tree git cannot identify — which is
+/// unavoidable for the commit that *introduces* a physics correction, since the
+/// goldens and the source land together — says so in the file, and says what
+/// was being changed. `regression.rs` prints both and refuses a
+/// non-baseline identity that declares nothing.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Golden {
     pub schema_version: u32,
     pub scenario: String,
     pub toolchain: ToolchainInfo,
+    /// The model/source identity of the build that wrote this file (F18.1d).
+    pub identity: ModelIdentity,
+    /// What the generator was told it was changing, when the source tree was
+    /// not a baseline. Empty when the tree was clean.
+    #[serde(default)]
+    pub declared_changes: String,
     pub dt: f64,
     pub duration_s: f64,
     pub sample_hz: f64,
@@ -204,10 +228,14 @@ pub struct Golden {
 }
 
 /// The only golden-file schema this build writes or reads.
-pub const GOLDEN_SCHEMA_VERSION: u32 = 1;
+///
+/// Bumped to 2 by v2 section 08: the file now carries the model/source
+/// identity of the build that wrote it (F18.1d), which a schema-1 reader would
+/// silently ignore.
+pub const GOLDEN_SCHEMA_VERSION: u32 = 2;
 
 /// Build the committed form of a golden trajectory.
-pub fn golden_for(sc: &Scenario) -> Golden {
+pub fn golden_for(sc: &Scenario, declared_changes: &str) -> Golden {
     let params = sc
         .to_parameters()
         .unwrap_or_else(|e| panic!("{}: {e}", sc.name));
@@ -215,6 +243,8 @@ pub fn golden_for(sc: &Scenario) -> Golden {
         schema_version: GOLDEN_SCHEMA_VERSION,
         scenario: sc.name.clone(),
         toolchain: ToolchainInfo::current(),
+        identity: ModelIdentity::current(),
+        declared_changes: declared_changes.to_string(),
         dt: params.sim.dt,
         duration_s: GOLDEN_DURATION_S,
         sample_hz: GOLDEN_SAMPLE_HZ,

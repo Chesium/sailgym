@@ -165,8 +165,10 @@ test.describe('parameter panel', () => {
     await expect(error).toContainText(/GZ|phi_vanish|stability/)
 
     // The edit was refused, not half-applied: the catalogue still holds the
-    // old value and the control has snapped back to it.
-    await expect(page.getByTestId('param-stability.gm')).toHaveAttribute('data-value', '1')
+    // old value and the control has snapped back to it. 0.55 m is the v2
+    // F18.1c default; v1 shipped 1.00 m, which the corrected curve rules
+    // reject outright.
+    await expect(page.getByTestId('param-stability.gm')).toHaveAttribute('data-value', '0.55')
 
     // And the simulation is still a simulation.
     await page.waitForTimeout(1_000)

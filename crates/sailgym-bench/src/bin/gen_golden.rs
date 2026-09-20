@@ -20,10 +20,24 @@
 //!
 //! `--allow-dirty` overrides the refusal, the way `cargo publish` does, and
 //! prints a warning naming every dirty file. It exists for exactly one
-//! situation — the change that *introduces* the golden files, where the
-//! physics they describe is necessarily still uncommitted — and section 09's
-//! handoff records the one run that used it. If you find yourself reaching
+//! situation — the change that *introduces or corrects* the physics the golden
+//! files describe, where the source and the fixtures land in the same commit —
+//! and each handoff records the run that used it. If you find yourself reaching
 //! for it to make a failing regression pass, that is the bug.
+//!
+//! **v2 section 08 narrowed the override rather than widening it (F18.1d).**
+//! `--allow-dirty` now *requires* `--declare "<what is changing>"`, and every
+//! file written carries:
+//!
+//! * `identity` — `ModelIdentity::current()`, which for a dirty tree records
+//!   the commit the binary does **not** implement and marks itself
+//!   `state: "dirty"`, so it can never be mistaken for a baseline;
+//! * `declared_changes` — the `--declare` text, verbatim;
+//! * the list of dirty files, appended to that text, so the file names the
+//!   exact working-tree content it describes.
+//!
+//! Nothing is stashed, deleted or committed. The override records what it
+//! could not verify; it does not pretend to have verified it.
 //!
 //! ## R7
 //!
@@ -34,6 +48,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use sailgym_physics::identity::{ModelIdentity, SourceState};
 use sailgym_physics::recording::ToolchainInfo;
 use sailgym_physics::scenario::{load_shipped, shipped_names};
 
@@ -71,11 +86,36 @@ fn dirty_physics_tree() -> Result<String, String> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
+/// The `--declare "<text>"` argument, if one was given.
+fn declared() -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+    args.iter()
+        .position(|a| a == "--declare")
+        .and_then(|i| args.get(i + 1).cloned())
+        .filter(|t| !t.trim().is_empty())
+}
+
 fn main() {
     let toolchain = ToolchainInfo::current();
+    let identity = ModelIdentity::current();
     println!("gen_golden: toolchain {}", toolchain.describe());
+    println!("gen_golden: identity  {}", identity.describe());
     let allow_dirty = std::env::args().any(|a| a == "--allow-dirty");
+    let declare = declared();
 
+    // v2 F18.1d: the override is narrowed, not widened. Overriding the refusal
+    // without saying what is being changed writes a fixture nobody can audit.
+    if allow_dirty && declare.is_none() {
+        eprintln!(
+            "gen_golden: refusing to run — --allow-dirty requires \
+             --declare \"<what is changing>\".\n\
+             A golden file written from an unidentified tree has to say what it \
+             describes, or it is an unreviewable claim (v2 F18.1d, RV51)."
+        );
+        std::process::exit(2);
+    }
+
+    let mut declared_changes = String::new();
     match dirty_physics_tree() {
         Err(why) if !allow_dirty => {
             eprintln!("gen_golden: refusing to run — {why}");
@@ -87,8 +127,9 @@ fn main() {
                  uncommitted changes:\n{dirty}\n\
                  Golden trajectories say \"the physics did not change\". \
                  Regenerating them against an uncommitted edit would bless it \
-                 silently. Commit or stash first, or pass --allow-dirty if you \
-                 are bootstrapping the files themselves."
+                 silently. Commit or stash first, or pass --allow-dirty \
+                 --declare \"<what is changing>\" if the source and the \
+                 fixtures have to land together."
             );
             std::process::exit(2);
         }
@@ -97,11 +138,48 @@ fn main() {
                 "gen_golden: WARNING — --allow-dirty given and \
                  crates/sailgym-physics/src is dirty:\n{dirty}\n\
                  The files written below describe the working tree, not a \
-                 commit. Say so wherever you record them."
+                 commit. Each one records that, and what you declared."
+            );
+            declared_changes = format!(
+                "{}\n\nGenerated from an uncommitted working tree. \
+                 git status --porcelain -- crates/sailgym-physics/src:\n{dirty}",
+                declare.clone().unwrap_or_default()
             );
         }
-        Err(why) => eprintln!("gen_golden: WARNING — --allow-dirty given and {why}"),
+        Err(why) => {
+            eprintln!("gen_golden: WARNING — --allow-dirty given and {why}");
+            declared_changes = format!(
+                "{}\n\nThe source identity could not be established: {why}",
+                declare.clone().unwrap_or_default()
+            );
+        }
         Ok(_) => {}
+    }
+
+    // The two halves have to agree, or the file would claim a baseline the
+    // build does not have.
+    match identity.source.state {
+        SourceState::Clean => {
+            if !declared_changes.is_empty() {
+                eprintln!(
+                    "gen_golden: refusing to run — the tree is dirty but the compiled-in \
+                     identity says clean. build.rs did not re-run; touch a source file or \
+                     `cargo clean -p sailgym-physics` and try again (RV52)."
+                );
+                std::process::exit(2);
+            }
+        }
+        _ => {
+            if declared_changes.is_empty() {
+                eprintln!(
+                    "gen_golden: refusing to run — the compiled-in identity is not a \
+                     baseline ({}) but the working tree looks clean. The binary is stale; \
+                     rebuild before generating (RV52).",
+                    identity.describe()
+                );
+                std::process::exit(2);
+            }
+        }
     }
 
     let dir = physics_root().join("tests/golden");
@@ -109,7 +187,7 @@ fn main() {
 
     for name in shipped_names() {
         let sc = load_shipped(name).unwrap_or_else(|e| panic!("{name}: {e}"));
-        let golden = golden_for(&sc);
+        let golden = golden_for(&sc, &declared_changes);
         let path = dir.join(format!("{name}.json"));
         let mut json = serde_json::to_string_pretty(&golden).expect("a golden file must serialise");
         json.push('\n');
@@ -127,4 +205,10 @@ fn main() {
         "gen_golden: done. `cargo test -p sailgym-physics --test regression` \
          now compares against this build."
     );
+    if !declared_changes.is_empty() {
+        println!(
+            "gen_golden: every file above records identity {} and the declared change.",
+            identity.describe()
+        );
+    }
 }
