@@ -464,7 +464,7 @@ cost (§7). Step 9 is the browser suite and dominates every one of them.
 | after group A (5.2, 5.3) | + `worldview.rs`, the five sensors, the registry | 756 s | all eleven ok |
 | after group B (5.4, 5.5) | + `observation.rs`, `actuation/` | 754 s | all eleven ok |
 | after group S (5.7) | + `manual.rs`, `tests/determinism.rs` | 757 s | all eleven ok |
-| after group S (5.8) | + the gate edits, step 3 now four crates | GATE58 | all eleven ok |
+| after group S (5.8) | + the gate edits, step 3 now four crates | 759 s | all eleven ok |
 
 **The baseline matters and it was measured**, not assumed: the PRD says to
 compare no-change guards against this section's starting revision, and at
