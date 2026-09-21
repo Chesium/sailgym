@@ -10,8 +10,8 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
 | Delta | Subject | Status |
 |---|---|---|
-| **F12′** | The gate grows to eleven steps | **implemented**: step 3 by sections 11 and 04, step 4 by section 02, steps 10 and 11 by section 03 |
-| **F14** | Agent interface — sensors, actions, cadence, helm | blocked on V-A |
+| **F12′** | The gate grows to eleven steps | **implemented**: step 3 by sections 11, 04 and 05, step 4 by section 02, steps 10 and 11 by section 03 |
+| **F14** | Agent interface — sensors, actions, cadence, helm | **implemented** by section 05; see F14.10. `Helm` and `ActionSpace::Setpoint` (task 5.6) remain deferred |
 | **F15** | Task and course — routes, marks, guidance, passage | **implemented** by section 04; see F15.5. Obstacles (F15.4's `Obstacle`, S6) remain excluded |
 | **F16** | Conformance, digests and the tolerance contract | **implemented** by section 02; see F16.9 |
 | **F17** | The Python boundary | F17.1 **implemented** by section 03; F17.2–F17.5 remain proposed, section 07 |
@@ -22,10 +22,11 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 ## F12′. The gate
 
 **The chain is eleven steps, and every part of it is implemented.** Section
-11 added `-p sailgym-task` to step 3 and section 04 added `-p sailgym-course`
-to it on **2026-09-22 by human approval** — its dispatch as the section PRD,
-whose task 4.7 instructs the five-site edit explicitly — without changing the
-step count, so `[ValidateRange(1, 11)]` did not move again; section 02 added
+11 added `-p sailgym-task` to step 3, section 04 added `-p sailgym-course`
+and section 05 `-p sailgym-agent` to it on **2026-09-22 by human approval** —
+each its dispatch as the section PRD, whose task 4.7 and task 5.8 instruct
+the five-site edit explicitly — without changing the step count, so
+`[ValidateRange(1, 11)]` did not move again; section 02 added
 `--test conformance`
 to step 4 on **2026-09-21 by human approval**, the same approval with a date
 that section 01's D1 received, recorded in
@@ -42,7 +43,7 @@ numbers and their meaning.
 ```
  1. cargo fmt --check
  2. cargo clippy --all-targets -- -D warnings
- 3. cargo test -p sailgym-physics -p sailgym-task -p sailgym-course          ← done, sections 11 and 04
+ 3. cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent   ← done, 11, 04, 05
  4. cargo test -p sailgym-physics --test invariants --test no_shortcuts \
                                   --test convergence --test symmetry \
                                   --test provenance --test conformance     ← done, section 02
@@ -68,9 +69,10 @@ Three properties of this shape are deliberate:
   it depends on `sailgym-physics` and nothing depends on it except the
   wrapper. A separate step would have made the chain ten steps for a crate
   that answers the same question step 3 already asks. `sailgym-course` joined
-  it in section 04 for the same reason and by the same edit, and **sections 05
-  and 06 extend this same list rather than each adding a step** — which is why
-  the step count has not moved since section 03.
+  it in section 04 and `sailgym-agent` in section 05, for the same reason and
+  by the same edit, and **section 06 extends this same list rather than
+  adding a step** — which is why the step count has not moved since
+  section 03.
 - **Step 4 grows rather than a step 12 appearing.** `--test conformance` proves
   a property of the physics crate, which is what step 4 is for. A separate step
   would make a red step 4 no less ambiguous and would cost another F12 change.
@@ -97,11 +99,12 @@ parsed and their step-name lists diffed, agreeing at all eleven positions
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
 
-No gate change remains proposed. Three entries must be retained in every
-later revision of the chain: `-p sailgym-task` and `-p sailgym-course` in
-step 3, and `--test conformance` in step 4. A section that rewrote the chain
-and dropped one would take the whole practice evaluator, the whole course
-layer, or the whole bundle-freshness check, out of the gate silently.
+No gate change remains proposed. Four entries must be retained in every
+later revision of the chain: `-p sailgym-task`, `-p sailgym-course` and
+`-p sailgym-agent` in step 3, and `--test conformance` in step 4. A section
+that rewrote the chain and dropped one would take the whole practice
+evaluator, the whole course layer, the whole agent interface, or the whole
+bundle-freshness check, out of the gate silently.
 
 **One site did not move with the rest**, and it is recorded rather than
 edited: the nine-step table in the repository's root `README.md` still spells
@@ -118,8 +121,14 @@ in place.
 
 ## F14. Agent interface
 
-*Blocked on V-A. Source: `discussions/unified-agent-interface.md`,
-`discussions/ablation-spaces.md`. Implemented by section 05.*
+*Implemented by section 05 on 2026-09-22, after 04. The implementation
+decision brief §5 asks for — the selected S row (S3, controller half), the
+exact F deltas, the decision source and date, and the validation performed —
+is recorded in [`progress/05-handoff.md`](progress/05-handoff.md) §1, which
+brief §5 names as one of the two places it may live. **F14.10 below records
+where the implementation departed from F14.1–F14.9 and why.** Source:
+`discussions/unified-agent-interface.md` §§2–4,
+`discussions/ablation-spaces.md` §§1–3.*
 
 ### F14.1 Crates and the direction of dependency
 
@@ -222,6 +231,121 @@ grep extends to the new crates rather than being rewritten.
 brief §43 governs `parameters.rs`. It does **not** govern controller gains,
 adapter gains or sensor noise settings, which may be tuned freely. The crate
 boundary is the distinction, which is why the boundary is worth having.
+
+**Section 05 introduced no gain at all**, which is the cleanest form the rule
+can take: the `rate` adapter is the identity and has nothing to tune, `Helm`
+is deferred, and no noise model ships. The crate's only tunable settings are a
+sensor's mounting position and its version, neither of which reaches a force.
+
+---
+
+### F14.10 What section 05 implemented, and where it departed
+
+*Recorded here because F14.1–F14.9 were a proposal and this is what they
+became. The evidence is [`progress/05-handoff.md`](progress/05-handoff.md).
+**One file in `crates/sailgym-physics/` changed**, `src/rng.rs`, and it gained
+one constant and one table row (D2); `git diff --name-only
+crates/sailgym-physics/` names only that file, which is the section's
+acceptance criterion 6. F3, F4, F5, F6, F7, F8 and F9 are unchanged:
+`STATE_LEN` is still 13, the F8.3 snapshot layout is untouched,
+`parameters.rs` is byte identical, there is no new WASM surface and this crate
+holds no equation of motion, no coefficient and no frame conversion of its
+own.*
+
+1. **`Action` carries a normalised vector, not `Controls`.** The source
+   discussion sketched `Action::Rates(Controls)`. F14.5 supersedes it: every
+   adapter presents `[−1, 1]^k`, so an agent emitting `Controls` would have
+   gone *round* the funnel rather than through it, and the `rate` arm of an
+   ablation would be the one arm whose numbers were not comparable with the
+   others. `Action::Rates` therefore carries `ActionVec` — at most
+   `ACTION_MAX_DIM = 4` scalars, `Copy`, bounds-checked at construction — and
+   `actuation::apply` is the one place it becomes `Controls`.
+
+2. **`ActionSpace` keeps both variants; one of them is refused.** F14.2 fixes
+   the enumeration at two and the enumeration is *logged data*, so a header
+   written today and one written after task 5.6 lands must use the same
+   vocabulary. `ActionSpace::Setpoint` is therefore a reserved name that
+   `AgentSpec::validate` refuses, naming the deferral. **Nothing beneath it is
+   scaffolded**: there is no `Setpoint` struct, no `Helm`, no adapter and no
+   `Action` variant. Task 5.6 is deferred exactly as the PRD instructs —
+   engaged/released semantics have no contract, because a zero rudder-rate
+   command currently means *released, self-centring* and a position servo
+   needs *engaged, hold*.
+
+3. **`Agent::decide` takes `&[f64]`, which makes F14.4 structural.** The agent
+   sees the concatenated observation vector because that is the only thing in
+   scope: no `WorldView`, no `WindField`, no `Route`, no `BoatState`. `reset`
+   takes the layout's field names and a `Pcg32` rather than an `EpisodeCtx`,
+   which does not exist until section 06 — and which the PRD forbids a manual
+   source to reach in any case.
+
+4. **`WorldView` carries `controls` and `guidance`, and deliberately no
+   `Route`.** The discussion had `course: &Route`. F15.5 §4 and RV20 require
+   `signed_cross_track` to be computed in `sailgym-course`'s `guidance.rs` and
+   nowhere else, and the surest way to stop a sensor recomputing it is to make
+   the route unreachable from a sensor. `controls` is present because the
+   actuator inner loop is part of the plant (F4.3) and because `imu` needs it
+   to evaluate the forces afresh. `others: &[BoatState]` is present and empty.
+   There are no obstacles: `brief.md` S6 is deferred and section 04 shipped
+   none.
+
+5. **Privilege is per column, and the sensor-level flag is derived.** F14.3
+   says "one flag per sensor". Section 10's `ObservationField` already records
+   `privileged` per column, and `guidance` emits four sensed columns and one
+   derived from the true wind: a sensor-level flag would either hide four
+   honest columns or leak one dishonest one. `Sensor::privileged()` reports
+   *any column privileged*, so F14.3's reading is still available.
+
+6. **The vane's mount is derived from F7 and introduces no literal.** The PRD
+   says "at the masthead"; F7 has no mast height. The vane therefore sits at
+   `mast_pos_b + (0, 0, z_ce)` — the highest *declared* point of the rig —
+   which follows a live parameter edit rather than freezing a copy, and is
+   configurable per instance because a sensor mounting position is not a
+   physical coefficient (F14.9).
+
+7. **`obs_digest` is the canonical record, not a hash.** F16.4 permits a
+   compact key and requires an established SHA-256 if one is used; section 10
+   ships no digest and compares canonical records. `obs_digest` returns the
+   canonical JSON of the whole `ObsLayout`, so no second hash implementation
+   enters a crate that ships, and the repository's one SHA-256 stays behind
+   section 02's `testkit` feature and out of the browser build.
+
+8. **Bounds live in `ObsLayout`, not in the episode header's
+   `ObservationField`.** Section 10's record carries name, unit,
+   normalisation, noise and privilege and no bounds, and this section may not
+   widen it (see the note above about `rng.rs`). F16.4 requires the full
+   record to travel beside any digest, and `ObsLayout` is that record.
+
+9. **`observe` takes a `WorldView` and an explicit list of per-sensor RNG
+   substreams.** F14.7 writes `observe(st, p, wind, guidance, sensors)`; the
+   first four travel together as the F14.4 boundary given a name. The streams
+   are built once per episode by `sensor_streams` and carried across
+   decisions: rebuilding them inside `observe` would hand every decision the
+   same draws, which is the most plausible way to ship a broken noise model
+   and not notice. No noise model ships here; every column declares
+   `noise: 0.0`.
+
+10. **The wall-clock grep is extended by a new file in the agent crate.**
+    F14.8 asks for the existing grep to be extended rather than rewritten, and
+    acceptance criterion 6 forbids editing
+    `crates/sailgym-physics/tests/determinism.rs`. So
+    `crates/sailgym-agent/tests/determinism.rs` runs the **same needles** and
+    the same `#[cfg(test)]` exclusion over `sailgym-agent` and
+    `sailgym-course` — the latter because `progress/04-handoff.md` §11.5 asked
+    for it and nothing enforced it before. The physics crate keeps its own
+    copy, unchanged, over its own sources.
+
+11. **The `rate` adapter is three scalars, and the release flag is a sign.**
+    `sheet_release` is a boolean and F14.5 requires one box; encoding it as
+    the sign of a third scalar makes the all-zero action exactly
+    `Controls::default()`, so "do nothing" is not a number a policy has to
+    learn. `angle`, `angle_bangbang` and `sheet_length_for_beta` are not
+    built.
+
+12. **The gate's step 3 grew again**, to
+    `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent`.
+    The step count did not change, so `[ValidateRange(1, 11)]` is untouched.
+    Section 06 extends the same list.
 
 ---
 

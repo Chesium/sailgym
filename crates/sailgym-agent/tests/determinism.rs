@@ -597,6 +597,129 @@ fn physics_depends_on_no_v2_crate() {
     }
 }
 
+/// Section acceptance 7: **no literal from the F7 catalogue appears in
+/// `crates/sailgym-agent/src`.**
+///
+/// `tests/provenance.rs::no_stray_constants` enforces the same F7 rule over
+/// `crates/sailgym-physics/src` and scans nothing else, so without this the
+/// agent crate would be the one place a coefficient could be copied to and
+/// nothing would notice (RV28). The scan is the physics one's: shipped lines
+/// only — no `#[cfg(test)]` item, no comment — because a fixture that says
+/// `u = 4.0` is evidence and a doc comment quoting a value is documentation.
+///
+/// Only `src/` is scanned. This file is test code by construction, and the
+/// scripted action components in it (`0.2`, `0.3`, `-0.9`) are normalised
+/// actions that happen to share a decimal with an F7 row.
+#[test]
+fn no_f7_literal_appears_in_the_agent_crate() {
+    /// `0.0`, `1.0`, `2.0`, `3.0` and `0.5` are structural, not coefficients —
+    /// the same universal set `tests/provenance.rs` exempts.
+    fn universal(v: f64) -> bool {
+        [0.0, 1.0, 2.0, 3.0, 0.5].contains(&v)
+    }
+
+    fn float_literals(line: &str) -> Vec<f64> {
+        let mut out = Vec::new();
+        let bytes = line.as_bytes();
+        let mut i = 0;
+        while i < bytes.len() {
+            if !bytes[i].is_ascii_digit() {
+                i += 1;
+                continue;
+            }
+            // Not a literal if an identifier character precedes it.
+            if i > 0
+                && (bytes[i - 1].is_ascii_alphanumeric()
+                    || bytes[i - 1] == b'_'
+                    || bytes[i - 1] == b'.')
+            {
+                while i < bytes.len()
+                    && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'.')
+                {
+                    i += 1;
+                }
+                continue;
+            }
+            let start = i;
+            while i < bytes.len() && (bytes[i].is_ascii_digit() || bytes[i] == b'_') {
+                i += 1;
+            }
+            if i < bytes.len()
+                && bytes[i] == b'.'
+                && i + 1 < bytes.len()
+                && bytes[i + 1].is_ascii_digit()
+            {
+                i += 1;
+                while i < bytes.len() && (bytes[i].is_ascii_digit() || bytes[i] == b'_') {
+                    i += 1;
+                }
+                let text: String = line[start..i].chars().filter(|c| *c != '_').collect();
+                if let Ok(v) = text.parse::<f64>() {
+                    out.push(v);
+                }
+            }
+            while i < bytes.len() && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_') {
+                i += 1;
+            }
+        }
+        out
+    }
+
+    // The F7 catalogue, read from `parameters.rs` rather than copied here: a
+    // copy would go stale the first time a value moved, and then this audit
+    // would be checking a number nothing uses.
+    let params = Path::new(env!("CARGO_MANIFEST_DIR")).join("../sailgym-physics/src/parameters.rs");
+    let catalogue = std::fs::read_to_string(&params).expect("parameters.rs must be readable");
+    let f7: Vec<f64> = catalogue
+        .lines()
+        .flat_map(float_literals)
+        .filter(|v| !universal(*v))
+        .collect();
+    assert!(f7.len() > 40, "the F7 scan found only {} values", f7.len());
+
+    let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut offenders: Vec<String> = Vec::new();
+    let mut files = 0usize;
+    fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
+        let mut entries: Vec<PathBuf> = std::fs::read_dir(dir)
+            .unwrap_or_else(|e| panic!("cannot read {}: {e}", dir.display()))
+            .map(|e| e.expect("entry").path())
+            .collect();
+        entries.sort();
+        for path in entries {
+            if path.is_dir() {
+                walk(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                out.push(path);
+            }
+        }
+    }
+    let mut paths = Vec::new();
+    walk(&src, &mut paths);
+    for path in paths {
+        let text = std::fs::read_to_string(&path).expect("source");
+        for (n, line) in code_lines(&text) {
+            let code = line.split("//").next().unwrap_or("");
+            for v in float_literals(code) {
+                if !universal(v) && f7.contains(&v) {
+                    offenders.push(format!("{}:{n}: {v} in `{}`", path.display(), code.trim()));
+                }
+            }
+        }
+        files += 1;
+    }
+    assert!(files >= 10, "the agent source scan found almost nothing");
+    assert!(
+        offenders.is_empty(),
+        "an F7 coefficient has been copied into the agent crate (RV28, brief §43):\n{}",
+        offenders.join("\n")
+    );
+    eprintln!(
+        "{files} agent source files scanned against {} F7 values",
+        f7.len()
+    );
+}
+
 // ---------------------------------------------------------------------------
 // 6. The observation never reads the cache
 // ---------------------------------------------------------------------------
