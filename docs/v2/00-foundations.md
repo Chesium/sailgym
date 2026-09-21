@@ -10,26 +10,30 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
 | Delta | Subject | Status |
 |---|---|---|
-| **F12′** | The gate grows to eleven steps | step 3 **implemented** by section 11 and step 4 by section 02; the rest proposed, section 03 |
+| **F12′** | The gate grows to eleven steps | **implemented**: step 3 by section 11, step 4 by section 02, steps 10 and 11 by section 03 on 2026-09-21 |
 | **F14** | Agent interface — sensors, actions, cadence, helm | blocked on V-A |
 | **F15** | Task and course — routes, marks, guidance, passage | blocked on V-A |
 | **F16** | Conformance, digests and the tolerance contract | **implemented** by section 02; see F16.9 |
-| **F17** | The Python boundary | proposed; sections 03 and 07 |
+| **F17** | The Python boundary | F17.1 **implemented** by section 03; F17.2–F17.5 remain proposed, section 07 |
 | **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08, F18.2 by 09, F18.3 by 10, F18.4 by 11 |
 
 ---
 
 ## F12′. The gate
 
-**Step 3 includes `sailgym-task` and step 4 includes `--test conformance`, and
-both parts are implemented.** Section 11 added `-p sailgym-task`; section 02
-added `--test conformance` on **2026-09-21 by human approval**, the same
-approval with a date that section 01's D1 received, recorded in
+**The chain is eleven steps, and every part of it is implemented.** Section
+11 added `-p sailgym-task` to step 3; section 02 added `--test conformance`
+to step 4 on **2026-09-21 by human approval**, the same approval with a date
+that section 01's D1 received, recorded in
 `docs/v2/prds/02-conformance-bundle.md` D1 and in
-`docs/v2/progress/02-handoff.md`. Steps 10 and 11 are still proposed. Only
-when 03 lands does the chain become **eleven** steps. The chain is **nine**
-steps today, and `[ValidateRange(1, 9)]` in `check.ps1` is unchanged. Steps
-1–9 keep their numbers and their meaning.
+`docs/v2/progress/02-handoff.md`. Section 03 added **steps 10 and 11 on
+2026-09-21 by human approval** — its dispatch as the section PRD, whose task
+3.7 instructs the five-site edit explicitly — recorded in
+`docs/v2/prds/03-jax-wind.md` D1 and in `docs/v2/progress/03-handoff.md`.
+`[ValidateRange(1, 9)]` in `check.ps1` became `[ValidateRange(1, 11)]` in the
+same edit; without it `scripts/check.ps1 -Step 10` would fail with a
+parameter error rather than running the step (RV17). Steps 1–9 keep their
+numbers and their meaning.
 
 ```
  1. cargo fmt --check
@@ -43,9 +47,14 @@ steps today, and `[ValidateRange(1, 9)]` in `check.ps1` is unchanged. Steps
  7. pnpm --dir web typecheck
  8. pnpm --dir web test:unit
  9. pnpm --dir web test:e2e
-10. uv run ruff check python && uv run ruff format --check python           ← new
-11. scripts/py-test.sh                                                     ← new
+10. uv run ruff check python && uv run ruff format --check python          ← done, section 03
+11. scripts/py-test.sh                                                     ← done, section 03
 ```
+
+`--fast` covers steps 1–9 only. The pre-commit subset was not re-derived when
+the Python steps landed; section 03 records it as a tracked debt, to be repaid
+whenever the Python suite gets slow enough that skipping it matters. Selecting
+a step explicitly always runs it.
 
 Three properties of this shape are deliberate:
 
@@ -73,24 +82,30 @@ itself: `scripts/check.sh` (the `step_names` array **and** the `run_step` case),
 Section 02's step-4 edit moved four of those five — `check.sh` at both sites,
 `check.ps1`'s `$Steps`, `CLAUDE.md`'s table and this clause — and left the
 repository root `README.md` alone for the same ownership reason recorded
-below.
+below. Section 03's steps 10 and 11 moved all five, `[ValidateRange]`
+included, and verified the result rather than asserting it: both scripts were
+parsed and their step-name lists diffed, agreeing at all eleven positions
+(`docs/v2/progress/03-handoff.md` §6).
 
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
 
-The remaining gate changes are still proposed; step 3's crate list is not.
-`-p sailgym-task` must be retained in every later revision of step 3 — a
-section that rewrites the chain for the Python steps and drops it would take
-the whole practice evaluator out of the gate silently.
+No gate change remains proposed. Two entries must be retained in every later
+revision of the chain: `-p sailgym-task` in step 3 and `--test conformance` in
+step 4. A section that rewrote the chain and dropped either would take the
+whole practice evaluator, or the whole bundle-freshness check, out of the gate
+silently.
 
 **One site did not move with the rest**, and it is recorded rather than
 edited: the nine-step table in the repository's root `README.md` still spells
-step 3 as `cargo test -p sailgym-physics` and step 4 without
-`--test conformance`. No section-11 task and no section-02 task owns that file
-(F13.2), so `docs/v2/progress/11-handoff.md` and
-`docs/v2/progress/02-handoff.md` report the exact two one-line changes it
-needs. `docs/v1/00-foundations.md` F12 is deliberately **not** edited: a v1
-clause is amended by a recorded v2 delta — this one — and never in place.
+step 3 as `cargo test -p sailgym-physics`, step 4 without
+`--test conformance`, and the chain as nine steps with no 10 or 11. No
+section-11, section-02 or section-03 task owns that file (F13.2), so
+`docs/v2/progress/11-handoff.md`, `docs/v2/progress/02-handoff.md` and
+`docs/v2/progress/03-handoff.md` report the exact changes it needs — now four
+lines rather than two. `docs/v1/00-foundations.md` F12 is deliberately **not**
+edited: a v1 clause is amended by a recorded v2 delta — this one — and never
+in place.
 
 ---
 
@@ -449,7 +464,9 @@ a worst `|Δ|` of exactly `0.0`.*
 
 ## F17. The Python boundary
 
-*Implemented by sections 03 and 07.*
+*F17.1 implemented by section 03 on 2026-09-21; F17.2–F17.5 remain proposals
+for section 07. **F17.6 below records what section 03 implemented and where
+it departed.***
 
 ### F17.1 The F8 rule, restated
 
@@ -492,6 +509,53 @@ The low-level batch API uses caller-owned contiguous `numpy` buffers, writing in
 
 `obs_out: &mut [f32]` does not violate F9.5, which forbids f32 **intermediates
 in physics**. This is an output buffer, exactly like the wind grid's.
+
+### F17.6 What section 03 implemented, and where it departed
+
+*Recorded here because F17.1 was a proposal and this is what it became. The
+evidence is [`conformance.md`](conformance.md) and
+[`progress/03-handoff.md`](progress/03-handoff.md). **No Rust file changed**:
+`git diff --name-only crates/` is empty for the whole section, which is its
+acceptance criterion 3.*
+
+1. **The two scopes are audited separately, by
+   `python/tests/test_no_stray_constants.py`**, in the three tiers of
+   `provenance.rs::no_stray_constants`: a float literal is structural
+   (`0.0`, `1.0`, `0.5`, `2.0`), or the right-hand side of a module-level
+   named constant carrying a doc string, or in an exemption table with a
+   stated reason. The exemption table is **empty**, and that is the intended
+   steady state.
+
+2. **F17.1's "kernel constants cite the Rust source" is enforced literally.**
+   A second pass requires every named constant that introduces a number to
+   name a `<file>.rs:<line>` in its doc string, and asserts the cited file
+   exists. Fourteen constants in `sailgym_jax/wind.py` carry such a
+   citation. The **line numbers are not checked against their content** and
+   will drift if `wind.rs` is edited; that is a known limitation, recorded in
+   the handoff, and the cheaper alternative — citing only the file — would
+   have made the citation unfalsifiable.
+
+3. **The audit carries two anti-vacuity floors and a proven failure**, both
+   copied from the Rust audit: `files > 3` and `scanned > 12` (currently 4
+   and 19), and the demonstration that pasting `1.225` into `wind.py` makes
+   it red at the file and line.
+
+4. **A fourth pass asserts the absence of the mode-table generator** under
+   `python/sailgym_jax/` — the four words F16.7 and RV15 name. That is
+   section 03's acceptance criterion 6, and it is why those words appear
+   nowhere in that package, not even in a comment saying they must not.
+
+5. **The expected bundle identity lives in the test suite, not in the
+   loader.** F16.4 requires verification against "the selected
+   source/contract identity", and F17.1 forbids wrapper scope from carrying
+   independently defined parameter or layout values — `dt` is a number Rust
+   owns. `Bundle.load(root, expect=...)` therefore takes the expectation as a
+   required keyword argument with no default, and `python/tests/conftest.py`
+   is where this suite states which bundle it was written against.
+
+6. **`jax_enable_x64` is enabled and asserted at `conftest` import** (RV14),
+   and the loader returns `float64` arrays explicitly, refusing any fixture
+   whose stored dtype is not `float64`.
 
 ## F18. Playable milestone contracts (proposed)
 

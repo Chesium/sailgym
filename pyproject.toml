@@ -1,0 +1,61 @@
+# The repository's Python workspace (v2 section 03, task 3.1).
+#
+# One workspace at the repository root, managed by `uv`, exactly as `web/` is
+# one pnpm workspace and `crates/` one cargo workspace. `uv.lock` is committed
+# for the same reason `web/pnpm-lock.yaml` and `Cargo.lock` are, and for the
+# same reason F9.2 hand-rolls PCG32: a toolchain that can drift under you is
+# not a reference. A conformance runner whose dependency set changed between
+# two runs would report a difference it could not attribute.
+#
+# `requires-python` is pinned to an exact minor version rather than a floor.
+# A floor lets the interpreter move under a recorded measurement; the two-arm
+# divergence this section reports is a property of a numerical stack, and the
+# interpreter is part of it.
+#
+# There is no `pip`, no `conda` and no `requirements.txt` (PRD 03, "What this
+# section does not do").
+
+[project]
+name = "sailgym"
+version = "0.0.0"
+description = "sailgym — the Python side: the conformance bundle loader and the JAX verification implementation"
+requires-python = "==3.12.*"
+dependencies = [
+    "jax",
+    "numpy",
+    "pytest",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Two distributions in one project, in the two scopes F17.1 audits separately:
+# `sailgym_conformance` is stack-neutral and holds no equation, and
+# `sailgym_jax` is the independent verification implementation and therefore
+# holds the equations it tests.
+[tool.hatch.build.targets.wheel]
+packages = ["python/sailgym_conformance", "python/sailgym_jax"]
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]
+# `-q` keeps a green run short; the tier-0 and tier-3 tests print their
+# measured numbers through `-s`-independent `warnings`-free stderr writes, so
+# the numbers this section has to report are visible without a flag.
+addopts = "-q"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["python"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sailgym_conformance", "sailgym_jax"]

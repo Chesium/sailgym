@@ -15,3 +15,9 @@ web/test-results/
 web/playwright-report/
 web/blob-report/
 web/.playwright/
+
+# Python (v2 section 03). `uv.lock` is committed; the environment is not.
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

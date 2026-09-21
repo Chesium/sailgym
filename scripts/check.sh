@@ -3,19 +3,25 @@
 #
 # Linux/CI equivalent of scripts/check.ps1; keep the two in step.
 # Usage:
-#   scripts/check.sh          run the whole chain (F12, nine steps)
+#   scripts/check.sh          run the whole chain (F12/F12', eleven steps)
 #   scripts/check.sh 3        run step 3 only
 #   scripts/check.sh --fast   the pre-commit subset; see below
 #
-# `--fast` runs the same nine steps with step 9 restricted to Chromium and to
-# the specs that are not tagged `@slow` — the browser performance measurement
-# and the three brief §46 demonstrations, which between them account for about
-# half of the browser suite's wall time and none of which can be made quick
-# without making it mean less. Step 8, the vitest run, is not restricted: it
-# takes well under a second. **`--fast` is not the gate.** It is what to run
-# while working; the full chain is what has to be green before a section is
-# finished (F13.7), and it is what CI runs. Section 10's measured times for
-# both are in `docs/v1/progress/10-handoff.md` and `docs/v1/acceptance.md`.
+# `--fast` runs steps 1-9 with step 9 restricted to Chromium and to the specs
+# that are not tagged `@slow` — the browser performance measurement and the
+# three brief §46 demonstrations, which between them account for about half of
+# the browser suite's wall time and none of which can be made quick without
+# making it mean less. Step 8, the vitest run, is not restricted: it takes well
+# under a second. **The Python steps 10 and 11 are deliberately outside the
+# `--fast` subset** (v2 section 03, recorded as a tracked debt in its PRD): the
+# subset was not re-derived when they landed, and the debt is repaid whenever
+# the Python suite gets slow enough that skipping it matters. Selecting a step
+# explicitly always runs it, `--fast` or not.
+#
+# **`--fast` is not the gate.** It is what to run while working; the full chain
+# is what has to be green before a section is finished (F13.7), and it is what
+# CI runs. Section 10's measured times for both are in
+# `docs/v1/progress/10-handoff.md` and `docs/v1/acceptance.md`.
 
 set -uo pipefail
 
@@ -38,11 +44,15 @@ step_names=(
     'pnpm --dir web typecheck'
     'pnpm --dir web test:unit'
     'pnpm --dir web test:e2e'
+    'uv run ruff check python && uv run ruff format --check python'
+    'scripts/py-test.sh'
 )
 if [[ $fast -eq 1 ]]; then
     step_names[8]='pnpm --dir web test:e2e --project=chromium --grep-invert @slow'
 fi
 total=${#step_names[@]}
+# The last step `--fast` covers. See the note at the top of the file.
+fast_total=9
 
 run_step() {
     case "$1" in
@@ -51,9 +61,10 @@ run_step() {
         # v2 section 11 added `-p sailgym-task` (v2 F12′). Step 3 is what
         # proves the pure Rust is correct **and builds on the host with no
         # WASM toolchain**, and the practice evaluator is pure Rust with the
-        # same property — so it belongs in this step rather than in a tenth
-        # one. The chain is still nine steps; the Python steps of F12′ arrive
-        # with section 03 and not before.
+        # same property — so it belongs in this step rather than in a step of
+        # its own. `-p sailgym-task` must survive every later revision of this
+        # step: a chain rewritten for the Python steps that dropped it would
+        # take the whole practice evaluator out of the gate silently (F12′).
         3) cargo test -p sailgym-physics -p sailgym-task ;;
         # Every audit target in one invocation: the brief §35 invariants, the
         # prohibited-shortcut greps (section 07), the convergence study and the
@@ -64,7 +75,8 @@ run_step() {
         # freshness check of v2 section 02. A stale bundle is a property of
         # the physics crate, so it belongs in the step that already asks
         # whether the physics crate is still what it says it is (v2 F12').
-        # The chain is still **nine** steps.
+        # `--test conformance` must stay here for the same reason
+        # `-p sailgym-task` must stay in step 3.
         4) cargo test -p sailgym-physics \
                --test invariants --test no_shortcuts \
                --test convergence --test symmetry --test provenance \
@@ -84,6 +96,15 @@ run_step() {
                 pnpm --dir web test:e2e
             fi
             ;;
+        # Steps 10 and 11 added 2026-09-21 by human approval (v2 normative
+        # delta D1; see docs/v2/prds/03-jax-wind.md and v2 F12'). Step 10 is
+        # the Python lint and format check, the counterpart of steps 1 and 2.
+        # Step 11 **delegates to a script**, exactly as step 6 delegates to
+        # build-wasm.sh: section 07 puts `maturin develop` in front of
+        # `pytest` inside py-test.sh without amending F12 again. The chain is
+        # now **eleven** steps.
+        10) uv run ruff check python && uv run ruff format --check python ;;
+        11) "$script_dir/py-test.sh" ;;
         *) echo "unknown step: $1" >&2; return 2 ;;
     esac
 }
@@ -92,6 +113,8 @@ cd "$repo_root"
 
 if [[ $# -gt 0 ]]; then
     selected=("$1")
+elif [[ $fast -eq 1 ]]; then
+    selected=($(seq 1 "$fast_total"))
 else
     selected=($(seq 1 "$total"))
 fi
@@ -117,7 +140,7 @@ done
 
 echo
 if [[ $fast -eq 1 ]]; then
-    echo "check: all steps passed (--fast subset) in $((SECONDS - started))s"
+    echo "check: steps 1-$fast_total passed (--fast subset; 10 and 11 not run) in $((SECONDS - started))s"
 else
     echo "check: all steps passed in $((SECONDS - started))s"
 fi

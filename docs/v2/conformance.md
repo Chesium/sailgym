@@ -420,3 +420,42 @@ Trajectories, 1-5 s, sampled every physics step. A **fresh** dt/dt2/dt4 study on
 - **f64 only.** F16.8: if a stack trains in f32, the f32↔f64 divergence is measured on this same bundle and reported as a number. If it exceeds the cross-stack tolerance, that f32 environment is not the environment this bundle describes. The escalation is **not** to raise `c_sheet` or lower `k_sheet` (brief §43, R1); it is to sub-step the rigging DOF in the port, or run that DOF in f64.
 - **No RNG comparison.** F16.7: no stack other than Rust implements PCG32, and no conformance test compares RNG streams across stacks.
 
+---
+
+<!-- BEGIN section-03 two-arm divergence -->
+
+## The two arms of the JAX wind port (section 03)
+
+Appended by `SAILGYM_WRITE_CONFORMANCE=1 scripts/py-test.sh`, **not** by
+`gen_conformance`. A regeneration of this file by the Rust generator drops
+this section; re-run the command above to restore it. The live numbers are
+always the ones `python/tests/test_wind_tier0.py` prints.
+
+F16.6 requires a port to ship two arms and to report the divergence between
+them **as a number, not as a pass or a fail**. `wave_exact` transcribes the
+Cody-Waite reduction, the Estrin polynomial and the fixed two-slot pairwise
+mode reduction of `crates/sailgym-physics/src/environment/wind.rs`;
+`wave_cos` calls `jnp.cos` and lets XLA reduce however it likes. Neither is
+"the port": the module exports both and the caller chooses.
+
+Bundle `2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63`.
+
+`max |Δ|` is over every row. `max relative` and the ULP figures are over
+the rows whose larger value exceeds the manifest's own absolute bound for
+that column — F16.2: neither metric means anything near cancellation, and
+a sign crossing would otherwise be the only thing the table showed.
+
+| Fixture / column | max \|Δ\| | rows | near-zero rows | max relative | max ULP | identical | ULP distribution |
+|---|---|---|---|---|---|---|---|
+| `tier0_wave` — `wave` | 3.330669e-16 | 1905 | 18 (|v| ≤ 7.105e-15) | 1.244400e-04 | 616290671953 | 813 | 0: 813, 1-1: 597, 2-3: 257, 4-7: 120, 8-15: 41, 16-31: 22, >=32: 37 |
+| `tier0_wind_sample` — `wx` | 8.881784e-16 | 540 | 80 (|v| ≤ 4.483e-14) | 1.286321e-13 | 1024 | 434 | 0: 354, 1-1: 55, 2-3: 26, 4-7: 8, 8-15: 11, 16-31: 4, >=32: 2 |
+| `tier0_wind_sample` — `wy` | 8.881784e-16 | 540 | 40 (|v| ≤ 6.395e-14) | 2.555074e-14 | 192 | 334 | 0: 294, 1-1: 86, 2-3: 64, 4-7: 25, 8-15: 13, 16-31: 7, >=32: 11 |
+
+For reference, the two bounds section 02 measured on the generating build and wrote into the manifest, which this section consumes rather than choosing its own (F16.6):
+
+| Measured by section 02 | value |
+|---|---|
+| `kernel_vs_libm_absolute` | 4.440892e-16 |
+| `summation_vs_compensated_absolute` | 8.881784e-16 m/s |
+
+<!-- END section-03 two-arm divergence -->
