@@ -22,6 +22,7 @@
 //! | [`STREAM_WIND`] | procedural wind field | 03 |
 //! | [`STREAM_SCENARIO`] | scenario randomisation | reserved |
 //! | [`STREAM_NOISE`] | sensor / disturbance noise | reserved |
+//! | [`STREAM_AGENT`] | agent decisions, and the per-sensor substreams below them | v2 05 |
 
 /// Stream label of the procedural wind field (`environment::wind`).
 pub const STREAM_WIND: u64 = 1;
@@ -29,6 +30,14 @@ pub const STREAM_WIND: u64 = 1;
 pub const STREAM_SCENARIO: u64 = 2;
 /// Reserved for any later noise source.
 pub const STREAM_NOISE: u64 = 3;
+/// Agent decisions (v2 `docs/v2/00-foundations.md` F14.8, section 05).
+///
+/// `sailgym-agent` derives this stream from the episode's root generator and
+/// derives one substream per sensor below it, keyed by the sensor's own id.
+/// That is what lets a jittery agent — or a noisy sensor — be added without
+/// shifting the wind field by a single bit, which is the whole point of the
+/// table above.
+pub const STREAM_AGENT: u64 = 4;
 
 /// The PCG multiplier, from the reference implementation.
 const MULTIPLIER: u64 = 6_364_136_223_846_793_005;
@@ -187,8 +196,34 @@ mod tests {
 
     #[test]
     fn stream_labels_are_distinct() {
-        assert_ne!(STREAM_WIND, STREAM_SCENARIO);
-        assert_ne!(STREAM_WIND, STREAM_NOISE);
-        assert_ne!(STREAM_SCENARIO, STREAM_NOISE);
+        // Every label against every other, so adding one cannot collide with
+        // an existing one and be noticed only as a reproducibility bug.
+        let labels = [
+            ("STREAM_WIND", STREAM_WIND),
+            ("STREAM_SCENARIO", STREAM_SCENARIO),
+            ("STREAM_NOISE", STREAM_NOISE),
+            ("STREAM_AGENT", STREAM_AGENT),
+        ];
+        for (i, (a_name, a)) in labels.iter().enumerate() {
+            for (b_name, b) in labels.iter().skip(i + 1) {
+                assert_ne!(a, b, "{a_name} and {b_name} are the same stream");
+            }
+        }
+
+        // …and distinct labels really do give distinct sequences, which is the
+        // property the table is claiming (F9.2).
+        let parent = Pcg32::seed_from_u64(1234);
+        let draws: Vec<Vec<u32>> = labels
+            .iter()
+            .map(|(_, label)| {
+                let mut s = parent.stream(*label);
+                (0..8).map(|_| s.next_u32()).collect()
+            })
+            .collect();
+        for (i, a) in draws.iter().enumerate() {
+            for b in draws.iter().skip(i + 1) {
+                assert_ne!(a, b);
+            }
+        }
     }
 }

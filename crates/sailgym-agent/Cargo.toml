@@ -1,0 +1,30 @@
+[package]
+name = "sailgym-agent"
+description = "Sensors, actions, cadence and the agent contract (v2 F14). Pure; the physics crate does not depend on it."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# The dependencies point **one way**: agent → {course, physics}, never the
+# reverse (v2 F14.1). `cargo tree -p sailgym-physics` must therefore mention
+# neither this crate nor `sailgym-course`, which
+# `spec::tests::physics_does_not_depend_on_the_agent_crate` asserts by running
+# that command — the same assertion `sailgym-task` and `sailgym-course` make.
+#
+# `sailgym-course` is here for `Guidance` and `Rounding` and for nothing else:
+# the guidance sensor reports what the course layer already computed and
+# recomputes none of it (RV20). `sailgym-physics` is here for `BoatState`,
+# `Controls`, `BoatParameters`, `Pcg32`, the F6.2 apparent wind, the F6.8 rope
+# geometry and `forces::evaluate`. No equation of motion is written in this
+# crate and no number in it is a physical coefficient (v2 F14.9).
+[dependencies]
+sailgym-physics = { workspace = true }
+sailgym-course = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# `testkit` is off in the line above and on here, so `mirror_state`,
+# `uniform_wind` and `still_air` reach the tests and nothing that ships.
+[dev-dependencies]
+sailgym-physics = { workspace = true, features = ["testkit"] }
