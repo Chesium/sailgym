@@ -31,12 +31,17 @@ import { loadWasm, type SimHandle } from './loadWasm'
 import {
   DEFAULT_SCENARIO,
   readCurrentScenario,
+  readPracticeChallenges,
+  readPracticeState,
   readScenarios,
   summarise,
+  type PracticeChallenge,
+  type PracticeState,
   type Scenario,
   type ScenarioSummary,
 } from './scenarioTypes'
 import { readSnapshot, SNAPSHOT_FIELDS, type Snapshot } from './snapshot'
+import type { Episode } from './scenarioTypes'
 import { beginSpan, endSpan, noteRudderCommand } from '../render/perfMarks'
 
 /**
@@ -190,6 +195,48 @@ export interface SimulationHandle {
    */
   inputGeneration: number
   /**
+   * The three shipped practice challenges, as the core lists them
+   * (v2 section 11). Empty until the module is ready.
+   *
+   * Read **once**, at load: the list is a property of the build, not of the
+   * run. Every threshold a challenge is judged by is in here, so nothing in
+   * `web/` restates one (F8, RV61).
+   */
+  challenges: readonly PracticeChallenge[]
+  /**
+   * The attempt in progress, or `{ active: false }`.
+   *
+   * Polled once per frame from `Sim.practice_state_json` and re-parsed only
+   * when the text has changed, the same rule `params` follows. Every number
+   * in it was decided in Rust on a physics step; nothing here scores
+   * anything (v2 F18.4).
+   */
+  practice: PracticeState
+  /**
+   * Begin an attempt at a challenge, recording at `logHz`.
+   *
+   * The core loads the challenge's scenario, freezes the resolved conditions
+   * and starts recording; this also starts the clock and clears every held
+   * input, because an attempt that begins with a finger still down on the
+   * release button is not the attempt anybody meant (RV53).
+   */
+  startPractice(id: string, logHz: number): void
+  /**
+   * Start the same challenge again under exactly the conditions the last
+   * attempt was started under (RV63). Same clock and input treatment as
+   * {@link SimulationHandle.startPractice}.
+   */
+  retryPractice(): void
+  /** Abandon practice, discard the in-progress recording, back to free sail. */
+  cancelPractice(): void
+  /**
+   * Stop the recording and return the episode document, or `null` when none
+   * is in progress.
+   *
+   * The codec and the practice envelope are the core's; this marshals.
+   */
+  stopRecording(): Episode | null
+  /**
    * Run an imperative call against the live `Sim`, or return `null` if the
    * module is not ready yet.
    *
@@ -212,6 +259,13 @@ const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.le
  * It is never written to.
  */
 const EMPTY_HELD: ReadonlySet<string> = new Set<string>()
+
+/**
+ * No practice attempt. A shared constant so React sees a stable identity and
+ * a consumer memoised on it does not re-render every frame (section 01's
+ * RV4, again).
+ */
+const IDLE_PRACTICE: PracticeState = { active: false }
 
 /**
  * Browser test fixtures from sections 02–08: ad-hoc initial conditions that
@@ -348,6 +402,8 @@ export function useSimulation(
   const [inspecting, setInspectingState] = useState(false)
   const [scenarios, setScenarios] = useState<readonly ScenarioSummary[]>([])
   const [scenario, setScenario] = useState<Scenario | null>(null)
+  const [challenges, setChallenges] = useState<readonly PracticeChallenge[]>([])
+  const [practice, setPractice] = useState<PracticeState>(IDLE_PRACTICE)
 
   const simRef = useRef<SimHandle | null>(null)
   /**
@@ -399,6 +455,16 @@ export function useSimulation(
    */
   const paramsTextRef = useRef<string>('')
   const lastParamsPollRef = useRef(-Infinity)
+  /**
+   * The last `practice_state_json()` text.
+   *
+   * Polled every frame — an attempt's progress is what the player is
+   * watching, so half a second of lag would show — but re-parsed only when
+   * the text moves, which is the same rule {@link PARAMS_POLL_MS} follows and
+   * for the same reason: a fresh object identity per frame invalidates every
+   * memo downstream of it.
+   */
+  const practiceTextRef = useRef<string>('')
   // Held in a ref so a new closure per frame does not restart the loop.
   const frameHookRef = useRef<FrameHook | undefined>(onFrame)
   frameHookRef.current = onFrame
@@ -493,6 +559,7 @@ export function useSimulation(
         setParams(JSON.parse(paramsText) as RenderParams)
 
         setScenarios(summarise(readScenarios(sim)))
+        setChallenges(readPracticeChallenges(sim))
         scenarioDocRef.current = scenarioDocument(sim, scenarioNameRef.current)
         sim.reset(scenarioDocRef.current)
         setScenario(readCurrentScenario(sim))
@@ -670,6 +737,14 @@ export function useSimulation(
           nextParams = JSON.parse(text) as RenderParams
         }
       }
+      // The attempt, every frame. It is what the player is watching, and the
+      // outcome has to reach the page on the frame the core decided it — a
+      // result that arrives half a second late looks like a bug in the boat.
+      //
+      // The **ref is committed at publish time, not here**: `renderHz` can
+      // skip the publish below, and a ref updated on a skipped frame would
+      // swallow that update for good.
+      const practiceText = sim.practice_state_json() as string
       endSpan('wasm')
 
       // The physics above has already advanced. Everything below is
@@ -687,6 +762,10 @@ export function useSimulation(
       setClockState(clock.getState())
       if (nextParams !== null) {
         setParams(nextParams)
+      }
+      if (practiceText !== practiceTextRef.current) {
+        practiceTextRef.current = practiceText
+        setPractice(JSON.parse(practiceText) as PracticeState)
       }
       endSpan('frame')
 
@@ -743,6 +822,77 @@ export function useSimulation(
     [withClock, clearInput],
   )
 
+  /**
+   * Publish the attempt immediately after a practice call, rather than
+   * waiting for the next frame.
+   *
+   * Starting, retrying and cancelling all change the state *now*, and the
+   * chooser has to become the sailing view on the click that asked for it.
+   * The ref is written too, so the frame loop does not publish the same text
+   * a second time.
+   */
+  const pushPractice = useCallback((sim: SimHandle) => {
+    const text = sim.practice_state_json() as string
+    practiceTextRef.current = text
+    setPractice(JSON.parse(text) as PracticeState)
+  }, [])
+
+  /**
+   * The shared tail of `startPractice` and `retryPractice`.
+   *
+   * An attempt is flown from `t = 0` of its own run, so the clock is put back
+   * to running whether or not it was; and every held key, finger and release
+   * latch is dropped, because they belonged to whatever was happening before
+   * (RV53, and the section's "attempt cancellation cannot retain a pressed
+   * release button").
+   */
+  const armAttempt = useCallback(
+    (sim: SimHandle) => {
+      clearInput()
+      trackRef.current = []
+      lastTrackRef.current = -Infinity
+      setTrajectory([])
+      withClock((c) => c.start())
+      pushPractice(sim)
+    },
+    [clearInput, pushPractice, withClock],
+  )
+
+  const startPractice = useCallback(
+    (id: string, logHz: number) => {
+      const sim = simRef.current
+      if (sim === null) {
+        return
+      }
+      sim.start_practice(id, logHz)
+      // The core loaded the challenge's scenario, so the picker and every
+      // reset path have to follow it.
+      scenarioDocRef.current = sim.scenario_json() as string
+      setScenario(readCurrentScenario(sim))
+      armAttempt(sim)
+    },
+    [armAttempt],
+  )
+
+  const retryPractice = useCallback(() => {
+    const sim = simRef.current
+    if (sim === null) {
+      return
+    }
+    sim.retry_practice()
+    armAttempt(sim)
+  }, [armAttempt])
+
+  const cancelPractice = useCallback(() => {
+    const sim = simRef.current
+    if (sim === null) {
+      return
+    }
+    sim.cancel_practice()
+    clearInput()
+    pushPractice(sim)
+  }, [clearInput, pushPractice])
+
   return {
     ready,
     error,
@@ -755,6 +905,18 @@ export function useSimulation(
     trajectory,
     scenarios,
     scenario,
+    challenges,
+    practice,
+    startPractice,
+    retryPractice,
+    cancelPractice,
+    stopRecording: useCallback((): Episode | null => {
+      const sim = simRef.current
+      if (sim === null || !sim.is_recording()) {
+        return null
+      }
+      return JSON.parse(sim.stop_recording() as string) as Episode
+    }, []),
     loadScenario,
     start: useCallback(() => withClock((c) => c.start()), [withClock]),
     pause: useCallback(() => {

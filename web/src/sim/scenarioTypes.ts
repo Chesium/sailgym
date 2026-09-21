@@ -150,6 +150,108 @@ export interface PracticeEvent { id: string; step: number; t: number; value: num
 /** `recording::PracticeEnvelope` — section 11's reserved, typed envelope. */
 export interface PracticeEnvelope { envelope_version: number; task: TaskIdentity; events: PracticeEvent[] }
 
+// ---------------------------------------------------------------------------
+// Guided practice (v2 section 11, F18.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * The shapes `Sim.practice_tasks_json` and `Sim.practice_state_json` return.
+ *
+ * They are **not** recording-document types, so the field-parity test above
+ * does not cover them: the challenge list is assembled in
+ * `crates/sailgym-wasm/src/lib.rs` from `sailgym_task::TaskSpec`'s public
+ * accessors, and the report is `sailgym_task::TaskReport`. What the parity
+ * test *does* cover is {@link TaskIdentity} and {@link PracticeEvent}, which
+ * are the two things that travel inside an episode.
+ *
+ * Nothing on this side of the boundary decides an outcome, computes an
+ * elapsed time or compares a threshold (F8, RV61). The page formats these
+ * numbers and nothing more; every one of them was decided in Rust, on a
+ * physics step.
+ */
+
+/** One shipped challenge, as `Sim.practice_tasks_json` lists it. */
+export interface PracticeChallenge {
+  /** `get_moving`, `complete_tack` or `recover_from_heel`. */
+  id: string
+  /** `TASK_VERSION`; bumped when a threshold or an outcome rule changes. */
+  version: number
+  /** The shipped scenario (brief §32) the challenge is set on. */
+  scenario: string
+  /** s, the attempt's limit. */
+  time_limit_s: number
+  /** The event id a result's **Inspect** action jumps to. */
+  highlight_event: string
+  /** The headline metric's stable id and its F1 unit. */
+  metric: { id: string; unit: string }
+  /** Every threshold, by name, in the task's own (SI) units. */
+  thresholds: Record<string, number>
+}
+
+/** `sailgym_task::Outcome`. `reason` is present only on `failed`. */
+export interface PracticeOutcome {
+  kind: 'running' | 'succeeded' | 'failed' | 'timed_out'
+  reason?: string
+}
+
+/** `sailgym_task::Progress` — the minimum to show while sailing. */
+export interface PracticeProgress {
+  phase: string
+  value: number
+  target: number
+  hold_s: number
+  hold_target_s: number
+}
+
+/** `sailgym_task::TaskReport`. */
+export interface PracticeReport {
+  task: TaskIdentity
+  outcome: PracticeOutcome
+  scenario: string
+  /** s, simulated time since the attempt began — **not** wall time. */
+  elapsed_s: number
+  /** Physics steps since the attempt began (v2 F18.4). */
+  elapsed_steps: number
+  metric: { id: string; unit: string; value: number }
+  progress: PracticeProgress
+  events: PracticeEvent[]
+  highlight: PracticeEvent | null
+}
+
+/**
+ * How an attempt ended, when it was not the boat that ended it.
+ *
+ * `cancelled` — a reset, a restart or a scenario change. `conditions_changed`
+ * — a parameter, catalogue or wind edit, which means no result it produced
+ * could be compared with another attempt (RV63).
+ */
+export type PracticeStatus = 'active' | 'finished' | 'cancelled' | 'conditions_changed'
+
+/** `Sim.practice_state_json`. */
+export type PracticeState =
+  | { active: false }
+  | { active: true; status: PracticeStatus; report: PracticeReport }
+
+/** The three challenges, straight from the core. One call (brief §24). */
+export function readPracticeChallenges(sim: SimHandle): PracticeChallenge[] {
+  return JSON.parse(sim.practice_tasks_json() as string) as PracticeChallenge[]
+}
+
+/** The attempt in progress, or `{ active: false }`. */
+export function readPracticeState(sim: SimHandle): PracticeState {
+  return JSON.parse(sim.practice_state_json() as string) as PracticeState
+}
+
+/** The last event with `id`, or `null`. Used for **Inspect** and for results. */
+export function lastEvent(events: readonly PracticeEvent[], id: string): PracticeEvent | null {
+  for (let i = events.length - 1; i >= 0; i -= 1) {
+    if (events[i].id === id) {
+      return events[i]
+    }
+  }
+  return null
+}
+
 /**
  * `recording::EpisodeHeader`.
  *

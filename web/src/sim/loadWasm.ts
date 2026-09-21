@@ -20,6 +20,12 @@ import init, { Sim } from '../wasm/sailgym_wasm.js'
  * moment they exist. The same finding was recorded for the six geometry fields
  * of v2 section 01 and the six actuator limits of v2 section 09
  * (`docs/v2/progress/09-handoff.md` §2.2).
+ *
+ * v2 section 11 is the fourth time, and it is now a rule rather than a
+ * coincidence: `practice_tasks_json`, `start_practice`, `retry_practice`,
+ * `cancel_practice` and `practice_state_json` are typed here without a line
+ * being written, because `SimHandle` **is** the generated declaration.
+ * Restating the surface by hand is the one thing that would break it.
  */
 export type SimHandle = Sim
 

@@ -10,24 +10,28 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
 | Delta | Subject | Status |
 |---|---|---|
-| **F12′** | The gate grows to eleven steps | proposed; sections 02 and 03 |
+| **F12′** | The gate grows to eleven steps | step 3 **implemented** by section 11; the rest proposed, sections 02 and 03 |
 | **F14** | Agent interface — sensors, actions, cadence, helm | blocked on V-A |
 | **F15** | Task and course — routes, marks, guidance, passage | blocked on V-A |
 | **F16** | Conformance, digests and the tolerance contract | proposed; section 02 |
 | **F17** | The Python boundary | proposed; sections 03 and 07 |
-| **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08; F18.2–4 proposed, sections 09–11 |
+| **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08, F18.2 by 09, F18.3 by 10, F18.4 by 11 |
 
 ---
 
 ## F12′. The gate
 
-After 11, step 3 includes sailgym-task. Only when 03 lands does the chain become **eleven** steps. Steps 1–9 keep their numbers and their
-meaning; step 4's test list gains one entry.
+**Step 3 now includes `sailgym-task`, and that part is implemented.** Section
+11 made the change in `scripts/check.sh`, `scripts/check.ps1` and the table in
+`CLAUDE.md`; everything else below is still proposed. Only when 03 lands does
+the chain become **eleven** steps. The chain is **nine** steps today. Steps
+1–9 keep their numbers and their meaning; step 4's test list gains one entry
+when 02 lands.
 
 ```
  1. cargo fmt --check
  2. cargo clippy --all-targets -- -D warnings
- 3. cargo test -p sailgym-physics -p sailgym-task
+ 3. cargo test -p sailgym-physics -p sailgym-task                            ← done, section 11
  4. cargo test -p sailgym-physics --test invariants --test no_shortcuts \
                                   --test convergence --test symmetry \
                                   --test provenance --test conformance     ← + conformance
@@ -40,8 +44,14 @@ meaning; step 4's test list gains one entry.
 11. scripts/py-test.sh                                                     ← new
 ```
 
-Two properties of this shape are deliberate:
+Three properties of this shape are deliberate:
 
+- **Step 3 grows rather than a step 10 appearing.** Step 3 is the step that
+  proves the pure Rust is correct *and builds on the host with no WASM
+  toolchain* (F8.1), and `sailgym-task` has exactly that property: it is pure,
+  it depends on `sailgym-physics` and nothing depends on it except the
+  wrapper. A separate step would have made the chain ten steps for a crate
+  that answers the same question step 3 already asks.
 - **Step 4 grows rather than a step 12 appearing.** `--test conformance` proves
   a property of the physics crate, which is what step 4 is for. A separate step
   would make a red step 4 no less ambiguous and would cost another F12 change.
@@ -58,7 +68,17 @@ itself: `scripts/check.sh` (the `step_names` array **and** the `run_step` case),
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
 
-All gate changes remain proposed. Section 11 adds task coverage before research gates; retain it in all later crate lists.
+The remaining gate changes are still proposed; step 3's crate list is not.
+`-p sailgym-task` must be retained in every later revision of step 3 — a
+section that rewrites the chain for the Python steps and drops it would take
+the whole practice evaluator out of the gate silently.
+
+**One site did not move with the rest**, and it is recorded rather than
+edited: the nine-step table in the repository's root `README.md` still spells
+step 3 as `cargo test -p sailgym-physics`. No section-11 task owns that file
+(F13.2), so `docs/v2/progress/11-handoff.md` reports the exact one-line change
+it needs. `docs/v1/00-foundations.md` F12 is deliberately **not** edited: a v1
+clause is amended by a recorded v2 delta — this one — and never in place.
 
 ---
 
@@ -532,3 +552,50 @@ Extend the existing versioned Episode codec with the diagnostic/identity data ne
 ### F18.4 Guided tasks — section 11
 
 A small pure sailgym-task evaluator owns practice outcomes outside physics. Evaluate on physics steps; thresholds and ordered events are versioned task data. Retry restores exact conditions, not live edited defaults. Record outcomes/events and compare only compatible attempts. Later course/env work reuses these semantics. Only two attempts are retained in session memory; no persistence framework is required.
+
+#### F18.4a — what section 11 implemented
+
+Recorded here because the clause above was a proposal and this is what it
+became. The evidence is [`practice-validation.md`](practice-validation.md) and
+[`progress/11-handoff.md`](progress/11-handoff.md). **F3, F4, F5, F6, F7, F8.3
+and F9 are unchanged** — no equation, no coefficient and no frame convention
+moved, `STATE_LEN` is still 13, `parameters.rs` is byte identical and
+`scenarios/` is untouched.
+
+1. **`crates/sailgym-task`** is the evaluator: three challenges
+   (`get_moving`, `complete_tack`, `recover_from_heel`), `TaskSpec`,
+   `TaskRun`, and `Outcome` = `Running | Succeeded | Failed(reason) |
+   TimedOut`. `TimedOut` carries no reason; the **events** say what happened.
+   The dependency runs `task → physics` and never the other way, which
+   `cargo tree -p sailgym-physics` asserts in the gate (F14.1, F8.1).
+
+2. **`TASK_VERSION`** is 1, and is bumped by hand whenever a threshold or an
+   outcome rule changes meaning. It travels inside the episode's
+   `TaskIdentity`, so `ExperimentIdentity::compare` refuses to compare two
+   attempts scored under different rules (F18.3).
+
+3. **Thresholds are task configuration, not coefficients.** Every one is
+   visible through `TaskSpec::thresholds()`, recorded with the episode, and
+   was chosen from scripted runs of section 08's baseline. `parameters.rs` did
+   not move to make a challenge passable, and where the boat turned out not to
+   do what a challenge assumed, the challenge changed
+   (`practice-validation.md` §3.1).
+
+4. **The WASM surface grew by five read-only-or-lifecycle methods**, all
+   coarse-grained (brief §24): `practice_tasks_json`, `start_practice`,
+   `retry_practice`, `cancel_practice`, `practice_state_json`. F8.2 is
+   otherwise unchanged.
+
+5. **Recording needed no schema change.** Section 10's reserved
+   `PracticeEnvelope` is written through `Recorder::set_practice` and
+   `Recorder::push_practice_event`; `EPISODE_SCHEMA_VERSION` is still 2,
+   `PRACTICE_ENVELOPE_VERSION` is still 1, and `recording.rs` is byte
+   identical.
+
+6. **Retry restores the frozen initial contract** — the resolved catalogue,
+   the complete F3 state, the controls, the wind configuration and the seed —
+   rather than re-resolving a document. It is deliberately not `Sim::restart`,
+   which keeps a live brief §31 edit. A parameter, catalogue or wind change
+   during an attempt ends it as `conditions_changed`, and a reset or a
+   scenario change ends it as `cancelled`; neither produces a comparable
+   result.

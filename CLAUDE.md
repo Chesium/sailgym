@@ -11,6 +11,7 @@ React/TypeScript front end. Read this file first, then the normative docs below.
 | `docs/v1/00-foundations.md` | **Normative** on conventions, frames, sign conventions, equations, parameters and the WASM surface. |
 | `docs/v1/NN-<name>.md` | The executable PRD for one section (milestone). |
 | `docs/v1/progress/NN-handoff.md` | Written on completing section NN; read by section NN+1. |
+| `docs/v2/README.md`, `docs/v2/00-foundations.md`, `docs/v2/prds/NN-*.md` | The v2 milestone: its index, its **normative deltas** to the table above, and its section PRDs. A v2 delta amends v1 only where it says so, in writing. |
 
 `00-foundations.md` outranks the section PRDs. The brief outranks everything on
 scope. **No agent may redefine anything in `00-foundations.md`.** If you find a
@@ -36,7 +37,7 @@ Nine steps, in order, failing fast. What each one proves:
 |---|---|---|
 | 1 | `cargo fmt --check` | Source is canonically formatted, so diffs are semantic. |
 | 2 | `cargo clippy --all-targets -- -D warnings` | No lint regressions, tests and benches included. |
-| 3 | `cargo test -p sailgym-physics` | The physics core is correct **and builds on the host with no WASM toolchain**. |
+| 3 | `cargo test -p sailgym-physics -p sailgym-task` | The physics core and the practice evaluator are correct **and build on the host with no WASM toolchain**. |
 | 4 | `cargo test -p sailgym-physics --test invariants` | The physical invariants still hold (brief section 35). |
 | 5 | `cargo test -p sailgym-physics --test regression` | Recorded scenarios still reproduce bit-for-bit (determinism). |
 | 6 | `wasm-pack build …` | The Rust core still compiles to WASM and the JS glue regenerates. |
@@ -81,6 +82,7 @@ why; and anything the next section must know.
 
 ```
 crates/sailgym-physics/   pure Rust core; all physics tests live here
+crates/sailgym-task/      pure practice-task evaluation; depends on physics, never the reverse
 crates/sailgym-wasm/      thin wasm_bindgen wrapper
 crates/sailgym-bench/     native headless benchmark / golden-trajectory generator
 web/                      Vite + React + TypeScript app and Playwright specs

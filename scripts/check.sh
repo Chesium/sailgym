@@ -31,7 +31,7 @@ fi
 step_names=(
     'cargo fmt --check'
     'cargo clippy --all-targets -- -D warnings'
-    'cargo test -p sailgym-physics'
+    'cargo test -p sailgym-physics -p sailgym-task'
     'cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance'
     'cargo test -p sailgym-physics --test regression'
     'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'
@@ -48,7 +48,13 @@ run_step() {
     case "$1" in
         1) cargo fmt --check ;;
         2) cargo clippy --all-targets -- -D warnings ;;
-        3) cargo test -p sailgym-physics ;;
+        # v2 section 11 added `-p sailgym-task` (v2 F12′). Step 3 is what
+        # proves the pure Rust is correct **and builds on the host with no
+        # WASM toolchain**, and the practice evaluator is pure Rust with the
+        # same property — so it belongs in this step rather than in a tenth
+        # one. The chain is still nine steps; the Python steps of F12′ arrive
+        # with section 03 and not before.
+        3) cargo test -p sailgym-physics -p sailgym-task ;;
         # Every audit target in one invocation: the brief §35 invariants, the
         # prohibited-shortcut greps (section 07), the convergence study and the
         # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), and the F7

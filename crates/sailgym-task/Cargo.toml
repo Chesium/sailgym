@@ -1,0 +1,16 @@
+[package]
+name = "sailgym-task"
+description = "Deterministic practice-task evaluation (v2 F18.4). Pure; the physics crate does not depend on it."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# The dependency points **one way**: task → physics, never the reverse
+# (v2 F14.1). `cargo tree -p sailgym-physics` must therefore not mention this
+# crate, which `tests/practice.rs::physics_does_not_depend_on_the_task_crate`
+# asserts by running that command.
+[dependencies]
+sailgym-physics = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

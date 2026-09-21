@@ -53,7 +53,12 @@ $E2E = if ($Fast) {
 $Steps = @(
     @{ Name = 'cargo fmt --check';                          Action = { cargo fmt --check } }
     @{ Name = 'cargo clippy --all-targets -- -D warnings';  Action = { cargo clippy --all-targets -- -D warnings } }
-    @{ Name = 'cargo test -p sailgym-physics';              Action = { cargo test -p sailgym-physics } }
+    # v2 section 11 added `-p sailgym-task` (v2 F12'). Step 3 is what proves
+    # the pure Rust is correct **and builds on the host with no WASM
+    # toolchain**, and the practice evaluator is pure Rust with the same
+    # property, so it belongs in this step rather than in a tenth one. The
+    # chain is still nine steps.
+    @{ Name = 'cargo test -p sailgym-physics -p sailgym-task'; Action = { cargo test -p sailgym-physics -p sailgym-task } }
     # Every audit target in one invocation: the brief section 35 invariants,
     # the prohibited-shortcut greps (section 07), the convergence study and the
     # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), and the F7

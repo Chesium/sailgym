@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { NOT_RECORDED } from '../sim/diagnostics'
 import type { ReplaySource } from '../sim/replay'
+import type { PracticeEvent } from '../sim/scenarioTypes'
 
 /**
  * The replay transport (brief §33, task 9.4): play, pause, scrub, step,
@@ -53,6 +54,15 @@ export interface TimelineProps {
   unavailable: number
   /** Why the spatial wind field is not drawn. */
   windFieldReason: string
+  /**
+   * The episode's recorded practice events, if it carries any (v2 section 11).
+   *
+   * Each becomes a button that puts the playhead on the event's **own**
+   * recorded time. The event was decided on a physics step and carries that
+   * step's `t` (v2 F18.4), so landing on it lands on a moment that happened —
+   * unlike a scrub, which may sit between two recorded samples.
+   */
+  events?: readonly PracticeEvent[]
 }
 
 /** What the transport may do with a given episode, and where the playhead is. */
@@ -122,6 +132,7 @@ export function Timeline({
   onExit,
   unavailable,
   windFieldReason,
+  events = [],
 }: TimelineProps) {
   const { startTime, endTime, frameCount, logHz, schemaVersion } = source
   const state = timelineState(source, time)
@@ -278,6 +289,31 @@ export function Timeline({
       <button type="button" data-testid="timeline-exit" onClick={onExit}>
         Back to live
       </button>
+      {events.length > 0 && (
+        <span
+          data-testid="timeline-events"
+          data-count={events.length}
+          style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}
+        >
+          <span style={{ color: '#667' }}>jump to:</span>
+          {events.map((e, i) => (
+            <button
+              key={`${e.id}-${e.step}-${i}`}
+              type="button"
+              data-testid={`timeline-event-${e.id}`}
+              data-step={e.step}
+              data-t={e.t}
+              title={`${e.id} at step ${e.step}, t = ${e.t.toFixed(3)} s`}
+              onClick={() => {
+                onPlaying(false)
+                onTime(e.t)
+              }}
+            >
+              {e.id}
+            </button>
+          ))}
+        </span>
+      )}
       {/* v2 section 10 replaced what this note used to say. Every panel now
           reads the episode: the HUD, the force overlay, the charts and the
           diagnostics panel all take the recorded sample, and what the episode

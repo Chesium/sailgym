@@ -16,6 +16,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
+import type { Episode, PracticeReport } from '../sim/scenarioTypes'
+
 /** brief §29's two modes. Sail Mode is the default; its value is what it omits. */
 export type UiMode = 'sail' | 'debug'
 
@@ -78,6 +80,49 @@ export const SAMPLE_HZ_CHOICES = [5, 10, 20, 50] as const
 /** How many samples each chart keeps. At 20 Hz this is 30 s of history. */
 export const CHART_CAPACITY = 600
 
+// ---------------------------------------------------------------------------
+// Guided practice: two attempts, in session memory (v2 section 11, F18.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * One finished attempt, kept so the next one can be compared with it.
+ *
+ * **Session memory, and deliberately nothing more.** v2 F18.4: "only two
+ * attempts are retained in session memory; no persistence framework is
+ * required". It is absent from {@link UiState}'s `partialize` list and
+ * cleared by `merge`, so it never reaches `localStorage` — an attempt belongs
+ * to a run of *this* page and *this* build, and an episode that outlived the
+ * build that made it is a comparison waiting to be wrong (F18.1d puts the
+ * physics source id inside the episode for exactly that reason).
+ *
+ * `episode` is the recorded document, so **Inspect**, the comparison plot and
+ * the existing export path all work off it and no second store is needed.
+ *
+ * This is UI state by the store's own rule: it is a record of what the *view*
+ * is remembering. Every number inside `report` was decided in Rust, on a
+ * physics step; nothing here scores anything.
+ */
+export interface PracticeAttempt {
+  /** Unique within the session: `<task id>-<n>`. */
+  id: string
+  taskId: string
+  /** The task version the attempt was scored under. */
+  taskVersion: number
+  /** The evaluator's whole report, verbatim. */
+  report: PracticeReport
+  /** The recorded episode, with the practice envelope in its header. */
+  episode: Episode
+}
+
+/**
+ * How many attempts are remembered.
+ *
+ * Two, because the question the loop asks is "was that better than last
+ * time?", and because more than two is a leaderboard — which the section PRD
+ * excludes by name.
+ */
+export const MAX_REMEMBERED_ATTEMPTS = 2
+
 export interface UiState {
   mode: UiMode
   /**
@@ -111,6 +156,11 @@ export interface UiState {
    * be reset (F8.2, brief §31). Set by the panel, cleared by the reset.
    */
   resetRequired: boolean
+  /**
+   * The finished practice attempts this session is holding, oldest first, at
+   * most {@link MAX_REMEMBERED_ATTEMPTS}. Never persisted.
+   */
+  attempts: readonly PracticeAttempt[]
 
   setMode: (mode: UiMode) => void
   toggleMode: () => void
@@ -122,6 +172,10 @@ export interface UiState {
   setSampleHz: (hz: number) => void
   setParametersOpen: (open: boolean) => void
   setResetRequired: (required: boolean) => void
+  /** Append an attempt, dropping the oldest past the two-attempt bound. */
+  rememberAttempt: (attempt: PracticeAttempt) => void
+  /** Forget both, for a change of challenge. */
+  forgetAttempts: () => void
 }
 
 const INITIAL = {
@@ -142,6 +196,7 @@ const INITIAL = {
   sampleHz: DEFAULT_SAMPLE_HZ,
   parametersOpen: false,
   resetRequired: false,
+  attempts: [] as readonly PracticeAttempt[],
 }
 
 export const useUiStore = create<UiState>()(
@@ -166,6 +221,11 @@ export const useUiStore = create<UiState>()(
       setSampleHz: (hz) => set({ sampleHz: Number.isFinite(hz) && hz > 0 ? hz : DEFAULT_SAMPLE_HZ }),
       setParametersOpen: (parametersOpen) => set({ parametersOpen }),
       setResetRequired: (resetRequired) => set({ resetRequired }),
+      rememberAttempt: (attempt) =>
+        set((s) => ({
+          attempts: [...s.attempts, attempt].slice(-MAX_REMEMBERED_ATTEMPTS),
+        })),
+      forgetAttempts: () => set({ attempts: [] }),
     }),
     {
       name: 'sailgym-ui',
@@ -188,6 +248,7 @@ export const useUiStore = create<UiState>()(
       },
       // `resetRequired` describes the *current run*, so it must not come back
       // from a previous session and demand a reset that has already happened.
+      // `attempts` is left out for a stronger reason: see `PracticeAttempt`.
       partialize: ({
         mode,
         modeChosen,
@@ -217,6 +278,10 @@ export const useUiStore = create<UiState>()(
           ...saved,
           overlays: { ...INITIAL.overlays, ...(saved.overlays ?? {}) },
           charts: { ...INITIAL.charts, ...(saved.charts ?? {}) },
+          // Belt and braces: `partialize` never writes it, and a stored file
+          // from some future build that did must not restore an episode made
+          // by a different one.
+          attempts: [],
         }
       },
     },

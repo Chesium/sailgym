@@ -4,6 +4,7 @@ import { RingBuffer } from './ringBuffer'
 import { CHART_CAPACITY, CHART_KEYS, SAMPLE_HZ_CHOICES, type ChartKey } from './store'
 import { NOT_RECORDED, type Diagnostics, type PartialDiagnostics } from '../sim/diagnostics'
 import { diagnosticsFromFrame, type ReplaySource } from '../sim/replay'
+import type { Episode } from '../sim/scenarioTypes'
 
 /**
  * Scrolling time-series for a selected subset of the diagnostics (task 8.4).
@@ -47,6 +48,14 @@ import { diagnosticsFromFrame, type ReplaySource } from '../sim/replay'
  *
  * A series a legacy episode does not carry is drawn empty and labelled
  * `Not recorded` rather than plotted as zero.
+ *
+ * ## Two attempts, one axis
+ *
+ * v2 section 11 adds {@link practiceCompareData} and {@link CompareChart} at
+ * the foot of this file: the same rule again, applied to two episodes instead
+ * of one. Every point is a recorded sample; the x axis is elapsed **task**
+ * time so the two line up from the moment each attempt began; and the y axis
+ * is shared, so a difference in the picture is a difference in the numbers.
  */
 
 export interface ChartSeriesDef {
@@ -402,3 +411,167 @@ export const Charts = memo(function Charts({
     </section>
   )
 })
+
+// ---------------------------------------------------------------------------
+// Two attempts on one axis (v2 section 11, task 11.3)
+// ---------------------------------------------------------------------------
+
+/**
+ * The quantity each challenge's two-attempt comparison plots.
+ *
+ * Every one reads a **recorded sample** through
+ * {@link diagnosticsFromFrame}; none is recomputed and none is interpolated,
+ * which is the rule section 10 set for every replay consumer and which a
+ * score would break most visibly (RV59, and v2 section 11's "all displayed
+ * metrics derive from recorded samples or evaluator events").
+ *
+ * `get_moving` and `complete_tack` both plot the **surge speed** `u`, taken
+ * from the recorded F3 state rather than from `speed_over_ground`: the
+ * challenges are about driving the boat forward, and `hypot(u, v)` counts
+ * leeway as progress. `recover_from_heel` plots `|φ|`, which is what its
+ * metric measures.
+ */
+export const PRACTICE_SERIES: Record<
+  string,
+  { label: string; unit: string; read: (d: PartialDiagnostics) => number | undefined }
+> = {
+  get_moving: { label: 'Forward speed', unit: 'm/s', read: (d) => d.velocity_body?.x },
+  complete_tack: { label: 'Forward speed', unit: 'm/s', read: (d) => d.velocity_body?.x },
+  recover_from_heel: {
+    label: 'Heel',
+    unit: '°',
+    read: (d) => (d.heel_deg === undefined ? undefined : Math.abs(d.heel_deg)),
+  },
+}
+
+/** One attempt's trace, in elapsed **task** seconds. */
+export interface CompareSeries {
+  label: string
+  colour: string
+  points: readonly { t: number; value: number }[]
+}
+
+/** Two attempts, on one axis, in one unit. */
+export interface CompareChartData {
+  /** What is plotted, and in what unit. */
+  label: string
+  unit: string
+  series: readonly CompareSeries[]
+  /** The shared axes, so both traces are drawn to the same scale. */
+  span: number
+  lo: number
+  hi: number
+}
+
+/** The two colours, older then newer. Presentation only. */
+const COMPARE_COLOURS = ['#8899aa', '#2b6fb0'] as const
+
+/**
+ * Both attempts' recorded traces, on a common elapsed-task-time axis.
+ *
+ * The x axis is `frame.t − first.t`, so two attempts line up from the moment
+ * each began rather than from whatever the clock happened to read; the y axis
+ * is shared, so a difference in the picture is a difference in the numbers.
+ * Returns `null` when the challenge has no series, when either episode is
+ * empty, or when neither carries the field — a legacy episode is labelled,
+ * never plotted as zero.
+ */
+export function practiceCompareData(
+  taskId: string,
+  episodes: readonly [Episode, Episode],
+  labels: readonly [string, string],
+): CompareChartData | null {
+  const def = PRACTICE_SERIES[taskId]
+  if (def === undefined) {
+    return null
+  }
+  const series: CompareSeries[] = []
+  let lo = Number.POSITIVE_INFINITY
+  let hi = Number.NEGATIVE_INFINITY
+  let span = 0
+  for (let i = 0; i < episodes.length; i += 1) {
+    const frames = episodes[i].frames
+    if (frames.length === 0) {
+      return null
+    }
+    const t0 = frames[0].t
+    const points: { t: number; value: number }[] = []
+    for (const frame of frames) {
+      const value = def.read(diagnosticsFromFrame(frame))
+      if (value !== undefined && Number.isFinite(value)) {
+        points.push({ t: frame.t - t0, value })
+        lo = Math.min(lo, value)
+        hi = Math.max(hi, value)
+        span = Math.max(span, frame.t - t0)
+      }
+    }
+    if (points.length === 0) {
+      return null
+    }
+    series.push({ label: labels[i], colour: COMPARE_COLOURS[i], points })
+  }
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+    return null
+  }
+  return { label: def.label, unit: def.unit, series, span, lo, hi }
+}
+
+const COMPARE_WIDTH = 300
+const COMPARE_HEIGHT = 80
+
+/** Two polylines on one pair of axes. Nothing is computed here. */
+export function CompareChart({ data }: { data: CompareChartData }) {
+  const pad = data.hi - data.lo < 1e-9 ? 1 : (data.hi - data.lo) * 0.08
+  const low = data.lo - pad
+  const high = data.hi + pad
+  const span = data.span < 1e-9 ? 1 : data.span
+  return (
+    <figure
+      data-testid="practice-compare-chart"
+      data-series={data.series.length}
+      data-span={data.span}
+      data-min={data.lo}
+      data-max={data.hi}
+      style={{ margin: 0 }}
+    >
+      <figcaption style={{ display: 'flex', gap: 8, fontSize: 12, flexWrap: 'wrap' }}>
+        <span style={{ flex: '1 1 auto' }}>
+          {data.label} ({data.unit}) against elapsed task time (s)
+        </span>
+        {data.series.map((s) => (
+          <span key={s.label} style={{ color: s.colour }}>
+            ▬ {s.label}
+          </span>
+        ))}
+      </figcaption>
+      <svg
+        width="100%"
+        height={COMPARE_HEIGHT}
+        viewBox={`0 0 ${COMPARE_WIDTH} ${COMPARE_HEIGHT}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`${data.label} for both attempts against elapsed task time`}
+        style={{ display: 'block', background: '#f7f9fb', maxWidth: '100%' }}
+      >
+        {data.series.map((s) => (
+          <polyline
+            key={s.label}
+            data-points={s.points.length}
+            points={s.points
+              .map(
+                (p) =>
+                  `${((p.t / span) * COMPARE_WIDTH).toFixed(1)},${(
+                    COMPARE_HEIGHT -
+                    ((p.value - low) / (high - low)) * COMPARE_HEIGHT
+                  ).toFixed(1)}`,
+              )
+              .join(' ')}
+            fill="none"
+            stroke={s.colour}
+            strokeWidth={1.5}
+          />
+        ))}
+      </svg>
+    </figure>
+  )
+}

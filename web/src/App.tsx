@@ -42,18 +42,25 @@ import {
   type SheetInputState,
 } from './sim/sheetInput'
 import { useSimulation, type RenderParams } from './sim/useSimulation'
-import { Charts, replayChartData, useChartSampler } from './ui/Charts'
+import {
+  Charts,
+  practiceCompareData,
+  replayChartData,
+  useChartSampler,
+  type CompareChartData,
+} from './ui/Charts'
 import { ClockControls } from './ui/ClockControls'
 import { DebugPanel } from './ui/DebugPanel'
 import { Hud } from './ui/Hud'
 import { Layout } from './ui/Layout'
 import { ModeSwitch } from './ui/ModeSwitch'
 import { ParameterPanel } from './ui/ParameterPanel'
+import { PracticePanel } from './ui/PracticePanel'
 import { RecordControls } from './ui/RecordControls'
 import { ScenarioPicker } from './ui/ScenarioPicker'
 import { Timeline, type PlaybackSpeed } from './ui/Timeline'
 import { TouchControls } from './ui/TouchControls'
-import { useUiStore } from './ui/store'
+import { useUiStore, type PracticeAttempt } from './ui/store'
 import { WindReadout } from './ui/WindReadout'
 import { ArrowProbe, buildArrows, type ArrowField } from './wind/ArrowOverlay'
 import { DeckOverlay } from './wind/DeckOverlay'
@@ -137,6 +144,19 @@ const PENDING_PARAMS: RenderParams = {
     sheet_release_rate: 1,
   },
 }
+
+/**
+ * Samples of **simulated** time per second a practice attempt is recorded at.
+ *
+ * **Provenance.** A recording rate, not a physical quantity and not a
+ * scoring rate: the evaluator runs on every physics step whatever this is
+ * (v2 F18.4), and changing it changes only how finely the result can be
+ * inspected afterwards. 20 Hz is `ui/RecordControls.tsx`'s own default and
+ * the rate `docs/v2/recording-format.md` §8 quotes its cap in; the longest
+ * attempt any shipped challenge allows is 45 s, which is 900 samples against
+ * a cap of 13 443.
+ */
+const PRACTICE_LOG_HZ = 20
 
 /**
  * `?scenario=` — one of the six shipped ids (brief §32), one of the legacy
@@ -395,23 +415,128 @@ export default function App() {
   )
   const identityIsBaseline = comparability?.verdict === 'same_conditions'
 
-  const enterReplay = useCallback(() => {
-    if (episode === null) {
+  // ---------------------------------------------------------------------
+  // Guided practice (v2 section 11, task 11.3)
+  // ---------------------------------------------------------------------
+  //
+  // The attempt itself lives in Rust and arrives through `sim.practice`;
+  // everything here is capture, memory and wiring. Nothing below decides an
+  // outcome, and the only arithmetic is the two subtractions the comparison
+  // shows as deltas.
+  const { practice, stopRecording, startPractice, retryPractice, cancelPractice } = sim
+  const { attempts, rememberAttempt, forgetAttempts } = ui
+  const practiceActive = practice.active && practice.status === 'active'
+  /** The status the previous render saw, so a capture happens exactly once. */
+  const lastAttemptStatus = useRef<string>('none')
+  const attemptCount = useRef(0)
+
+  /**
+   * When an attempt stops being active, take its episode.
+   *
+   * Three cases, and they are not the same thing:
+   *
+   * * **finished** — the evaluator reached a terminal outcome. The episode is
+   *   the attempt's record: it is held for export and for **Inspect**, and it
+   *   is remembered so the next attempt can be compared with it.
+   * * **conditions_changed** — a parameter or the wind moved underneath it.
+   *   The episode is still worth looking at, so it is held; it is **not**
+   *   remembered, because no comparison it took part in could mean anything
+   *   (RV63).
+   * * **cancelled** — a reset or a scenario change. The core has already
+   *   discarded the recorder, so `stopRecording` returns `null` and there is
+   *   nothing to hold.
+   */
+  useEffect(() => {
+    const status = practice.active ? practice.status : 'none'
+    const was = lastAttemptStatus.current
+    lastAttemptStatus.current = status
+    if (was !== 'active' || status === 'active' || !practice.active) {
       return
     }
-    const source = createReplaySource(episode)
-    // The live boat and the replayed one would otherwise animate past each
-    // other in the same view. `setInspecting(true)` does three things at once:
-    // it pauses the clock, it clears every held input (RV53 — a finger or a
-    // key that was down belongs to the live run), and it stops the frame loop
-    // ticking the clock at all, so no route back to `advance` remains however
-    // the clock controls are used afterwards (task 10.3, RV57).
-    inspectingRef.current = true
-    sim.setInspecting(true)
-    setPlayback({ kind: 'replay', source })
-    setReplayTime(source.startTime)
-    setReplayPlaying(false)
-  }, [episode, sim])
+    const recorded = stopRecording()
+    if (recorded === null) {
+      return
+    }
+    setEpisode(recorded)
+    if (status !== 'finished') {
+      return
+    }
+    attemptCount.current += 1
+    rememberAttempt({
+      id: `${practice.report.task.id}-${attemptCount.current}`,
+      taskId: practice.report.task.id,
+      taskVersion: practice.report.task.version,
+      report: practice.report,
+      episode: recorded,
+    })
+  }, [practice, stopRecording, rememberAttempt])
+
+  /**
+   * The core's verdict on comparing the two remembered attempts.
+   *
+   * `ExperimentIdentity::compare`, in Rust (F18.3): a different seed, `dt`,
+   * parameter, physics source, initial condition **or task version** each
+   * makes them incomparable on its own, and only `same_conditions` licenses
+   * the deltas the panel shows (RV58, RV61). Memoised on the attempts, since
+   * both episodes cross the boundary as JSON.
+   */
+  const attemptComparison = useMemo(
+    () =>
+      attempts.length === 2 && sim.ready
+        ? withSim((core) => compareEpisodes(core, attempts[0].episode, attempts[1].episode))
+        : null,
+    [attempts, sim.ready, withSim],
+  )
+  /**
+   * Both attempts' recorded traces on one elapsed-task-time axis.
+   *
+   * Only when they are the same challenge: two different challenges plot two
+   * different quantities, and drawing them on one axis would be the mixed
+   * picture section 10 spent itself removing.
+   */
+  const attemptCompare: CompareChartData | null = useMemo(() => {
+    if (attempts.length !== 2 || attempts[0].taskId !== attempts[1].taskId) {
+      return null
+    }
+    return practiceCompareData(
+      attempts[0].taskId,
+      [attempts[0].episode, attempts[1].episode],
+      ['earlier attempt', 'latest attempt'],
+    )
+  }, [attempts])
+
+  /**
+   * Open a replay.
+   *
+   * `from` and `at` are section 11's **Inspect**: it hands in the attempt's
+   * own episode and the recorded time of the event to jump to, because the
+   * `episode` state it has just set is not visible until the next render.
+   * `at` is clamped into the episode — a playhead outside it would be a claim
+   * about data the recording does not have.
+   */
+  const enterReplay = useCallback(
+    (from?: Episode, at?: number) => {
+      const target = from ?? episode
+      if (target === null) {
+        return
+      }
+      const source = createReplaySource(target)
+      // The live boat and the replayed one would otherwise animate past each
+      // other in the same view. `setInspecting(true)` does three things at once:
+      // it pauses the clock, it clears every held input (RV53 — a finger or a
+      // key that was down belongs to the live run), and it stops the frame loop
+      // ticking the clock at all, so no route back to `advance` remains however
+      // the clock controls are used afterwards (task 10.3, RV57).
+      inspectingRef.current = true
+      sim.setInspecting(true)
+      setPlayback({ kind: 'replay', source })
+      setReplayTime(
+        at === undefined ? source.startTime : Math.min(source.endTime, Math.max(source.startTime, at)),
+      )
+      setReplayPlaying(false)
+    },
+    [episode, sim],
+  )
 
   const exitReplay = useCallback(() => {
     setReplayPlaying(false)
@@ -480,6 +605,80 @@ export default function App() {
       window.history.replaceState(null, '', url)
     },
     [exitReplay, sim],
+  )
+
+  /**
+   * Start a challenge.
+   *
+   * A replay is closed first — the boat is about to sail again — and the
+   * remembered attempts are dropped when the challenge changes, because two
+   * results from two different challenges are not a comparison and holding
+   * them side by side would only invite one.
+   */
+  /**
+   * Put the boat back in front of the player.
+   *
+   * The practice panel is in the layout's `instruments` slot, which sits
+   * below the world view inside the scrolling `main` row — as the recording
+   * controls and the heel indicator already do. Measured at 1280 × 720: the
+   * world view fills the whole 335 px row, so pressing Start means the boat
+   * is off the top of the scrollport at the moment the attempt begins.
+   *
+   * Scrolling the world cell back to the top of the row is the narrowest fix
+   * there is. It changes no layout, no size and nothing in the core — only
+   * where the one scroll container is looking — and it is here rather than in
+   * `ui/Layout.tsx` because `App.tsx` already holds the ref the layout
+   * publishes. A slot of its own, above the world, is the better answer and
+   * belongs to whichever PRD next owns `ui/Layout.tsx`.
+   */
+  const showTheBoat = useCallback(() => {
+    worldRef.current?.scrollIntoView({ block: 'start' })
+  }, [worldRef])
+
+  const onStartPractice = useCallback(
+    (id: string) => {
+      exitReplay()
+      if (attempts.length > 0 && attempts[0].taskId !== id) {
+        forgetAttempts()
+      }
+      startPractice(id, PRACTICE_LOG_HZ)
+      showTheBoat()
+    },
+    [attempts, exitReplay, forgetAttempts, showTheBoat, startPractice],
+  )
+
+  const onRetryPractice = useCallback(() => {
+    exitReplay()
+    retryPractice()
+    showTheBoat()
+  }, [exitReplay, retryPractice, showTheBoat])
+
+  const onCancelPractice = useCallback(() => {
+    exitReplay()
+    cancelPractice()
+  }, [cancelPractice, exitReplay])
+
+  /**
+   * **Inspect**: open this attempt's own episode at its highlight event.
+   *
+   * The event is the evaluator's — the tack's crossing, the peak heel, the
+   * moment the target speed was reached — and it carries the **physics step**
+   * it was decided on as well as the time (v2 F18.4), so the playhead lands
+   * on a moment that happened rather than on one interpolated between two
+   * that did.
+   */
+  const onInspectAttempt = useCallback(
+    (attempt: PracticeAttempt) => {
+      setEpisode(attempt.episode)
+      // The highlight if the attempt produced one; otherwise the last event
+      // it did produce; otherwise the start of the episode. An attempt that
+      // timed out before anything happened is still worth looking at, and
+      // inventing a moment for it would be the one thing not to do.
+      const events = attempt.report.events
+      const at = attempt.report.highlight ?? (events.length > 0 ? events[events.length - 1] : null)
+      enterReplay(attempt.episode, at?.t)
+    },
+    [enterReplay],
   )
 
   // The E2E probe. See `ReplayProbe`.
@@ -879,14 +1078,35 @@ export default function App() {
   const instruments = (
     <>
       <div style={{ display: 'grid', gap: 6, flex: '1 1 420px', minWidth: 320 }}>
-        <RecordControls
+        <PracticePanel
           ready={sim.ready}
-          withSim={sim.withSim}
-          episode={episode}
-          onEpisode={setEpisode}
-          onReplay={enterReplay}
+          challenges={sim.challenges}
+          state={practice}
+          attempts={attempts}
+          comparison={attemptComparison}
+          compare={attemptCompare}
+          onStart={onStartPractice}
+          onRetry={onRetryPractice}
+          onCancel={onCancelPractice}
+          onInspect={onInspectAttempt}
           replaying={playback.kind === 'replay'}
         />
+        {/* Hidden while an attempt is running, and only then. The attempt owns
+            the recorder — pressing Record would start a second episode over the
+            top of it and throw away the events already in the first — and there
+            is nothing to export until the attempt has produced something. It
+            comes back the moment the attempt ends or is abandoned, which is
+            what keeps free sail and the whole v1 recording path reachable. */}
+        {!practiceActive && (
+          <RecordControls
+            ready={sim.ready}
+            withSim={sim.withSim}
+            episode={episode}
+            onEpisode={setEpisode}
+            onReplay={() => enterReplay()}
+            replaying={playback.kind === 'replay'}
+          />
+        )}
         {/* The recording bound, visible before it is reached. The cap and the
             bytes per sample are the core's (`recording::MAX_EPISODE_FRAMES`,
             derived from a stated byte budget); nothing here restates one. */}
@@ -924,6 +1144,7 @@ export default function App() {
             onExit={exitReplay}
             unavailable={view.unavailable.length}
             windFieldReason={view.windField.reason}
+            events={playback.source.header.practice?.events ?? []}
           />
         )}
       </div>

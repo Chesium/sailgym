@@ -11,7 +11,27 @@
 //! `stop_recording`, `is_recording`, `recorded_frames`, `episode_to_binary`,
 //! `episode_from_binary` and `episode_from_json`, plus the v2 section 10
 //! inspection methods `recording_capacity`, `recording_full`,
-//! `episode_identity_json` and `episode_comparability_json`.
+//! `episode_identity_json` and `episode_comparability_json`, plus the v2
+//! section 11 practice methods `practice_tasks_json`, `start_practice`,
+//! `retry_practice`, `cancel_practice` and `practice_state_json`.
+//!
+//! ## Section 11 keeps the scoring in Rust, and outside the physics crate
+//!
+//! A practice attempt is evaluated by `sailgym-task`, once per **completed
+//! physics step**, inside the existing [`Sim::advance`] loop — there is no
+//! second clock and no second stepping path (v2 F18.4). The evaluator is an
+//! observer: it takes a value and returns an outcome, and
+//! `sailgym-task`'s `task_evaluation_does_not_perturb_the_physics` compares
+//! all thirteen state scalars bit for bit to say so.
+//!
+//! The attempt also owns its **initial contract**: the resolved catalogue,
+//! the complete F3 state, the controls, the wind configuration and the seed,
+//! frozen at [`Sim::start_practice`] and restored verbatim by
+//! [`Sim::retry_practice`]. That is what makes a retry the same experiment
+//! (RV63), and it is deliberately **not** [`Sim::restart`], which keeps a
+//! live brief §31 parameter edit. A parameter, catalogue or wind change while
+//! an attempt is running ends it as `conditions_changed`, because the
+//! conditions it was started under no longer hold.
 //!
 //! ## Section 10 keeps the codec, the identity and the cap in Rust
 //!
@@ -48,6 +68,7 @@ use sailgym_physics::scenario::{
 };
 use sailgym_physics::simulation::Simulation;
 use sailgym_physics::state::{BoatState, Controls};
+use sailgym_task::{StepObservation, TaskId, TaskRun, TaskSpec, TASK_IDS};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -108,6 +129,64 @@ fn ad_hoc_scenario(inner: &Simulation) -> Scenario {
     }
 }
 
+/// Where a practice attempt stands (v2 section 11).
+///
+/// `Finished` is the evaluator's verdict — succeeded, failed or timed out,
+/// which [`TaskRun::outcome`] carries. The other two are the browser's:
+/// something ended the attempt that was not the boat.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AttemptStatus {
+    /// Being evaluated on every step.
+    Active,
+    /// The evaluator reached a terminal outcome.
+    Finished,
+    /// A reset, a restart or a scenario change ended it. There is no result.
+    Cancelled,
+    /// A parameter, catalogue or wind change ended it. The conditions it was
+    /// started under no longer hold, so no result it could produce would be
+    /// comparable with another attempt (RV63).
+    ConditionsChanged,
+}
+
+impl AttemptStatus {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Finished => "finished",
+            Self::Cancelled => "cancelled",
+            Self::ConditionsChanged => "conditions_changed",
+        }
+    }
+}
+
+/// The initial contract an attempt was started under, frozen.
+///
+/// **This is what "retry restores the exact conditions" means.** Every field
+/// is a resolved value, not a document that would be resolved again: the
+/// catalogue is the one that was in force, the state is the complete F3
+/// state, and the wind is the configuration plus the seed it was built from.
+/// Re-deriving any of them from the scenario at retry time would re-apply
+/// `parameter_overrides` to whatever the catalogue happens to be now, which
+/// is the defect RV63 names.
+#[derive(Clone)]
+struct Conditions {
+    scenario: Scenario,
+    params: BoatParameters,
+    state: BoatState,
+    controls: Controls,
+    wind: WindConfig,
+    seed: u64,
+    log_hz: f64,
+}
+
+/// One practice attempt: the frozen contract, the evaluator and its status.
+struct Attempt {
+    spec: TaskSpec,
+    run: TaskRun,
+    conditions: Conditions,
+    status: AttemptStatus,
+}
+
 /// The simulation handle JavaScript holds.
 #[wasm_bindgen]
 pub struct Sim {
@@ -125,6 +204,9 @@ pub struct Sim {
     /// `Some` while recording (brief §33). An observer: see
     /// `sailgym_physics::recording`.
     recorder: Option<Recorder>,
+    /// `Some` once a practice challenge has been started, and until it is
+    /// cancelled. A finished attempt is kept so the page can show the result.
+    attempt: Option<Attempt>,
 }
 
 #[wasm_bindgen]
@@ -182,6 +264,7 @@ impl Sim {
             scenario,
             reset_document: "{}".to_string(),
             recorder: None,
+            attempt: None,
         })
     }
 
@@ -202,6 +285,10 @@ impl Sim {
     /// An in-progress recording is discarded: its header describes a run that
     /// no longer exists (brief §33).
     pub fn reset(&mut self, scenario_json: &str) -> Result<(), JsValue> {
+        // A reset replaces the run a practice attempt was being flown in, so
+        // the attempt is over. It is a *cancellation*, not a result: there is
+        // nothing to compare and nothing to show (v2 section 11).
+        self.end_attempt(AttemptStatus::Cancelled);
         self.apply(scenario_json, true)?;
         self.reset_document = scenario_json.to_string();
         Ok(())
@@ -218,6 +305,11 @@ impl Sim {
     /// scenario in the picker is the other case — its `parameter_overrides`
     /// are the point of choosing it — and that goes through `reset`.
     pub fn restart(&mut self) -> Result<(), JsValue> {
+        // Same reasoning as `reset`, and the reason a retry does **not** go
+        // through here: `restart` keeps the parameter catalogue currently in
+        // force, which is exactly what an attempt's frozen contract must not
+        // do (RV63). [`Sim::retry_practice`] is the practice path.
+        self.end_attempt(AttemptStatus::Cancelled);
         let document = std::mem::take(&mut self.reset_document);
         let outcome = self.apply(&document, false);
         self.reset_document = document;
@@ -289,6 +381,19 @@ impl Sim {
     /// the state the recording was started from. The recorder is an observer
     /// and cannot change a trajectory.
     pub fn start_recording(&mut self, hz: f64) {
+        self.begin_recording(hz);
+    }
+
+    /// The body of [`Sim::start_recording`], reused by the practice path.
+    ///
+    /// When an attempt is in progress the reserved `PracticeEnvelope` is
+    /// attached **before** the first sample, because `push_practice_event`
+    /// refuses an event with no envelope and because a recording stopped
+    /// mid-attempt should still say which task it was flown against
+    /// (`docs/v2/recording-format.md` §6). No second recorder and no second
+    /// `Episode` type is created: section 10 reserved this slot and this is
+    /// the one thing that fills it.
+    fn begin_recording(&mut self, hz: f64) {
         let header = EpisodeHeader::manual(
             self.scenario.clone(),
             *self.inner.params(),
@@ -300,6 +405,9 @@ impl Sim {
             *self.inner.controls(),
         );
         let mut rec = Recorder::start(hz, header);
+        if let Some(a) = self.attempt.as_ref() {
+            rec.set_practice(a.run.envelope());
+        }
         let d = sailgym_physics::diagnostics::diagnostics(&self.inner);
         rec.observe(&self.inner, &d);
         self.recorder = Some(rec);
@@ -422,6 +530,175 @@ impl Sim {
         Ok(JsValue::from_str(&json))
     }
 
+    // --- guided practice (v2 section 11, F18.4) ---------------------------
+
+    /// The three shipped challenges, as one JSON array (brief §24).
+    ///
+    /// ```json
+    /// [{ "id": "get_moving", "version": 1, "scenario": "free_sail",
+    ///    "time_limit_s": 45.0, "highlight_event": "speed_reached",
+    ///    "metric": { "id": "top_speed", "unit": "m/s" },
+    ///    "thresholds": { "target_speed_mps": 1.2, … } }]
+    /// ```
+    ///
+    /// Every number a challenge is judged by is in here, which is what makes
+    /// the thresholds *visible* — the page shows them and restates none of
+    /// them. A challenge is a shipped scenario plus a task; `scenario` names
+    /// the one it is set on, and section 11 ships no new scenario.
+    pub fn practice_tasks_json(&self) -> Result<JsValue, JsValue> {
+        let rows: Vec<serde_json::Value> = TASK_IDS
+            .iter()
+            .map(|id| {
+                let spec = TaskSpec::shipped(*id);
+                let (metric, unit) = spec.metric();
+                serde_json::json!({
+                    "id": id.as_str(),
+                    "version": spec.version(),
+                    "scenario": id.scenario(),
+                    "time_limit_s": spec.time_limit_s(),
+                    "highlight_event": id.highlight_event(),
+                    "metric": { "id": metric, "unit": unit },
+                    "thresholds": spec.thresholds(),
+                })
+            })
+            .collect();
+        let json = serde_json::to_string(&rows).map_err(|e| js_err("practice_tasks_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// Begin an attempt at `task_id`, recording at `log_hz`.
+    ///
+    /// Four things happen, in this order, and none of them is optional:
+    ///
+    /// 1. the challenge's shipped scenario is **loaded** — `load_scenario`,
+    ///    not `restart_scenario`, so the scenario's own `parameter_overrides`
+    ///    are applied to the ILCA catalogue and any live brief §31 edit is
+    ///    discarded. An attempt starts from the boat the scenario describes;
+    ///    2. the resolved conditions are **frozen** ([`Conditions`]);
+    /// 3. the evaluator is started from the resolved initial observation;
+    /// 4. recording begins, with the practice envelope attached.
+    ///
+    /// A previous attempt is cancelled. Free sail is what you get by not
+    /// calling this, and [`Sim::cancel_practice`] is how you get back to it.
+    pub fn start_practice(&mut self, task_id: &str, log_hz: f64) -> Result<(), JsValue> {
+        let id = TaskId::parse(task_id)
+            .ok_or_else(|| JsValue::from_str(&format!("unknown practice task `{task_id}`")))?;
+        let spec = TaskSpec::shipped(id);
+        self.attempt = None;
+        self.recorder = None;
+
+        let scenario = sailgym_physics::scenario::load_shipped(id.scenario())
+            .map_err(|e| js_err("practice scenario", e))?;
+        self.inner
+            .load_scenario(&scenario)
+            .map_err(|e| js_err("practice scenario", e))?;
+        self.scenario = scenario.clone();
+        self.reset_document =
+            serde_json::to_string(&scenario).map_err(|e| js_err("practice scenario", e))?;
+
+        let conditions = Conditions {
+            scenario,
+            params: *self.inner.params(),
+            state: *self.inner.state(),
+            controls: *self.inner.controls(),
+            wind: *self.inner.wind().config(),
+            seed: self.inner.seed(),
+            log_hz,
+        };
+        let run = TaskRun::start(spec, &StepObservation::of(&self.inner))
+            .map_err(|e| js_err("practice task", e))?;
+        self.attempt = Some(Attempt {
+            spec,
+            run,
+            conditions,
+            status: AttemptStatus::Active,
+        });
+        self.begin_recording(log_hz);
+        Ok(())
+    }
+
+    /// Start the same challenge again under **exactly** the conditions the
+    /// last attempt was started under.
+    ///
+    /// Not a reset and not a restart: the frozen [`Conditions`] are written
+    /// back one field at a time — catalogue, wind configuration, seed, the
+    /// complete F3 state, the controls — so a live parameter edit made during
+    /// the attempt cannot survive into the retry (RV63). `Simulation::reset`
+    /// clears the step counter, the capsize report and the controls and
+    /// rebuilds the wind field from the seed, which is what makes the second
+    /// attempt bit-reproducible against the first (brief §34).
+    ///
+    /// The recorder is replaced, the evaluator is rebuilt from the same
+    /// frozen specification, and every event, timer and success flag from the
+    /// previous attempt is gone with it.
+    pub fn retry_practice(&mut self) -> Result<(), JsValue> {
+        let Some(previous) = self.attempt.as_ref() else {
+            return Err(JsValue::from_str("retry_practice: no attempt to retry"));
+        };
+        let spec = previous.spec;
+        let conditions = previous.conditions.clone();
+        self.attempt = None;
+        self.recorder = None;
+
+        self.inner
+            .set_parameters(conditions.params)
+            .map_err(|e| js_err("retry_practice", e))?;
+        // The configuration first, then the seeded reset: `Simulation::reset`
+        // rebuilds the field from the configuration in force and the seed it
+        // is given, so this order is what reproduces the same wind.
+        self.inner.set_wind(conditions.wind);
+        self.inner.reset(conditions.state, conditions.seed);
+        self.inner.set_controls(conditions.controls);
+        self.scenario = conditions.scenario.clone();
+        self.reset_document =
+            serde_json::to_string(&conditions.scenario).map_err(|e| js_err("retry_practice", e))?;
+
+        let run = TaskRun::start(spec, &StepObservation::of(&self.inner))
+            .map_err(|e| js_err("practice task", e))?;
+        let log_hz = conditions.log_hz;
+        self.attempt = Some(Attempt {
+            spec,
+            run,
+            conditions,
+            status: AttemptStatus::Active,
+        });
+        self.begin_recording(log_hz);
+        Ok(())
+    }
+
+    /// Abandon practice and go back to free sail.
+    ///
+    /// The in-progress recording goes with it: its header describes a run
+    /// nobody finished, and keeping it would leave a half-scored episode on
+    /// the page (brief §33 takes the same view of a reset).
+    pub fn cancel_practice(&mut self) {
+        self.attempt = None;
+        self.recorder = None;
+    }
+
+    /// The attempt, as JSON, or `{ "active": false }` when there is none.
+    ///
+    /// ```json
+    /// { "active": true, "status": "active",
+    ///   "report": { "task": …, "outcome": …, "elapsed_s": …, "metric": …,
+    ///               "progress": …, "events": […], "highlight": … } }
+    /// ```
+    ///
+    /// The whole record in one call (brief §24). Every number in it is the
+    /// evaluator's; the page formats and never recomputes.
+    pub fn practice_state_json(&self) -> Result<JsValue, JsValue> {
+        let value = match self.attempt.as_ref() {
+            None => serde_json::json!({ "active": false }),
+            Some(a) => serde_json::json!({
+                "active": true,
+                "status": a.status.as_str(),
+                "report": a.run.report(),
+            }),
+        };
+        let json = serde_json::to_string(&value).map_err(|e| js_err("practice_state_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
     /// Set the control rates. Rates, never absolute angles (brief §12, §13).
     pub fn set_controls(&mut self, rudder_rate: f64, sheet_rate: f64, release: bool) {
         self.inner.set_controls(Controls {
@@ -441,20 +718,86 @@ impl Sim {
     /// one step in ten, and none at all once the recorder is full, because
     /// `Recorder::due` is `false` from then on.
     pub fn advance(&mut self, n: u32) -> u32 {
-        if self.recorder.is_none() {
+        if self.recorder.is_none() && !self.attempt_is_active() {
             return self.inner.advance(n);
         }
         for _ in 0..n {
             self.inner.advance(1);
-            let t = self.inner.state().t;
-            if self.recorder.as_ref().is_some_and(|r| r.due(t)) {
-                let d = sailgym_physics::diagnostics::diagnostics(&self.inner);
-                if let Some(r) = self.recorder.as_mut() {
-                    r.observe(&self.inner, &d);
+            self.observe_step();
+        }
+        n
+    }
+
+    /// End an **active** attempt for a reason that is not the boat's.
+    ///
+    /// A finished, cancelled or conditions-changed attempt is left alone: the
+    /// first already has a result and the other two already have none, and a
+    /// second cancellation must not overwrite either. Nothing is thrown away
+    /// here — the attempt is still readable through
+    /// [`Sim::practice_state_json`], which is how the page explains why the
+    /// result it is looking at cannot be compared.
+    fn end_attempt(&mut self, status: AttemptStatus) {
+        if let Some(a) = self.attempt.as_mut() {
+            if a.status == AttemptStatus::Active {
+                a.status = status;
+            }
+        }
+    }
+
+    /// Whether a practice attempt is being evaluated.
+    fn attempt_is_active(&self) -> bool {
+        self.attempt
+            .as_ref()
+            .is_some_and(|a| a.status == AttemptStatus::Active)
+    }
+
+    /// Everything that watches a **completed** physics step: the practice
+    /// evaluator, then the recorder.
+    ///
+    /// `self` is destructured so the evaluator can read `inner` while the
+    /// attempt and the recorder are held mutably; they are disjoint fields
+    /// and the borrow checker is told so once, here, rather than the code
+    /// being shaped around it.
+    ///
+    /// Order matters in exactly one way: the task is evaluated first, so an
+    /// event decided on this step is already in the envelope when the frame
+    /// beside it is logged. Neither can change the state — the evaluator
+    /// takes a value and the recorder takes `&Simulation` — so nothing else
+    /// about the order is observable (`recording_does_not_perturb`,
+    /// `task_evaluation_does_not_perturb_the_physics`).
+    fn observe_step(&mut self) {
+        let Self {
+            inner,
+            attempt,
+            recorder,
+            ..
+        } = self;
+
+        if let Some(a) = attempt {
+            if a.status == AttemptStatus::Active {
+                let before = a.run.events().len();
+                let outcome = a.run.observe(&StepObservation::of(inner));
+                // The new events, in the order the evaluator appended them.
+                // `push_practice_event` refuses one with no envelope, which
+                // is why `begin_recording` sets the envelope first.
+                if let Some(rec) = recorder.as_mut() {
+                    for event in &a.run.events()[before..] {
+                        rec.push_practice_event(event.clone());
+                    }
+                }
+                if outcome.is_terminal() {
+                    a.status = AttemptStatus::Finished;
                 }
             }
         }
-        n
+
+        if let Some(rec) = recorder.as_mut() {
+            let t = inner.state().t;
+            if rec.due(t) {
+                let d = sailgym_physics::diagnostics::diagnostics(inner);
+                rec.observe(inner, &d);
+            }
+        }
     }
 
     /// Flat `f64` view of `BoatState`, layout = F8.3 field order.
@@ -472,9 +815,15 @@ impl Sim {
     /// Live parameter editing (brief §31). Returns whether a reset is
     /// required.
     pub fn set_parameter(&mut self, path: &str, value: f64) -> Result<bool, JsValue> {
-        self.inner
+        let reset_required = self
+            .inner
             .set_parameter(path, value)
-            .map_err(|e| js_err("set_parameter", e))
+            .map_err(|e| js_err("set_parameter", e))?;
+        // Only once the edit has actually been accepted: a rejected edit
+        // changes nothing, so it cannot have changed an attempt's conditions
+        // either (section 08 handoff §2.1).
+        self.end_attempt(AttemptStatus::ConditionsChanged);
+        Ok(reset_required)
     }
 
     /// Restore `BoatParameters::ilca7()` — the panel's "Reset to ILCA
@@ -482,6 +831,7 @@ impl Sim {
     /// untouched; only the catalogue moves.
     pub fn reset_parameters(&mut self) {
         self.inner.reset_parameters();
+        self.end_attempt(AttemptStatus::ConditionsChanged);
     }
 
     /// The whole F7 catalogue, as a JSON **string**.
@@ -563,6 +913,7 @@ impl Sim {
         let value: serde_json::Value =
             serde_json::from_str(wind_json).map_err(|e| js_err("invalid wind JSON", e))?;
         self.inner.set_wind(parse_wind(&value)?);
+        self.end_attempt(AttemptStatus::ConditionsChanged);
         Ok(())
     }
 

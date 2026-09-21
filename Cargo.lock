@@ -206,12 +206,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sailgym-task"
+version = "0.1.0"
+dependencies = [
+ "sailgym-physics",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "sailgym-wasm"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "sailgym-physics",
+ "sailgym-task",
  "serde_json",
  "wasm-bindgen",
  "wasm-bindgen-test",

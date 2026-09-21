@@ -11,6 +11,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 sailgym-physics = { workspace = true }
+# v2 section 11: practice evaluation. The arrow points `wasm → task → physics`
+# (v2 F14.1); `sailgym-physics` gains no dependency from this, which
+# `sailgym-task`'s `physics_does_not_depend_on_the_task_crate` asserts.
+sailgym-task = { workspace = true }
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1"
 serde_json = { workspace = true }
