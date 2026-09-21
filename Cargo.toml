@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/sailgym-physics",
     "crates/sailgym-task",
+    "crates/sailgym-course",
     "crates/sailgym-wasm",
     "crates/sailgym-bench",
 ]
@@ -16,5 +17,6 @@ publish = false
 [workspace.dependencies]
 sailgym-physics = { path = "crates/sailgym-physics" }
 sailgym-task = { path = "crates/sailgym-task" }
+sailgym-course = { path = "crates/sailgym-course" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }

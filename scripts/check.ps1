@@ -62,14 +62,15 @@ $E2E = if ($Fast) {
 $Steps = @(
     @{ Name = 'cargo fmt --check';                          Action = { cargo fmt --check } }
     @{ Name = 'cargo clippy --all-targets -- -D warnings';  Action = { cargo clippy --all-targets -- -D warnings } }
-    # v2 section 11 added `-p sailgym-task` (v2 F12'). Step 3 is what proves
-    # the pure Rust is correct **and builds on the host with no WASM
-    # toolchain**, and the practice evaluator is pure Rust with the same
-    # property, so it belongs in this step rather than in a step of its own.
-    # `-p sailgym-task` must survive every later revision of this step: a chain
-    # rewritten for the Python steps that dropped it would take the whole
-    # practice evaluator out of the gate silently (v2 F12').
-    @{ Name = 'cargo test -p sailgym-physics -p sailgym-task'; Action = { cargo test -p sailgym-physics -p sailgym-task } }
+    # v2 section 11 added `-p sailgym-task` and section 04 `-p sailgym-course`
+    # (v2 F12'). Step 3 is what proves the pure Rust is correct **and builds on
+    # the host with no WASM toolchain**, and both crates are pure Rust with the
+    # same property, so they belong in this step rather than each in a step of
+    # its own. Neither may be dropped by a later revision of this step: a chain
+    # rewritten for some new tool that lost one would take the whole practice
+    # evaluator, or the whole course layer, out of the gate silently (v2 F12').
+    # Sections 05 and 06 extend this same list rather than each adding a step.
+    @{ Name = 'cargo test -p sailgym-physics -p sailgym-task -p sailgym-course'; Action = { cargo test -p sailgym-physics -p sailgym-task -p sailgym-course } }
     # Every audit target in one invocation: the brief section 35 invariants,
     # the prohibited-shortcut greps (section 07), the convergence study and the
     # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), the F7 provenance

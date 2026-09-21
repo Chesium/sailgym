@@ -1,0 +1,26 @@
+[package]
+name = "sailgym-course"
+description = "Routes, marks, guidance and ordered mark passage (v2 F15). Pure; nothing depends on it in the physics crate."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# The dependency points **one way**: course → physics, never the reverse
+# (v2 F14.1). `cargo tree -p sailgym-physics` must therefore not mention this
+# crate, which `route::tests::physics_does_not_depend_on_the_course_crate`
+# asserts by running that command — the same assertion `sailgym-task` makes.
+#
+# `sailgym-physics` is here for `Vec2` and `BoatState` and for nothing else
+# (task 4.1). No geometry in this crate is a physical equation, no number in
+# it is a physical coefficient, and `parameters.rs` is never read.
+[dependencies]
+sailgym-physics = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# `testkit` is off in the line above and on here, so `mirror_state` is
+# available to the tests (task 4.3's mirror assertion, RV21) and to nothing
+# that ships.
+[dev-dependencies]
+sailgym-physics = { workspace = true, features = ["testkit"] }

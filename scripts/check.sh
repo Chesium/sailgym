@@ -37,7 +37,7 @@ fi
 step_names=(
     'cargo fmt --check'
     'cargo clippy --all-targets -- -D warnings'
-    'cargo test -p sailgym-physics -p sailgym-task'
+    'cargo test -p sailgym-physics -p sailgym-task -p sailgym-course'
     'cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance --test conformance'
     'cargo test -p sailgym-physics --test regression'
     'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'
@@ -58,14 +58,16 @@ run_step() {
     case "$1" in
         1) cargo fmt --check ;;
         2) cargo clippy --all-targets -- -D warnings ;;
-        # v2 section 11 added `-p sailgym-task` (v2 F12′). Step 3 is what
-        # proves the pure Rust is correct **and builds on the host with no
-        # WASM toolchain**, and the practice evaluator is pure Rust with the
-        # same property — so it belongs in this step rather than in a step of
-        # its own. `-p sailgym-task` must survive every later revision of this
-        # step: a chain rewritten for the Python steps that dropped it would
-        # take the whole practice evaluator out of the gate silently (F12′).
-        3) cargo test -p sailgym-physics -p sailgym-task ;;
+        # v2 section 11 added `-p sailgym-task` and section 04
+        # `-p sailgym-course` (v2 F12′). Step 3 is what proves the pure Rust is
+        # correct **and builds on the host with no WASM toolchain**, and both
+        # crates are pure Rust with the same property — so they belong in this
+        # step rather than each in a step of its own. Neither may be dropped by
+        # a later revision of this step: a chain rewritten for some new tool
+        # that lost one would take the whole practice evaluator, or the whole
+        # course layer, out of the gate silently (F12′). Sections 05 and 06
+        # extend this same list rather than each adding a step.
+        3) cargo test -p sailgym-physics -p sailgym-task -p sailgym-course ;;
         # Every audit target in one invocation: the brief §35 invariants, the
         # prohibited-shortcut greps (section 07), the convergence study and the
         # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), the F7

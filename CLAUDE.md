@@ -38,7 +38,7 @@ Eleven steps, in order, failing fast. What each one proves:
 |---|---|---|
 | 1 | `cargo fmt --check` | Source is canonically formatted, so diffs are semantic. |
 | 2 | `cargo clippy --all-targets -- -D warnings` | No lint regressions, tests and benches included. |
-| 3 | `cargo test -p sailgym-physics -p sailgym-task` | The physics core and the practice evaluator are correct **and build on the host with no WASM toolchain**. |
+| 3 | `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course` | The physics core, the practice evaluator and the course layer are correct **and build on the host with no WASM toolchain**. |
 | 4 | `cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance --test conformance` | The physical invariants still hold (brief section 35), no prohibited shortcut has crept in, the integrator converges, port/starboard symmetry holds, no coefficient has drifted from the F7 catalogue, and the committed conformance bundle still describes the compiled physics (v2 F16, section 02). |
 | 5 | `cargo test -p sailgym-physics --test regression` | Recorded scenarios still reproduce bit-for-bit (determinism). |
 | 6 | `wasm-pack build …` | The Rust core still compiles to WASM and the JS glue regenerates. |
@@ -86,6 +86,7 @@ why; and anything the next section must know.
 ```
 crates/sailgym-physics/   pure Rust core; all physics tests live here
 crates/sailgym-task/      pure practice-task evaluation; depends on physics, never the reverse
+crates/sailgym-course/    routes, marks, guidance, ordered passage; depends on physics, never the reverse
 crates/sailgym-wasm/      thin wasm_bindgen wrapper
 crates/sailgym-bench/     native headless benchmark / golden-trajectory generator
 web/                      Vite + React + TypeScript app and Playwright specs

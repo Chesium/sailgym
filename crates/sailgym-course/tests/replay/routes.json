@@ -1,0 +1,426 @@
+{
+  "note": [
+    "v2 section 04, task 4.4. Routes laid out by hand over the committed golden",
+    "trajectories in crates/sailgym-physics/tests/golden/*.json, and the passage",
+    "sequences each one produces under the F15.3 rule. Generated once and then",
+    "committed; crates/sailgym-course/tests/replay.rs reads it and asserts it.",
+    "'sample' indexes the golden's samples array, 5 Hz, so t = sample / 5 s.",
+    "'clearance_m' is the signed lateral offset of the boat from the mark at the",
+    "crossing, along the leg's left normal: positive means the boat passed to",
+    "port of the leg direction, so the mark was left to starboard, and the",
+    "magnitude is how far clear of the mark it went. For a gate there is no side,",
+    "so 'along_gate' gives the crossing's fractional position between the posts",
+    "instead. Both are documentation of the hand-check, not assertions."
+  ],
+  "scenarios": {
+    "beam_reach_capsize": {
+      "route": {
+        "marks": [
+          {
+            "position": {
+              "x": -1.085,
+              "y": -5.694
+            },
+            "radius": 2.0,
+            "rounding": "starboard"
+          },
+          {
+            "position": {
+              "x": 6.328,
+              "y": -9.625
+            },
+            "radius": 2.0,
+            "rounding": {
+              "gate": [
+                {
+                  "x": 3.516,
+                  "y": -14.926
+                },
+                {
+                  "x": 9.139,
+                  "y": -4.325
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": 18.788,
+              "y": -16.251
+            },
+            "radius": 2.0,
+            "rounding": "port"
+          },
+          {
+            "position": {
+              "x": 3.745,
+              "y": 19.646
+            },
+            "radius": 2.0,
+            "rounding": "either"
+          }
+        ],
+        "laps": 1
+      },
+      "final_leg": 3,
+      "events": [
+        {
+          "leg": 0,
+          "mark": 0,
+          "sample": 75,
+          "clearance_m": 5.376
+        },
+        {
+          "leg": 1,
+          "mark": 1,
+          "sample": 95,
+          "along_gate": 0.5
+        },
+        {
+          "leg": 2,
+          "mark": 2,
+          "sample": 150,
+          "clearance_m": -7.528
+        }
+      ]
+    },
+    "close_hauled": {
+      "route": {
+        "marks": [
+          {
+            "position": {
+              "x": -2.998,
+              "y": 0.64
+            },
+            "radius": 1.0,
+            "rounding": "port"
+          },
+          {
+            "position": {
+              "x": -2.935,
+              "y": 4.014
+            },
+            "radius": 1.0,
+            "rounding": {
+              "gate": [
+                {
+                  "x": 0.065,
+                  "y": 3.959
+                },
+                {
+                  "x": -5.934,
+                  "y": 4.07
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": -1.076,
+              "y": 6.896
+            },
+            "radius": 1.0,
+            "rounding": "starboard"
+          },
+          {
+            "position": {
+              "x": 5.868,
+              "y": -1.252
+            },
+            "radius": 1.0,
+            "rounding": "either"
+          }
+        ],
+        "laps": 1
+      },
+      "final_leg": 3,
+      "events": [
+        {
+          "leg": 0,
+          "mark": 0,
+          "sample": 60,
+          "clearance_m": -2.988
+        },
+        {
+          "leg": 1,
+          "mark": 1,
+          "sample": 76,
+          "along_gate": 0.5
+        },
+        {
+          "leg": 2,
+          "mark": 2,
+          "sample": 150,
+          "clearance_m": 2.551
+        }
+      ]
+    },
+    "free_sail": {
+      "route": {
+        "marks": [
+          {
+            "position": {
+              "x": 8.598,
+              "y": -0.386
+            },
+            "radius": 2.0,
+            "rounding": "port"
+          },
+          {
+            "position": {
+              "x": 2.644,
+              "y": -9.61
+            },
+            "radius": 2.0,
+            "rounding": "starboard"
+          },
+          {
+            "position": {
+              "x": 12.793,
+              "y": -20.836
+            },
+            "radius": 2.0,
+            "rounding": {
+              "gate": [
+                {
+                  "x": 8.342,
+                  "y": -24.86
+                },
+                {
+                  "x": 17.244,
+                  "y": -16.812
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": -19.98,
+              "y": 0.898
+            },
+            "radius": 2.0,
+            "rounding": "either"
+          }
+        ],
+        "laps": 1
+      },
+      "final_leg": 3,
+      "events": [
+        {
+          "leg": 0,
+          "mark": 0,
+          "sample": 70,
+          "clearance_m": -5.939
+        },
+        {
+          "leg": 1,
+          "mark": 1,
+          "sample": 117,
+          "clearance_m": 8.481
+        },
+        {
+          "leg": 2,
+          "mark": 2,
+          "sample": 136,
+          "along_gate": 0.5
+        }
+      ]
+    },
+    "gybe": {
+      "route": {
+        "marks": [
+          {
+            "position": {
+              "x": 6.196,
+              "y": -7.859
+            },
+            "radius": 1.5,
+            "rounding": "port"
+          },
+          {
+            "position": {
+              "x": -5.599,
+              "y": -12.124
+            },
+            "radius": 1.5,
+            "rounding": "starboard"
+          },
+          {
+            "position": {
+              "x": -11.436,
+              "y": -17.105
+            },
+            "radius": 1.5,
+            "rounding": {
+              "gate": [
+                {
+                  "x": -14.682,
+                  "y": -13.301
+                },
+                {
+                  "x": -8.191,
+                  "y": -20.908
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": -7.43,
+              "y": 9.423
+            },
+            "radius": 1.5,
+            "rounding": "either"
+          }
+        ],
+        "laps": 1
+      },
+      "final_leg": 3,
+      "events": [
+        {
+          "leg": 0,
+          "mark": 0,
+          "sample": 28,
+          "clearance_m": -5.922
+        },
+        {
+          "leg": 1,
+          "mark": 1,
+          "sample": 73,
+          "clearance_m": 3.899
+        },
+        {
+          "leg": 2,
+          "mark": 2,
+          "sample": 111,
+          "along_gate": 0.5
+        }
+      ]
+    },
+    "sheet_release_recovery": {
+      "route": {
+        "marks": [
+          {
+            "position": {
+              "x": 5.911,
+              "y": 1.679
+            },
+            "radius": 2.0,
+            "rounding": "port"
+          },
+          {
+            "position": {
+              "x": 15.854,
+              "y": -1.421
+            },
+            "radius": 2.0,
+            "rounding": "port"
+          },
+          {
+            "position": {
+              "x": 26.566,
+              "y": -16.219
+            },
+            "radius": 2.0,
+            "rounding": "starboard"
+          },
+          {
+            "position": {
+              "x": -19.239,
+              "y": -5.465
+            },
+            "radius": 2.0,
+            "rounding": "either"
+          }
+        ],
+        "laps": 1
+      },
+      "final_leg": 3,
+      "events": [
+        {
+          "leg": 0,
+          "mark": 0,
+          "sample": 73,
+          "clearance_m": -5.703
+        },
+        {
+          "leg": 1,
+          "mark": 1,
+          "sample": 105,
+          "clearance_m": -4.994
+        },
+        {
+          "leg": 2,
+          "mark": 2,
+          "sample": 142,
+          "clearance_m": 6.731
+        }
+      ]
+    },
+    "tack": {
+      "route": {
+        "marks": [
+          {
+            "position": {
+              "x": 4.772,
+              "y": 1.168
+            },
+            "radius": 1.0,
+            "rounding": "starboard"
+          },
+          {
+            "position": {
+              "x": 5.557,
+              "y": 5.471
+            },
+            "radius": 1.0,
+            "rounding": {
+              "gate": [
+                {
+                  "x": 8.509,
+                  "y": 4.933
+                },
+                {
+                  "x": 2.606,
+                  "y": 6.01
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": 4.547,
+              "y": 8.173
+            },
+            "radius": 1.0,
+            "rounding": "either"
+          },
+          {
+            "position": {
+              "x": -5.828,
+              "y": -1.427
+            },
+            "radius": 1.0,
+            "rounding": "either"
+          }
+        ],
+        "laps": 1
+      },
+      "final_leg": 2,
+      "events": [
+        {
+          "leg": 0,
+          "mark": 0,
+          "sample": 23,
+          "clearance_m": 2.855
+        },
+        {
+          "leg": 1,
+          "mark": 1,
+          "sample": 41,
+          "along_gate": 0.5
+        }
+      ]
+    }
+  }
+}

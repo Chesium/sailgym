@@ -10,9 +10,9 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
 | Delta | Subject | Status |
 |---|---|---|
-| **F12′** | The gate grows to eleven steps | **implemented**: step 3 by section 11, step 4 by section 02, steps 10 and 11 by section 03 on 2026-09-21 |
+| **F12′** | The gate grows to eleven steps | **implemented**: step 3 by sections 11 and 04, step 4 by section 02, steps 10 and 11 by section 03 |
 | **F14** | Agent interface — sensors, actions, cadence, helm | blocked on V-A |
-| **F15** | Task and course — routes, marks, guidance, passage | blocked on V-A |
+| **F15** | Task and course — routes, marks, guidance, passage | **implemented** by section 04; see F15.5. Obstacles (F15.4's `Obstacle`, S6) remain excluded |
 | **F16** | Conformance, digests and the tolerance contract | **implemented** by section 02; see F16.9 |
 | **F17** | The Python boundary | F17.1 **implemented** by section 03; F17.2–F17.5 remain proposed, section 07 |
 | **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08, F18.2 by 09, F18.3 by 10, F18.4 by 11 |
@@ -22,7 +22,11 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 ## F12′. The gate
 
 **The chain is eleven steps, and every part of it is implemented.** Section
-11 added `-p sailgym-task` to step 3; section 02 added `--test conformance`
+11 added `-p sailgym-task` to step 3 and section 04 added `-p sailgym-course`
+to it on **2026-09-22 by human approval** — its dispatch as the section PRD,
+whose task 4.7 instructs the five-site edit explicitly — without changing the
+step count, so `[ValidateRange(1, 11)]` did not move again; section 02 added
+`--test conformance`
 to step 4 on **2026-09-21 by human approval**, the same approval with a date
 that section 01's D1 received, recorded in
 `docs/v2/prds/02-conformance-bundle.md` D1 and in
@@ -38,7 +42,7 @@ numbers and their meaning.
 ```
  1. cargo fmt --check
  2. cargo clippy --all-targets -- -D warnings
- 3. cargo test -p sailgym-physics -p sailgym-task                            ← done, section 11
+ 3. cargo test -p sailgym-physics -p sailgym-task -p sailgym-course          ← done, sections 11 and 04
  4. cargo test -p sailgym-physics --test invariants --test no_shortcuts \
                                   --test convergence --test symmetry \
                                   --test provenance --test conformance     ← done, section 02
@@ -63,7 +67,10 @@ Three properties of this shape are deliberate:
   toolchain* (F8.1), and `sailgym-task` has exactly that property: it is pure,
   it depends on `sailgym-physics` and nothing depends on it except the
   wrapper. A separate step would have made the chain ten steps for a crate
-  that answers the same question step 3 already asks.
+  that answers the same question step 3 already asks. `sailgym-course` joined
+  it in section 04 for the same reason and by the same edit, and **sections 05
+  and 06 extend this same list rather than each adding a step** — which is why
+  the step count has not moved since section 03.
 - **Step 4 grows rather than a step 12 appearing.** `--test conformance` proves
   a property of the physics crate, which is what step 4 is for. A separate step
   would make a red step 4 no less ambiguous and would cost another F12 change.
@@ -90,11 +97,11 @@ parsed and their step-name lists diffed, agreeing at all eleven positions
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
 
-No gate change remains proposed. Two entries must be retained in every later
-revision of the chain: `-p sailgym-task` in step 3 and `--test conformance` in
-step 4. A section that rewrote the chain and dropped either would take the
-whole practice evaluator, or the whole bundle-freshness check, out of the gate
-silently.
+No gate change remains proposed. Three entries must be retained in every
+later revision of the chain: `-p sailgym-task` and `-p sailgym-course` in
+step 3, and `--test conformance` in step 4. A section that rewrote the chain
+and dropped one would take the whole practice evaluator, the whole course
+layer, or the whole bundle-freshness check, out of the gate silently.
 
 **One site did not move with the rest**, and it is recorded rather than
 edited: the nine-step table in the repository's root `README.md` still spells
@@ -220,8 +227,13 @@ boundary is the distinction, which is why the boundary is worth having.
 
 ## F15. Task and course
 
-*Blocked on V-A. Source: `discussions/unified-agent-interface.md` §5.
-Implemented by section 04.*
+*Implemented by section 04 on 2026-09-22, after 03. The implementation
+decision brief §5 asks for — the selected S row (S3, with S6 excluded), the
+exact F deltas, the decision source and date, and the validation performed —
+is recorded in [`progress/04-handoff.md`](progress/04-handoff.md) §1, which
+brief §5 names as one of the two places it may live. **F15.5 below records
+where the implementation departed from F15.1–F15.4 and why.** Source:
+`discussions/unified-agent-interface.md` §5.*
 
 ### F15.1 One route type, two UX modes
 
@@ -257,6 +269,73 @@ crossing, not two marks.
 `Route`, `Mark`, `Obstacle` and ray casting live in `sailgym-course`. Obstacle
 ray casting iterates a `Vec` in index order, never a set (F9.3). Contact, if
 scored at all, is a **termination**, never a force.
+
+### F15.5 What section 04 implemented, and where it departed
+
+*Recorded here because F15.1–F15.4 were a proposal and this is what they
+became. The evidence is [`progress/04-handoff.md`](progress/04-handoff.md).
+**No Rust outside `crates/sailgym-course/` changed** except the workspace
+`Cargo.toml`, `Cargo.lock` and the two gate scripts:
+`git diff --name-only crates/sailgym-physics/` is empty — the section's
+acceptance criterion 3 — and `crates/sailgym-task`, `crates/sailgym-wasm` and
+`crates/sailgym-bench` are untouched. F3, F4, F5, F6, F7, F8 and F9 are
+unchanged; this crate holds no equation of motion, no coefficient and no
+frame conversion of its own.*
+
+1. **The route is a circuit, which F15 did not say.** `Route` is `marks` and
+   `laps` and carries no start point, so leg `i` runs from mark `(i − 1) mod n`
+   to mark `i mod n` and **leg 0 comes from the last mark**. With `laps > 1`
+   that is literally where the boat has just been; with `laps == 1` it is a
+   convention, and a course that wants a distinct start makes the start a
+   mark — which is also how a start line is spelled, as a `Rounding::Gate`.
+   The alternative, orienting mark 0's plane by the *outgoing* leg, would
+   have made lap 1 and lap 2 disagree about the same mark.
+
+2. **The single-mark route of F15.1 arrives at a disc, and that is the only
+   place in the crate where proximity decides anything.** A dragged lookahead
+   point has no incoming leg, so it has no perpendicular plane and no side;
+   `Leg::from` is `None`, `Guidance::line` is `None`, and passage is the
+   step's segment reaching the mark's disc. F15.3's prohibition is not
+   weakened by it, because `Route::validate` **refuses** `Port`, `Starboard`
+   or `Gate` on a route with no incoming leg — so the disc branch can never
+   be reached by a mark that has a side.
+
+3. **`radius` earns its place in the sided clause.** F15.3 forbids a radius
+   check as the passage test and says nothing about what `Mark::radius` is
+   for. Here it is the **clearance**: a sided crossing must be at a lateral
+   offset of at least `radius` on the required side, so grazing the buoy
+   tangentially counts and sailing over the top of it does not. A mark's size
+   therefore constrains the passage without ever deciding it.
+
+4. **Cross-track error is positive to port of the leg's direction of
+   travel** — `d̂ × (p − a)` with `Vec2::cross`. That is the side `+y_H`
+   points to (F2) for a boat on the leg's heading, which is why that sign was
+   chosen rather than its negation. It is computed in `guidance.rs` and
+   nowhere else (RV20), and the mirror of a route and a state negates it
+   **bit for bit**, with one stated carve-out: `−(+0.0)` is `−0.0`, whose bits
+   differ from the `+0.0` a mirrored zero produces, so at zero IEEE equality
+   is asserted instead.
+
+5. **A gate is oriented by its leg, with one documented fallback.** The
+   crossing direction comes from the sign of `d̂ · n̂_gate`, as a **three-way**
+   `partial_cmp`; a leg exactly parallel to the gate line gives no
+   orientation, and the boat's own displacement is then what says which way
+   "through" is. That is the `delta_r_self_centre` trap of F16.3 in a new
+   place, and it is handled rather than asserted away.
+
+6. **Tasks 4.5 and 4.6 are absent, not disabled.** `brief.md` S6 is deferred
+   and `README.md` V-F excludes them from default delivery, so there is no
+   `obstacle.rs`, no `raycast.rs` and no feature flag standing in for them
+   (RV23, section acceptance 6).
+
+7. **There is no WASM surface, no scenario field and no recording field.**
+   F8.2 is unchanged and no route can yet be set from the browser; the PRD
+   tracks that as a debt for the section that adds the picker UI.
+
+8. **The gate's step 3 grew again**, to
+   `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course`. The
+   step count did not change, so `[ValidateRange(1, 11)]` is untouched.
+   Sections 05 and 06 extend the same list rather than each adding a step.
 
 ---
 

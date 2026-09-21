@@ -303,6 +303,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sailgym-course"
+version = "0.1.0"
+dependencies = [
+ "sailgym-physics",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "sailgym-physics"
 version = "0.1.0"
 dependencies = [
