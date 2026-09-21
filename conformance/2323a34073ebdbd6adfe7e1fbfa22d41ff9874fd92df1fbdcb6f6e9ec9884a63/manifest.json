@@ -1,0 +1,3209 @@
+{
+  "bundle_schema_version": 1,
+  "generator": "cargo run --release -p sailgym-bench --bin gen_conformance",
+  "generator_version": 1,
+  "key": "2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63",
+  "toolchain": {
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "target": "x86_64-unknown-linux-gnu",
+    "profile": "release"
+  },
+  "identity": {
+    "bundle_schema_version": 1,
+    "generator_version": 1,
+    "tolerance_contract_version": 1,
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "55f3a73fd06aaa2001133f328676fd75b9c49943",
+        "state": "dirty"
+      }
+    },
+    "parameters": {
+      "hull": {
+        "loa": 4.23,
+        "lwl": 3.81,
+        "beam": 1.37,
+        "m_hull": 58.0,
+        "m_sailor": 80.0,
+        "sailor_pos_b": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.35
+        }
+      },
+      "inertia": {
+        "i_zz": 155.0,
+        "i_xx": 28.0,
+        "a_x": 7.0,
+        "a_y": 100.0,
+        "a_psi": 60.0,
+        "a_phi": 15.0
+      },
+      "resistance": {
+        "x_u": 5.0,
+        "x_uu": 9.0,
+        "y_v": 40.0,
+        "y_vv": 512.0,
+        "n_r": 250.0,
+        "n_rr": 180.0,
+        "k_p": 60.0,
+        "k_pp": 40.0
+      },
+      "sail": {
+        "area": 7.06,
+        "ar": 3.7,
+        "alpha_stall": 0.262,
+        "stall_blend": 0.105,
+        "cn_max": 1.8,
+        "cd0": 0.06,
+        "oswald": 0.85,
+        "alpha_camber": 0.0,
+        "camber_blend": 0.2,
+        "boom_length": 2.72,
+        "d_ce": 1.05,
+        "z_ce": 2.4,
+        "mast_pos_b": {
+          "x": 1.2,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "i_boom": 12.0,
+        "c_beta": 2.0,
+        "beta_max": 1.745,
+        "k_lim": 400.0,
+        "c_lim": 40.0
+      },
+      "board": {
+        "area": 0.2,
+        "ar": 4.9,
+        "alpha_stall": 0.209,
+        "stall_blend": 0.087,
+        "cn_max": 1.9,
+        "cd0": 0.012,
+        "oswald": 0.9,
+        "alpha_camber": 0.0,
+        "camber_blend": 0.2,
+        "pos_b": {
+          "x": 0.45,
+          "y": 0.0,
+          "z": -0.45
+        }
+      },
+      "rudder": {
+        "area": 0.105,
+        "ar": 3.9,
+        "alpha_stall": 0.209,
+        "stall_blend": 0.087,
+        "cn_max": 1.9,
+        "cd0": 0.012,
+        "oswald": 0.9,
+        "alpha_camber": 0.0,
+        "camber_blend": 0.2,
+        "pos_b": {
+          "x": -2.0,
+          "y": 0.0,
+          "z": -0.28
+        },
+        "delta_r_max": 0.698,
+        "delta_r_rate_max": 2.09,
+        "delta_r_return_rate": 1.57,
+        "delta_r_self_centre": true
+      },
+      "sheet": {
+        "k_sheet": 20000.0,
+        "c_sheet": 300.0,
+        "d_sheet": 2.45,
+        "z_boom": 0.7,
+        "block_pos_b": {
+          "x": -2.1,
+          "y": 0.0,
+          "z": 0.1
+        },
+        "l_sheet_min": 1.0404326023342405,
+        "l_sheet_max": 4.5,
+        "sheet_haul_rate": 1.5,
+        "sheet_ease_rate": 3.0,
+        "sheet_release_rate": 6.0
+      },
+      "stability": {
+        "gm": 0.55,
+        "phi_peak": 0.785,
+        "gz_max": 0.3,
+        "phi_vanish": 1.396,
+        "phi_capsize": 1.396,
+        "t_capsize": 1.0
+      },
+      "sim": {
+        "dt": 0.005,
+        "integrator": "Rk2Midpoint"
+      }
+    },
+    "integrator": "Rk2Midpoint",
+    "dt": 0.005,
+    "wind": [
+      {
+        "name": "synthetic_uniform",
+        "seed": 0,
+        "mode_count": 0,
+        "modes_key": "17ac5590d97432162c58f227f979988f0b5780cd2f3df1a0b649e8cf514d7ea2"
+      },
+      {
+        "name": "synthetic_spatial",
+        "seed": 4242,
+        "mode_count": 12,
+        "modes_key": "641e46158b6400511636bb9940ae439c36e9edc5cf71875e5c3345228b662abb"
+      },
+      {
+        "name": "synthetic_gust",
+        "seed": 7,
+        "mode_count": 12,
+        "modes_key": "018abefe6447f3030cc00a6d66ceee24a5bd6e0d4ce48375e5609ad014603f7d"
+      },
+      {
+        "name": "scenario_beam_reach_capsize",
+        "seed": 20250901,
+        "mode_count": 0,
+        "modes_key": "6b6f5d96f686e00aa1efce2db02e6e882eb05020b610d35cfd782c0d56273121"
+      },
+      {
+        "name": "scenario_close_hauled",
+        "seed": 20250902,
+        "mode_count": 0,
+        "modes_key": "eaff3946fc64eacc8f01c0fbe5142f5141c4ce26fc86efcb67a0690921a2540b"
+      },
+      {
+        "name": "scenario_free_sail",
+        "seed": 0,
+        "mode_count": 0,
+        "modes_key": "b6e4e9e6edcda9c912ab497669a86f526152206a5e787fa18faca8a733b4db87"
+      },
+      {
+        "name": "scenario_gybe",
+        "seed": 20250904,
+        "mode_count": 12,
+        "modes_key": "dd938ed79e442cc3c98ec37fb1a68e89551ffa3696ff476c0eb2681fcb781c44"
+      },
+      {
+        "name": "scenario_sheet_release_recovery",
+        "seed": 20250901,
+        "mode_count": 0,
+        "modes_key": "42238d911f5e12ff8ba9f42d5bb1791f6f938ac99f0e066ef0afce2871aab0f4"
+      },
+      {
+        "name": "scenario_tack",
+        "seed": 20250903,
+        "mode_count": 0,
+        "modes_key": "2f1edf2d40d4b990c3cbea31420a5c45ff732ce587146dc3b0dd38134d4cf27e"
+      }
+    ],
+    "fixtures": [
+      {
+        "name": "tier0_wrap_pi",
+        "tier": 0,
+        "samplers": [
+          "wrap_pi_edge",
+          "halton_background"
+        ],
+        "rows": 336,
+        "input_columns": [
+          "a"
+        ],
+        "output_columns": [
+          "wrap_pi"
+        ],
+        "data_key": "37685b3ae6af4219a30200791cf668954354130d49acb89d1759c0808328cc87"
+      },
+      {
+        "name": "tier0_wave",
+        "tier": 0,
+        "samplers": [
+          "halton_background"
+        ],
+        "rows": 1905,
+        "input_columns": [
+          "theta"
+        ],
+        "output_columns": [
+          "wave"
+        ],
+        "data_key": "c2345064c44d95dff8900d4e344cb937fab16eb45512966d6604c0ac084319ca"
+      },
+      {
+        "name": "tier0_wind_sample",
+        "tier": 0,
+        "samplers": [
+          "halton_background"
+        ],
+        "rows": 540,
+        "input_columns": [
+          "field",
+          "x",
+          "y",
+          "t"
+        ],
+        "output_columns": [
+          "wx",
+          "wy"
+        ],
+        "data_key": "47a1a9a3797d4e24ad7f1010021266e0fc184ec3ed9d8eae705809aee17fef83"
+      },
+      {
+        "name": "tier0_apparent",
+        "tier": 0,
+        "samplers": [
+          "halton_background",
+          "phi_unwrapped"
+        ],
+        "rows": 412,
+        "input_columns": [
+          "x",
+          "y",
+          "psi",
+          "phi",
+          "u",
+          "v",
+          "r",
+          "p",
+          "beta",
+          "beta_dot",
+          "delta_r",
+          "l_sheet",
+          "t",
+          "wind_x",
+          "wind_y",
+          "rb_x",
+          "rb_y",
+          "rb_z"
+        ],
+        "output_columns": [
+          "tw_x",
+          "tw_y",
+          "aw_x",
+          "aw_y",
+          "aw_z",
+          "cg_x",
+          "cg_y",
+          "cg_z"
+        ],
+        "data_key": "f70d3a95a4ddb6cc33843a006a84d92b613b9fb8eef4e1050b22193bf83f443b"
+      },
+      {
+        "name": "tier0_foil",
+        "tier": 0,
+        "samplers": [
+          "stall_blend_edge",
+          "zero_flow_eps",
+          "halton_background"
+        ],
+        "rows": 996,
+        "input_columns": [
+          "edge0",
+          "edge1",
+          "x",
+          "vx",
+          "vy",
+          "cx",
+          "cy",
+          "rho",
+          "alpha",
+          "area",
+          "ar",
+          "alpha_stall",
+          "stall_blend",
+          "cn_max",
+          "cd0",
+          "oswald",
+          "alpha_camber",
+          "camber_blend"
+        ],
+        "output_columns": [
+          "smoothstep",
+          "angle_of_attack",
+          "cl",
+          "cd",
+          "fx",
+          "fy"
+        ],
+        "data_key": "d3daba7837eabe92ca8d78fa733a5bbaf7d8d14dfab041735fe11399ad5a5fa1"
+      },
+      {
+        "name": "tier0_sail",
+        "tier": 0,
+        "samplers": [
+          "halton_background",
+          "phi_unwrapped"
+        ],
+        "rows": 417,
+        "input_columns": [
+          "x",
+          "y",
+          "psi",
+          "phi",
+          "u",
+          "v",
+          "r",
+          "p",
+          "beta",
+          "beta_dot",
+          "delta_r",
+          "l_sheet",
+          "t",
+          "wind_x",
+          "wind_y"
+        ],
+        "output_columns": [
+          "f_x",
+          "f_y",
+          "f_z",
+          "r_x",
+          "r_y",
+          "r_z",
+          "alpha",
+          "cl",
+          "cd",
+          "m_beta",
+          "aw_x",
+          "aw_y",
+          "aw_z",
+          "q",
+          "ce_x",
+          "ce_y",
+          "ce_z"
+        ],
+        "data_key": "4237d421315e4002add66a0f0fd2814af46b260f19388d824e9a73ac4e2b68dd"
+      },
+      {
+        "name": "tier0_sheet",
+        "tier": 0,
+        "samplers": [
+          "sheet_slack_boundary",
+          "halton_background"
+        ],
+        "rows": 850,
+        "input_columns": [
+          "x",
+          "y",
+          "psi",
+          "phi",
+          "u",
+          "v",
+          "r",
+          "p",
+          "beta",
+          "beta_dot",
+          "delta_r",
+          "l_sheet",
+          "t",
+          "l_sheet_dot"
+        ],
+        "output_columns": [
+          "attach_x",
+          "attach_y",
+          "attach_z",
+          "rope_path_length",
+          "drope_dbeta",
+          "tension",
+          "m_beta",
+          "boom_f_x",
+          "boom_f_y",
+          "boom_f_z",
+          "boom_r_x",
+          "boom_r_y",
+          "boom_r_z",
+          "hull_f_x",
+          "hull_f_y",
+          "hull_f_z",
+          "hull_r_x",
+          "hull_r_y",
+          "hull_r_z",
+          "rope_length",
+          "extension"
+        ],
+        "data_key": "e7c2826cffe2460ccbc2fab105899505bb89b325b4454d118f5433798ac2d963"
+      },
+      {
+        "name": "tier0_gz",
+        "tier": 0,
+        "samplers": [
+          "phi_unwrapped",
+          "halton_background"
+        ],
+        "rows": 514,
+        "input_columns": [
+          "gm",
+          "phi_peak",
+          "gz_max",
+          "phi_vanish",
+          "gz_limit",
+          "phi",
+          "total_mass"
+        ],
+        "output_columns": [
+          "fit_ok",
+          "c_1",
+          "c_2",
+          "c_3",
+          "c_4",
+          "gz",
+          "dgz",
+          "gz_integral",
+          "righting_moment"
+        ],
+        "data_key": "e40f896fa180b8a6d4b1ad51e22f06a01c21a4ce1a4c61d2ad977b919fdae39b"
+      },
+      {
+        "name": "tier0_hydro",
+        "tier": 0,
+        "samplers": [
+          "halton_background",
+          "phi_unwrapped",
+          "zero_flow_eps"
+        ],
+        "rows": 269,
+        "input_columns": [
+          "x",
+          "y",
+          "psi",
+          "phi",
+          "u",
+          "v",
+          "r",
+          "p",
+          "beta",
+          "beta_dot",
+          "delta_r",
+          "l_sheet",
+          "t",
+          "rb_x",
+          "rb_y",
+          "rb_z",
+          "chord_x",
+          "chord_y",
+          "area",
+          "ar",
+          "alpha_stall",
+          "stall_blend",
+          "cn_max",
+          "cd0",
+          "oswald",
+          "alpha_camber",
+          "camber_blend"
+        ],
+        "output_columns": [
+          "flow_x",
+          "flow_y",
+          "f_x",
+          "f_y",
+          "f_z",
+          "r_x",
+          "r_y",
+          "r_z",
+          "alpha",
+          "v_local_x",
+          "v_local_y",
+          "hull_f_x",
+          "hull_f_y",
+          "hull_n_yaw",
+          "hull_k_roll"
+        ],
+        "data_key": "afd5cd5e883716f20ce9a96a113b5c5ea4281178d603a11babf7650c3ead8ae5"
+      },
+      {
+        "name": "tier1_derivative",
+        "tier": 1,
+        "samplers": [
+          "limit_rate_boundary",
+          "rudder_self_centre_zero",
+          "sheet_release_precedence",
+          "sheet_slack_boundary",
+          "halton_background"
+        ],
+        "rows": 609,
+        "input_columns": [
+          "x",
+          "y",
+          "psi",
+          "phi",
+          "u",
+          "v",
+          "r",
+          "p",
+          "beta",
+          "beta_dot",
+          "delta_r",
+          "l_sheet",
+          "t",
+          "rudder_rate_cmd",
+          "sheet_rate_cmd",
+          "sheet_release",
+          "field",
+          "eval_t"
+        ],
+        "output_columns": [
+          "d_x",
+          "d_y",
+          "d_psi",
+          "d_phi",
+          "d_u",
+          "d_v",
+          "d_r",
+          "d_p",
+          "d_beta",
+          "d_beta_dot",
+          "d_delta_r",
+          "d_l_sheet",
+          "d_t"
+        ],
+        "data_key": "0e0ef9f1a96182c83395c6c29d3072fe829b2e0a91366af58f9df4deb11a6536"
+      },
+      {
+        "name": "tier2_trajectories",
+        "tier": 2,
+        "samplers": [
+          "golden_script_cues",
+          "sheet_transient"
+        ],
+        "rows": 3407,
+        "input_columns": [
+          "case",
+          "step"
+        ],
+        "output_columns": [
+          "x",
+          "y",
+          "psi",
+          "phi",
+          "u",
+          "v",
+          "r",
+          "p",
+          "beta",
+          "beta_dot",
+          "delta_r",
+          "l_sheet",
+          "t"
+        ],
+        "data_key": "31b3a9f645f427f0d104f095213e47206dfb2f6bd75441a44d36e116f4c8a43e"
+      }
+    ]
+  },
+  "declared_changes": "v2 section 02: the conformance bundle, its generator and its runner land together with the physics-source accessors they need (tasks 2.1-2.4)\n\nGenerated from an uncommitted working tree. git status --porcelain -- crates/sailgym-physics/src:\nM crates/sailgym-physics/src/environment/wind.rs\n M crates/sailgym-physics/src/lib.rs\n M crates/sailgym-physics/src/stability/hydrostatics.rs\n M crates/sailgym-physics/src/testkit.rs\n?? crates/sailgym-physics/src/digest.rs\n?? crates/sailgym-physics/src/testkit/",
+  "tolerances": {
+    "contract_version": 1,
+    "tiers": [
+      {
+        "tier": 0,
+        "rule": "Pure functions. A port is conformant on a column when, for every row, |port - recorded| <= max(absolute, relative * |recorded|). `relative` is 32 ULP = 32 * DBL_EPSILON = 7.105427357601002e-15, which F16.2 proposes for well-scaled tier-0 values and which is a proposal, not a universal pass threshold — an ULP distance and a relative error are distinct metrics, and neither means anything near cancellation. `absolute` is that same budget against the column's **own measured scale** over the domain below: relative * measured_scale. A column whose measured scale is **zero** is structurally zero over the whole domain — the sail force has no z component because F6.3 drops the spanwise flow, and a `Load` applied at the CG has no arm — and its bound is zero: a port must produce zero there too, and `the_bundle_is_not_vacuous` checks that such a column really is all zeros rather than merely unsampled. The custom wind kernel and the fixed-order mode reduction are measured separately and reported under `wind_kernel`, because a port that calls its host's cosine cannot meet the ULP bound and should not be asked to. Every number here was measured on the build that wrote this bundle.",
+        "domains": {
+          "tier0_apparent": "412 rows; x in [-4.98046875e2, 4.9609375e2]; y in [-4.986282578875171e2, 4.958847736625513e2]; psi in [-3.131539557098306e0, 3.1013802676238447e0]; phi in [-1.2365308684529426e1, 1.156106096521044e1]; u in [-1.9924868519909842e0, 7.924868519909843e0]; v in [-2.997269003186163e0, 2.967228038233956e0]; r in [-1.4993893751272136e0, 1.4896193771626294e0]; p in [-2.9833795013850417e0, 2.9833795013850413e0]; beta in [-3.129715176638603e0, 3.0346953610290823e0]; beta_dot in [-5.985731272294887e0, 5.743162901307965e0]; delta_r in [-6.965473465140478e-1, 6.674942767950052e-1]; l_sheet in [0e0, 4.426714788508177e0]; t in [0e0, 5.8786436644854255e1]; wind_x in [-1.1987020010816657e1, 1.1545700378583014e1]; wind_y in [-1.1989135355364418e1, 1.156541421457673e1]; rb_x in [-2.4982200071199716e0, 2.4163403346386616e0]; rb_y in [-1.4991381786842861e0, 1.4543234702671648e0]; rb_z in [-9.98925020155872e-1, 2.9398011287288366e0]",
+          "tier0_foil": "996 rows; edge0 in [0e0, 2.62e-1]; edge1 in [2.96e-1, 1e0]; x in [-4.834710743801653e-1, 3.241592653589793e0]; vx in [-1.0952463116704536e1, 1.1475036543361682e1]; vy in [-1.120379024179283e1, 1.0955658266741947e1]; cx in [-1e0, 9.989515550921088e-1]; cy in [-9.999056249496064e-1, 9.994862162006879e-1]; rho in [1.225e0, 1.025e3]; alpha in [-3.241592653589793e0, 3.241592653589793e0]; area in [1.05e-1, 7.06e0]; ar in [3.7e0, 4.9e0]; alpha_stall in [2.09e-1, 2.62e-1]; stall_blend in [8.7e-2, 1.05e-1]; cn_max in [1.8e0, 1.9e0]; cd0 in [1.2e-2, 6e-2]; oswald in [8.5e-1, 9e-1]; alpha_camber = 0e0; camber_blend = 2e-1",
+          "tier0_gz": "514 rows; gm in [5e-1, 1e0]; phi_peak in [6e-1, 9e-1]; gz_max = 3e-1; phi_vanish = 1.396e0; gz_limit = 6.85e-1; phi in [-1.2365308684529426e1, 1.156106096521044e1]; total_mass = 1.38e2",
+          "tier0_hydro": "269 rows; x in [-4.9609375e2, 4.921875e2]; y in [-4.958847736625514e2, 4.9176954732510285e2]; psi in [-3.131539557098306e0, 3.091327171132357e0]; phi in [-1.2365308684529426e1, 1.156106096521044e1]; u in [-1.9924868519909842e0, 7.917355371900827e0]; v in [-2.997269003186163e0, 2.9644970414201186e0]; r in [-1.4896193771626298e0, 1.4273356401384083e0]; p in [-2.9833795013850417e0, 2.8337950138504153e0]; beta in [-3.129715176638603e0, 2.951553022370751e0]; beta_dot in [-5.985731272294887e0, 5.657550535077288e0]; delta_r in [-6.965473465140478e-1, 6.602310093652446e-1]; l_sheet in [0e0, 4.416606483474822e0]; t in [0e0, 5.864366448542534e1]; rb_x in [-2e0, 4.5e-1]; rb_y = 0e0; rb_z in [-4.5e-1, -2.8e-1]; chord_x in [-1e0, -7.679930583122613e-1]; chord_y in [-6.12151305336333e-1, 6.404581659907067e-1]; area in [1.05e-1, 2e-1]; ar in [3.9e0, 4.9e0]; alpha_stall = 2.09e-1; stall_blend = 8.7e-2; cn_max = 1.9e0; cd0 = 1.2e-2; oswald = 9e-1; alpha_camber = 0e0; camber_blend = 2e-1",
+          "tier0_sail": "417 rows; x in [-4.98046875e2, 4.9609375e2]; y in [-4.986282578875171e2, 4.958847736625513e2]; psi in [-3.131539557098306e0, 3.1013802676238447e0]; phi in [-1.2365308684529426e1, 1.156106096521044e1]; u in [-1.9924868519909842e0, 7.924868519909843e0]; v in [-2.997269003186163e0, 2.9644970414201186e0]; r in [-1.4993893751272136e0, 1.4896193771626294e0]; p in [-2.9833795013850417e0, 2.933518005540166e0]; beta in [-3.129715176638603e0, 3.010940407126702e0]; beta_dot in [-5.985731272294887e0, 5.728894173602853e0]; delta_r in [-6.965473465140478e-1, 6.660416233090529e-1]; l_sheet in [0e0, 4.424187712249838e0]; t in [0e0, 5.875074360499702e1]; wind_x in [-1.39848566792861e1, 1.3469983775013517e1]; wind_y in [-1.3987324581258488e1, 1.349298325033952e1]",
+          "tier0_sheet": "850 rows; x in [-4.9609375e2, 4.921875e2]; y in [-4.958847736625514e2, 4.876543209876543e2]; psi in [-3.131539557098306e0, 3.091327171132357e0]; phi in [-6.246548658158131e0, 6.10000206207231e0]; u in [-1.9924868519909842e0, 7.917355371900827e0]; v in [-2.964497041420118e0, 2.928994082840237e0]; r in [-1.4896193771626298e0, 1.406574394463668e0]; p in [-2.9833795013850417e0, 2.8005540166204987e0]; beta in [-3.129715176638603e0, 2.9396755454195604e0]; beta_dot in [-5.985731272294887e0, 5.643281807372176e0]; delta_r in [-6.965473465140478e-1, 6.587783558792923e-1]; l_sheet in [1.0404326023342405e0, 4.414079407216483e0]; t in [0e0, 5.860797144556811e1]; l_sheet_dot in [-2.9951325040562464e0, 6.666666666666667e0]",
+          "tier0_wave": "1905 rows; theta in [-9.968e4, 9.904000000000003e4]",
+          "tier0_wind_sample": "540 rows; field in [0e0, 8e0]; x in [-1.984375e3, 1.96875e3]; y in [-1.9835390946502057e3, 1.950617283950617e3]; t in [9.600000000000001e-1, 5.952e2]",
+          "tier0_wrap_pi": "336 rows; a in [-3.064022464612267e3, 3.0640224646122665e3]"
+        },
+        "quantities": [
+          {
+            "fixture": "tier0_wrap_pi",
+            "quantity": "wrap_pi",
+            "unit": "rad",
+            "measured_scale": 3.141592653589793,
+            "absolute": 2.2322358387255243e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_wave",
+            "quantity": "wave",
+            "unit": "dimensionless",
+            "measured_scale": 1.0,
+            "absolute": 7.105427357601002e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_wind_sample",
+            "quantity": "wx",
+            "unit": "m/s",
+            "measured_scale": 6.308913896257288,
+            "absolute": 4.4827529395215666e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_wind_sample",
+            "quantity": "wy",
+            "unit": "m/s",
+            "measured_scale": 9.0,
+            "absolute": 6.394884621840902e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "tw_x",
+            "unit": "m/s",
+            "measured_scale": 15.437993032050354,
+            "absolute": 1.0969353803638423e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "tw_y",
+            "unit": "m/s",
+            "measured_scale": 15.279264463442143,
+            "absolute": 1.085657037225626e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "aw_x",
+            "unit": "m/s",
+            "measured_scale": 19.731008145401375,
+            "absolute": 1.4019724506938314e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "aw_y",
+            "unit": "m/s",
+            "measured_scale": 16.38732658999763,
+            "absolute": 1.164389586705115e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "aw_z",
+            "unit": "m/s",
+            "measured_scale": 15.566138421807848,
+            "absolute": 1.1060406579451757e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "cg_x",
+            "unit": "m/s",
+            "measured_scale": 19.966845139923233,
+            "absolute": 1.4187296770219314e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "cg_y",
+            "unit": "m/s",
+            "measured_scale": 14.81932322928922,
+            "absolute": 1.0529762469452364e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_apparent",
+            "quantity": "cg_z",
+            "unit": "m/s",
+            "measured_scale": 14.297414327498407,
+            "absolute": 1.0158923890556371e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_foil",
+            "quantity": "smoothstep",
+            "unit": "dimensionless",
+            "measured_scale": 1.0,
+            "absolute": 7.105427357601002e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_foil",
+            "quantity": "angle_of_attack",
+            "unit": "rad",
+            "measured_scale": 3.141592653589793,
+            "absolute": 2.2322358387255243e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_foil",
+            "quantity": "cl",
+            "unit": "dimensionless",
+            "measured_scale": 1.072011984182225,
+            "absolute": 7.617103280084515e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_foil",
+            "quantity": "cd",
+            "unit": "dimensionless",
+            "measured_scale": 1.912,
+            "absolute": 1.3585577107733115e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_foil",
+            "quantity": "fx",
+            "unit": "N",
+            "measured_scale": 21630.303194302316,
+            "absolute": 1.5369254807000002e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_foil",
+            "quantity": "fy",
+            "unit": "N",
+            "measured_scale": 24227.782300974875,
+            "absolute": 1.7214874717534823e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "f_x",
+            "unit": "N",
+            "measured_scale": 4198.567566966398,
+            "absolute": 2.983261685305932e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "f_y",
+            "unit": "N",
+            "measured_scale": 3116.6915938857337,
+            "absolute": 2.2145425716400764e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "f_z",
+            "unit": "N",
+            "measured_scale": 0.0,
+            "absolute": 0.0,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "r_x",
+            "unit": "m",
+            "measured_scale": 2.2499259367798774,
+            "absolute": 1.5986685303771803e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "r_y",
+            "unit": "m",
+            "measured_scale": 1.05,
+            "absolute": 7.460698725481052e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "r_z",
+            "unit": "m",
+            "measured_scale": 2.4,
+            "absolute": 1.7053025658242404e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "alpha",
+            "unit": "rad",
+            "measured_scale": 3.1285819374987853,
+            "absolute": 2.2229911689200217e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "cl",
+            "unit": "dimensionless",
+            "measured_scale": 1.069963666726449,
+            "absolute": 7.602549109197191e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "cd",
+            "unit": "dimensionless",
+            "measured_scale": 1.8599986180334986,
+            "absolute": 1.3216085065675277e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "m_beta",
+            "unit": "N*m",
+            "measured_scale": 4410.426755912196,
+            "absolute": 3.1337966930153956e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "aw_x",
+            "unit": "m/s",
+            "measured_scale": 24.377235545764947,
+            "absolute": 1.7321067634956184e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "aw_y",
+            "unit": "m/s",
+            "measured_scale": 20.01115698027892,
+            "absolute": 1.4218782226492208e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "aw_z",
+            "unit": "m/s",
+            "measured_scale": 17.61952678884316,
+            "absolute": 1.2519426767342992e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "q",
+            "unit": "Pa",
+            "measured_scale": 387.9368541319369,
+            "absolute": 2.7564571363707338e-12,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "ce_x",
+            "unit": "m",
+            "measured_scale": 2.2499259367798774,
+            "absolute": 1.5986685303771803e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "ce_y",
+            "unit": "m",
+            "measured_scale": 1.05,
+            "absolute": 7.460698725481052e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sail",
+            "quantity": "ce_z",
+            "unit": "m",
+            "measured_scale": 2.4,
+            "absolute": 1.7053025658242404e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "attach_x",
+            "unit": "m",
+            "measured_scale": 3.6498271858197144,
+            "absolute": 2.5933581936639274e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "attach_y",
+            "unit": "m",
+            "measured_scale": 2.44998919899469,
+            "absolute": 1.7408220280363836e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "attach_z",
+            "unit": "m",
+            "measured_scale": 0.7,
+            "absolute": 4.973799150320701e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "rope_path_length",
+            "unit": "m",
+            "measured_scale": 5.781120948951866,
+            "absolute": 4.1077334948282854e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "drope_dbeta",
+            "unit": "m/rad",
+            "measured_scale": 2.3703864829006203,
+            "absolute": 1.6842608963689687e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "tension",
+            "unit": "N",
+            "measured_scale": 93379.08723675333,
+            "absolute": 6.634983210798377e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "m_beta",
+            "unit": "N*m",
+            "measured_scale": 119617.71406160825,
+            "absolute": 8.499349779470453e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "boom_f_x",
+            "unit": "N",
+            "measured_scale": 92238.52164599813,
+            "absolute": 6.553941151281473e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "boom_f_y",
+            "unit": "N",
+            "measured_scale": 36247.79213988128,
+            "absolute": 2.5755605392334703e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "boom_f_z",
+            "unit": "N",
+            "measured_scale": 9779.408367668782,
+            "absolute": 6.948687575678592e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "boom_r_x",
+            "unit": "m",
+            "measured_scale": 3.6498271858197144,
+            "absolute": 2.5933581936639274e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "boom_r_y",
+            "unit": "m",
+            "measured_scale": 2.44998919899469,
+            "absolute": 1.7408220280363836e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "boom_r_z",
+            "unit": "m",
+            "measured_scale": 0.7,
+            "absolute": 4.973799150320701e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "hull_f_x",
+            "unit": "N",
+            "measured_scale": 92238.52164599813,
+            "absolute": 6.553941151281473e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "hull_f_y",
+            "unit": "N",
+            "measured_scale": 36247.79213988128,
+            "absolute": 2.5755605392334703e-10,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "hull_f_z",
+            "unit": "N",
+            "measured_scale": 9779.408367668782,
+            "absolute": 6.948687575678592e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "hull_r_x",
+            "unit": "m",
+            "measured_scale": 2.1,
+            "absolute": 1.4921397450962105e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "hull_r_y",
+            "unit": "m",
+            "measured_scale": 0.0,
+            "absolute": 0.0,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "hull_r_z",
+            "unit": "m",
+            "measured_scale": 0.1,
+            "absolute": 7.105427357601002e-16,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "rope_length",
+            "unit": "m",
+            "measured_scale": 5.781120948951866,
+            "absolute": 4.1077334948282854e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_sheet",
+            "quantity": "extension",
+            "unit": "m",
+            "measured_scale": 4.595190512466523,
+            "absolute": 3.26507923806682e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "fit_ok",
+            "unit": "dimensionless",
+            "measured_scale": 1.0,
+            "absolute": 7.105427357601002e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "c_1",
+            "unit": "m",
+            "measured_scale": 0.21940257436852673,
+            "absolute": 1.5589490542462182e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "c_2",
+            "unit": "m",
+            "measured_scale": 0.4877062050972796,
+            "absolute": 3.4653610121699755e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "c_3",
+            "unit": "m",
+            "measured_scale": 0.09994102003889038,
+            "absolute": 7.101236579308817e-16,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "c_4",
+            "unit": "m",
+            "measured_scale": 0.06016025869595958,
+            "absolute": 4.274643479786248e-16,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "gz",
+            "unit": "m",
+            "measured_scale": 0.675412529266538,
+            "absolute": 4.799094663116947e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "dgz",
+            "unit": "m/rad",
+            "measured_scale": 1.0322594809760741,
+            "absolute": 7.334644756270408e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "gz_integral",
+            "unit": "m*rad",
+            "measured_scale": 0.3754602958082656,
+            "absolute": 2.6678058575290153e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_gz",
+            "quantity": "righting_moment",
+            "unit": "N*m",
+            "measured_scale": 914.0477306581738,
+            "absolute": 6.4946997515717e-12,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "flow_x",
+            "unit": "m/s",
+            "measured_scale": 8.086423078756138,
+            "absolute": 5.745749176892998e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "flow_y",
+            "unit": "m/s",
+            "measured_scale": 4.464746199853291,
+            "absolute": 3.1723929793182685e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "f_x",
+            "unit": "N",
+            "measured_scale": 3623.073829992105,
+            "absolute": 2.5743487910234144e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "f_y",
+            "unit": "N",
+            "measured_scale": 4784.4610065686475,
+            "absolute": 3.3995640127448094e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "f_z",
+            "unit": "N",
+            "measured_scale": 0.0,
+            "absolute": 0.0,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "r_x",
+            "unit": "m",
+            "measured_scale": 2.0,
+            "absolute": 1.4210854715202004e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "r_y",
+            "unit": "m",
+            "measured_scale": 0.0,
+            "absolute": 0.0,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "r_z",
+            "unit": "m",
+            "measured_scale": 0.45,
+            "absolute": 3.197442310920451e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "alpha",
+            "unit": "rad",
+            "measured_scale": 3.141592653589793,
+            "absolute": 2.2322358387255243e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "v_local_x",
+            "unit": "m/s",
+            "measured_scale": 8.086423078756138,
+            "absolute": 5.745749176892998e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "v_local_y",
+            "unit": "m/s",
+            "measured_scale": 4.464746199853291,
+            "absolute": 3.1723929793182685e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "hull_f_x",
+            "unit": "N",
+            "measured_scale": 603.747421624206,
+            "absolute": 4.2898834466897e-12,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "hull_f_y",
+            "unit": "N",
+            "measured_scale": 4719.504956587261,
+            "absolute": 3.3534099632868656e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "hull_n_yaw",
+            "unit": "N*m",
+            "measured_scale": 771.8187042779662,
+            "absolute": 5.484101736484818e-12,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier0_hydro",
+            "quantity": "hull_k_roll",
+            "unit": "N*m",
+            "measured_scale": 535.0249000544809,
+            "absolute": 3.80158056184485e-12,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          }
+        ]
+      },
+      {
+        "tier": 1,
+        "rule": "Derivative components. Each bound is derived **directly, in that component's own units** — m/s, rad/s, m/s^2, rad/s^2 — and never borrowed from a state-error tolerance, which would be dimensionally invalid (F16.2). The form is the same as tier 0: max(absolute, relative * |recorded|) with relative = 32 ULP = 7.105427357601002e-15 and absolute = relative * the component's own measured scale. Measured on the build that wrote this bundle.",
+        "domains": {
+          "tier1_derivative": "609 rows; x in [-4.98046875e2, 4.9609375e2]; y in [-4.986282578875171e2, 4.958847736625513e2]; psi in [-3.131539557098306e0, 3.1114333641153316e0]; phi in [-6.277951500176521e0, 6.246548658158131e0]; u in [-1.9924868519909842e0, 7.9323816679188575e0]; v in [-2.997269003186163e0, 2.967228038233956e0]; r in [-1.4993893751272136e0, 1.4896193771626294e0]; p in [-2.999125236915002e0, 2.9833795013850413e0]; beta in [-3.129715176638603e0, 3.0703277918826526e0]; beta_dot in [-5.985731272294887e0, 5.771700356718192e0]; delta_r in [-6.980000000000001e-1, 6.980000000000001e-1]; l_sheet in [1.0404326023342403e0, 4.500000000000001e0]; t in [0e0, 5.8857822724568706e1]; rudder_rate_cmd in [-2e0, 2e0]; sheet_rate_cmd in [-2e0, 2e0]; sheet_release in [0e0, 1e0]; field in [0e0, 8e0]; eval_t in [0e0, 1.1799216803132788e2]"
+        },
+        "quantities": [
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_x",
+            "unit": "m/s",
+            "measured_scale": 8.043472721382923,
+            "absolute": 5.71523111246316e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_y",
+            "unit": "m/s",
+            "measured_scale": 7.852421473370161,
+            "absolute": 5.579481036029791e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_psi",
+            "unit": "rad/s",
+            "measured_scale": 1.4993893751272136,
+            "absolute": 1.0653802285725175e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_phi",
+            "unit": "rad/s",
+            "measured_scale": 2.999125236915002,
+            "absolute": 2.1310066507247442e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_u",
+            "unit": "m/s^2",
+            "measured_scale": 37.4483497358035,
+            "absolute": 2.660865287097884e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_v",
+            "unit": "m/s^2",
+            "measured_scale": 51.96976514160531,
+            "absolute": 3.6926739100526126e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_r",
+            "unit": "rad/s^2",
+            "measured_scale": 50.914158421647336,
+            "absolute": 3.6176685413840443e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_p",
+            "unit": "rad/s^2",
+            "measured_scale": 124.11932513900256,
+            "absolute": 8.819208484496425e-13,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_beta",
+            "unit": "rad/s",
+            "measured_scale": 5.985731272294887,
+            "absolute": 4.2531178737411945e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_beta_dot",
+            "unit": "rad/s^2",
+            "measured_scale": 10176.696146171489,
+            "absolute": 7.230977520699958e-11,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_delta_r",
+            "unit": "rad/s",
+            "measured_scale": 2.09,
+            "absolute": 1.4850343177386093e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_l_sheet",
+            "unit": "m/s",
+            "measured_scale": 6.0,
+            "absolute": 4.263256414560601e-14,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          },
+          {
+            "fixture": "tier1_derivative",
+            "quantity": "d_t",
+            "unit": "s/s",
+            "measured_scale": 1.0,
+            "absolute": 7.105427357601002e-15,
+            "relative": 7.105427357601002e-15,
+            "ulp": 32,
+            "measured": null
+          }
+        ]
+      },
+      {
+        "tier": 2,
+        "rule": "Trajectories, 1-5 s, sampled every physics step. A **fresh** dt/dt2/dt4 study on this build's model, per case and per state quantity: each case is run at dt, dt/2 and dt/4 and compared at the same simulated times, and `reference_error_dt` = max |x(dt) - x(dt/4)| is the reference's own discretization error. The bound is 0.1 of that, floored at 8 ULP/step * steps * DBL_EPSILON * max(scale, 1) — below which a difference says nothing about the port rather than something about the model. RK2's local state error is O(dt^3) and its global error O(dt^2) **in smooth regimes**, but this model's sheet tension is discontinuous at take-up (v2 F18.1b), so **no order is asserted and none may be inferred from the dt/2 column**: `reference_error_half_dt` is printed because a refinement that did not shrink would be worth knowing, not because a slope is being claimed. Long divergent capsize trajectories are not a pointwise oracle (F16.2) and none is included here. Nothing in this tier is taken from docs/v1/convergence.md, which studies a superseded model.",
+        "domains": {
+          "beam_reach_capsize": "scenario beam_reach_capsize, 2 s at dt = 0.005 (401 samples), cues at [0.0] s",
+          "close_hauled": "scenario close_hauled, 2 s at dt = 0.005 (401 samples), cues at [0.0, 0.8] s",
+          "free_sail": "scenario free_sail, 2 s at dt = 0.005 (401 samples), cues at [0.0] s",
+          "gybe": "scenario gybe, 2 s at dt = 0.005 (401 samples), cues at [0.0, 0.6] s",
+          "sheet_release_recovery": "scenario sheet_release_recovery, 2 s at dt = 0.005 (401 samples), cues at [0.0] s",
+          "sheet_transient": "scenario free_sail, 5 s at dt = 0.005 (1001 samples), cues at [0.0, 2.0, 3.0] s",
+          "tack": "scenario tack, 2 s at dt = 0.005 (401 samples), cues at [0.0, 0.6] s"
+        },
+        "quantities": [
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::x",
+            "unit": "m",
+            "measured_scale": 0.09736788495228212,
+            "absolute": 3.856151897502213e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000038561518975022135,
+              "reference_error_half_dt": 0.000012341311308644576,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::y",
+            "unit": "m",
+            "measured_scale": 0.6901556616486655,
+            "absolute": 2.128074385809864e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00002128074385809864,
+              "reference_error_half_dt": 4.058054774325193e-6,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::psi",
+            "unit": "rad",
+            "measured_scale": 0.09489289096277657,
+            "absolute": 2.859252855064165e-7,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 2.859252855064165e-6,
+              "reference_error_half_dt": 5.348777292052409e-7,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::phi",
+            "unit": "rad",
+            "measured_scale": 1.0757411211026384,
+            "absolute": 5.539451477973995e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000055394514779739945,
+              "reference_error_half_dt": 0.000010673385652484879,
+              "floor": 7.643600391579059e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::u",
+            "unit": "m/s",
+            "measured_scale": 0.128177815052924,
+            "absolute": 7.2892039480521035e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00007289203948052103,
+              "reference_error_half_dt": 0.000017406820063570194,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::v",
+            "unit": "m/s",
+            "measured_scale": 0.39584583315028576,
+            "absolute": 8.497403728832675e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00008497403728832675,
+              "reference_error_half_dt": 0.000016506559926410258,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::r",
+            "unit": "rad/s",
+            "measured_scale": 0.055181914863866845,
+            "absolute": 1.487363917941631e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00001487363917941631,
+              "reference_error_half_dt": 2.889183901184922e-6,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::p",
+            "unit": "rad/s",
+            "measured_scale": 1.6825557104978555,
+            "absolute": 0.00011456104407694402,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00114561044076944,
+              "reference_error_half_dt": 0.00022138086639955645,
+              "floor": 1.1955277376059253e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::beta",
+            "unit": "rad",
+            "measured_scale": 0.09459535922298729,
+            "absolute": 0.0001076167518630225,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.001076167518630225,
+              "reference_error_half_dt": 0.0002157055916531675,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 1.5378169629826801,
+            "absolute": 0.0029767735152632924,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.029767735152632924,
+              "reference_error_half_dt": 0.005895973712513741,
+              "floor": 1.0926846719760022e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.0,
+            "absolute": 7.105427357601002e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::l_sheet",
+            "unit": "m",
+            "measured_scale": 1.0404326023342405,
+            "absolute": 7.392718276365716e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 7.392718276365716e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "beam_reach_capsize::t",
+            "unit": "s",
+            "measured_scale": 1.9999999999999793,
+            "absolute": 1.4210854715201856e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6431300764452317e-14,
+              "reference_error_half_dt": 5.551115123125783e-15,
+              "floor": 1.4210854715201856e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::x",
+            "unit": "m",
+            "measured_scale": 0.03205047475290338,
+            "absolute": 1.2403222888812683e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000012403222888812682,
+              "reference_error_half_dt": 0.000013063852502466847,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::y",
+            "unit": "m",
+            "measured_scale": 0.27386676837009477,
+            "absolute": 5.066535051728716e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000050665350517287155,
+              "reference_error_half_dt": 0.00005868740823944396,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::psi",
+            "unit": "rad",
+            "measured_scale": 2.356194490192345,
+            "absolute": 8.567976812479117e-8,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 8.567976812479117e-7,
+              "reference_error_half_dt": 1.0842449791326203e-6,
+              "floor": 1.6741768790441432e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::phi",
+            "unit": "rad",
+            "measured_scale": 0.15583400577054246,
+            "absolute": 6.828566537500636e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00006828566537500635,
+              "reference_error_half_dt": 0.0000778754190334241,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::u",
+            "unit": "m/s",
+            "measured_scale": 0.21543617252198966,
+            "absolute": 5.628166360040904e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00005628166360040904,
+              "reference_error_half_dt": 0.00005538333410134988,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::v",
+            "unit": "m/s",
+            "measured_scale": 0.13692521815602393,
+            "absolute": 4.897187432324757e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000048971874323247566,
+              "reference_error_half_dt": 0.000052444330063392,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::r",
+            "unit": "rad/s",
+            "measured_scale": 0.007931405177775271,
+            "absolute": 3.5004155834496287e-7,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 3.5004155834496287e-6,
+              "reference_error_half_dt": 4.035344992822827e-6,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::p",
+            "unit": "rad/s",
+            "measured_scale": 0.3645631479156548,
+            "absolute": 0.00005963823214209241,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0005963823214209241,
+              "reference_error_half_dt": 0.0005845367366196369,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::beta",
+            "unit": "rad",
+            "measured_scale": 0.6187082283299918,
+            "absolute": 0.00024984320964426264,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0024984320964426265,
+              "reference_error_half_dt": 0.0010484655844401614,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 1.8057347519874716,
+            "absolute": 0.03716611529653875,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.3716611529653875,
+              "reference_error_half_dt": 0.12408019399703879,
+              "floor": 1.283051710734264e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.698,
+            "absolute": 7.105427357601002e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 8.770761894538737e-15,
+              "reference_error_half_dt": 8.770761894538737e-15,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::l_sheet",
+            "unit": "m",
+            "measured_scale": 2.0,
+            "absolute": 1.4210854715202004e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 1.4210854715202004e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "close_hauled::t",
+            "unit": "s",
+            "measured_scale": 1.9999999999999793,
+            "absolute": 1.4210854715201856e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6431300764452317e-14,
+              "reference_error_half_dt": 5.551115123125783e-15,
+              "floor": 1.4210854715201856e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::x",
+            "unit": "m",
+            "measured_scale": 0.7493580683331091,
+            "absolute": 0.0025435071583790325,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.025435071583790325,
+              "reference_error_half_dt": 0.024359883008426952,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::y",
+            "unit": "m",
+            "measured_scale": 0.2699229259641685,
+            "absolute": 0.000729113229237155,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.007291132292371549,
+              "reference_error_half_dt": 0.007004200574194486,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::psi",
+            "unit": "rad",
+            "measured_scale": 0.04850081139814915,
+            "absolute": 0.00045799728008892593,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.004579972800889259,
+              "reference_error_half_dt": 0.004398892610627196,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::phi",
+            "unit": "rad",
+            "measured_scale": 0.3277650218410032,
+            "absolute": 0.00018595677223166575,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0018595677223166573,
+              "reference_error_half_dt": 0.0018205329199213194,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::u",
+            "unit": "m/s",
+            "measured_scale": 0.7544595185926379,
+            "absolute": 0.002388249508356183,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.023882495083561828,
+              "reference_error_half_dt": 0.02288049495700356,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::v",
+            "unit": "m/s",
+            "measured_scale": 0.2114186042322262,
+            "absolute": 0.0004329373924831098,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.004329373924831098,
+              "reference_error_half_dt": 0.004166708109899775,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::r",
+            "unit": "rad/s",
+            "measured_scale": 0.07121099999786112,
+            "absolute": 0.0012908094983966072,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.01290809498396607,
+              "reference_error_half_dt": 0.01241264394857694,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::p",
+            "unit": "rad/s",
+            "measured_scale": 0.7811821126956846,
+            "absolute": 0.001036554597411732,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.010365545974117318,
+              "reference_error_half_dt": 0.010159484230255922,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::beta",
+            "unit": "rad",
+            "measured_scale": 1.3331611844173916,
+            "absolute": 0.00308895608404276,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0308895608404276,
+              "reference_error_half_dt": 0.028565266083908858,
+              "floor": 9.472679951851088e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 3.94659692532575,
+            "absolute": 0.11285694208753494,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.1285694208753494,
+              "reference_error_half_dt": 0.8749428903940143,
+              "floor": 2.804225776263358e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.0,
+            "absolute": 7.105427357601002e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::l_sheet",
+            "unit": "m",
+            "measured_scale": 4.5,
+            "absolute": 3.197442310920451e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.3344880755994382e-13,
+              "reference_error_half_dt": 2.9753977059954195e-14,
+              "floor": 3.197442310920451e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "free_sail::t",
+            "unit": "s",
+            "measured_scale": 1.9999999999999793,
+            "absolute": 1.4210854715201856e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6431300764452317e-14,
+              "reference_error_half_dt": 5.551115123125783e-15,
+              "floor": 1.4210854715201856e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::x",
+            "unit": "m",
+            "measured_scale": 0.5589003155770166,
+            "absolute": 1.2323101328759468e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000012323101328759467,
+              "reference_error_half_dt": 0.000026709668810132037,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::y",
+            "unit": "m",
+            "measured_scale": 4.128927223297866,
+            "absolute": 1.3212109346127932e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000013212109346127932,
+              "reference_error_half_dt": 0.000026472673360089516,
+              "floor": 2.93377924499642e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::psi",
+            "unit": "rad",
+            "measured_scale": 1.9869236998437803,
+            "absolute": 4.041979304592047e-7,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 4.041979304592047e-6,
+              "reference_error_half_dt": 0.000010782949809273745,
+              "floor": 1.4117942014335797e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::phi",
+            "unit": "rad",
+            "measured_scale": 0.07971349079557022,
+            "absolute": 1.025754433802567e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00001025754433802567,
+              "reference_error_half_dt": 0.00004966050532285212,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::u",
+            "unit": "m/s",
+            "measured_scale": 2.5,
+            "absolute": 3.0892657047143502e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0000308926570471435,
+              "reference_error_half_dt": 0.00004096806379205731,
+              "floor": 1.7763568394002505e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::v",
+            "unit": "m/s",
+            "measured_scale": 0.3896933209622154,
+            "absolute": 2.6103398430066264e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00002610339843006626,
+              "reference_error_half_dt": 0.0000649180651777926,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::r",
+            "unit": "rad/s",
+            "measured_scale": 0.5523328549456411,
+            "absolute": 5.1621495033904455e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00005162149503390445,
+              "reference_error_half_dt": 0.0000433211946367848,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::p",
+            "unit": "rad/s",
+            "measured_scale": 0.17815274773048353,
+            "absolute": 8.328891273672728e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00008328891273672728,
+              "reference_error_half_dt": 0.00029739668661045784,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::beta",
+            "unit": "rad",
+            "measured_scale": 1.500510720081934,
+            "absolute": 0.00010937891854847504,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0010937891854847503,
+              "reference_error_half_dt": 0.0030039297813371224,
+              "floor": 1.0661769920843754e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 1.0979849163790696,
+            "absolute": 0.014473935928073745,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.14473935928073745,
+              "reference_error_half_dt": 0.2028305713995382,
+              "floor": 7.80165206307309e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.698,
+            "absolute": 7.105427357601002e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.4432899320127035e-15,
+              "reference_error_half_dt": 2.6645352591003757e-15,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::l_sheet",
+            "unit": "m",
+            "measured_scale": 4.0,
+            "absolute": 2.8421709430404007e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 2.8421709430404007e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "gybe::t",
+            "unit": "s",
+            "measured_scale": 1.9999999999999793,
+            "absolute": 1.4210854715201856e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6431300764452317e-14,
+              "reference_error_half_dt": 5.551115123125783e-15,
+              "floor": 1.4210854715201856e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::x",
+            "unit": "m",
+            "measured_scale": 0.09736788495228212,
+            "absolute": 3.856151897502213e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000038561518975022135,
+              "reference_error_half_dt": 0.000012341311308644576,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::y",
+            "unit": "m",
+            "measured_scale": 0.6901556616486655,
+            "absolute": 2.128074385809864e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00002128074385809864,
+              "reference_error_half_dt": 4.058054774325193e-6,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::psi",
+            "unit": "rad",
+            "measured_scale": 0.09489289096277657,
+            "absolute": 2.859252855064165e-7,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 2.859252855064165e-6,
+              "reference_error_half_dt": 5.348777292052409e-7,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::phi",
+            "unit": "rad",
+            "measured_scale": 1.0757411211026384,
+            "absolute": 5.539451477973995e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000055394514779739945,
+              "reference_error_half_dt": 0.000010673385652484879,
+              "floor": 7.643600391579059e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::u",
+            "unit": "m/s",
+            "measured_scale": 0.128177815052924,
+            "absolute": 7.2892039480521035e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00007289203948052103,
+              "reference_error_half_dt": 0.000017406820063570194,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::v",
+            "unit": "m/s",
+            "measured_scale": 0.39584583315028576,
+            "absolute": 8.497403728832675e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00008497403728832675,
+              "reference_error_half_dt": 0.000016506559926410258,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::r",
+            "unit": "rad/s",
+            "measured_scale": 0.055181914863866845,
+            "absolute": 1.487363917941631e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00001487363917941631,
+              "reference_error_half_dt": 2.889183901184922e-6,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::p",
+            "unit": "rad/s",
+            "measured_scale": 1.6825557104978555,
+            "absolute": 0.00011456104407694402,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00114561044076944,
+              "reference_error_half_dt": 0.00022138086639955645,
+              "floor": 1.1955277376059253e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::beta",
+            "unit": "rad",
+            "measured_scale": 0.09459535922298729,
+            "absolute": 0.0001076167518630225,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.001076167518630225,
+              "reference_error_half_dt": 0.0002157055916531675,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 1.5378169629826801,
+            "absolute": 0.0029767735152632924,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.029767735152632924,
+              "reference_error_half_dt": 0.005895973712513741,
+              "floor": 1.0926846719760022e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.0,
+            "absolute": 7.105427357601002e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::l_sheet",
+            "unit": "m",
+            "measured_scale": 1.0404326023342405,
+            "absolute": 7.392718276365716e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 7.392718276365716e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_release_recovery::t",
+            "unit": "s",
+            "measured_scale": 1.9999999999999793,
+            "absolute": 1.4210854715201856e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6431300764452317e-14,
+              "reference_error_half_dt": 5.551115123125783e-15,
+              "floor": 1.4210854715201856e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::x",
+            "unit": "m",
+            "measured_scale": 1.9889592957479054,
+            "absolute": 0.00001799140441747227,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00017991404417472268,
+              "reference_error_half_dt": 0.000040678453652631674,
+              "floor": 1.4132405793161988e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::y",
+            "unit": "m",
+            "measured_scale": 1.9655606541682902,
+            "absolute": 0.000013115254706441704,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00013115254706441704,
+              "reference_error_half_dt": 0.000030181642897142424,
+              "floor": 1.3966148445151491e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::psi",
+            "unit": "rad",
+            "measured_scale": 1.1116179089514715,
+            "absolute": 7.667938268030028e-6,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00007667938268030028,
+              "reference_error_half_dt": 0.000017497600003135716,
+              "floor": 7.898520301463005e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::phi",
+            "unit": "rad",
+            "measured_scale": 0.028621638764507778,
+            "absolute": 0.00002946554724956377,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00029465547249563767,
+              "reference_error_half_dt": 0.00006632568379016587,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::u",
+            "unit": "m/s",
+            "measured_scale": 1.8,
+            "absolute": 0.00001572517093531012,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00015725170935310118,
+              "reference_error_half_dt": 0.00003546813935617621,
+              "floor": 1.2789769243681803e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::v",
+            "unit": "m/s",
+            "measured_scale": 0.20999413384226548,
+            "absolute": 0.000025298210742817976,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.00025298210742817975,
+              "reference_error_half_dt": 0.00005700276664068887,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::r",
+            "unit": "rad/s",
+            "measured_scale": 0.31054352925214357,
+            "absolute": 0.00002353279475061365,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0002353279475061365,
+              "reference_error_half_dt": 0.00005284189361448588,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::p",
+            "unit": "rad/s",
+            "measured_scale": 0.142337542221205,
+            "absolute": 0.0000989806143504482,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.000989806143504482,
+              "reference_error_half_dt": 0.00022314014014451766,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::beta",
+            "unit": "rad",
+            "measured_scale": 0.6108652381980153,
+            "absolute": 0.00005570112920884052,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0005570112920884052,
+              "reference_error_half_dt": 0.00012779628086628803,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 0.5293202875314743,
+            "absolute": 0.00027405625673073976,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0027405625673073974,
+              "reference_error_half_dt": 0.0006151452491430023,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.698,
+            "absolute": 7.105427357601002e-13,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 3.1086244689504383e-15,
+              "reference_error_half_dt": 2.1094237467877974e-15,
+              "floor": 7.105427357601002e-13,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::l_sheet",
+            "unit": "m",
+            "measured_scale": 2.0,
+            "absolute": 1.4210854715202004e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 1.4210854715202004e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "tack::t",
+            "unit": "s",
+            "measured_scale": 1.9999999999999793,
+            "absolute": 1.4210854715201856e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6431300764452317e-14,
+              "reference_error_half_dt": 5.551115123125783e-15,
+              "floor": 1.4210854715201856e-12,
+              "steps": 400.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::x",
+            "unit": "m",
+            "measured_scale": 3.6884700226797467,
+            "absolute": 0.0053784986443119465,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.053784986443119465,
+              "reference_error_half_dt": 0.05203529493388981,
+              "floor": 6.552038951709965e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::y",
+            "unit": "m",
+            "measured_scale": 0.5316513667113739,
+            "absolute": 0.0024733803032378713,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.02473380303237871,
+              "reference_error_half_dt": 0.023824302362149385,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::psi",
+            "unit": "rad",
+            "measured_scale": 0.04850081139814915,
+            "absolute": 0.0004720423907556875,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.004720423907556875,
+              "reference_error_half_dt": 0.004559108669464861,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::phi",
+            "unit": "rad",
+            "measured_scale": 0.4029104129913516,
+            "absolute": 0.00018595677223166575,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0018595677223166573,
+              "reference_error_half_dt": 0.0018205329199213194,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::u",
+            "unit": "m/s",
+            "measured_scale": 1.2352940689654133,
+            "absolute": 0.002388249508356183,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.023882495083561828,
+              "reference_error_half_dt": 0.02288049495700356,
+              "floor": 2.1943230680772766e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::v",
+            "unit": "m/s",
+            "measured_scale": 0.21930253704935151,
+            "absolute": 0.0004329373924831098,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.004329373924831098,
+              "reference_error_half_dt": 0.004166708109899775,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::r",
+            "unit": "rad/s",
+            "measured_scale": 0.1109866299038026,
+            "absolute": 0.0012908094983966072,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.01290809498396607,
+              "reference_error_half_dt": 0.01241264394857694,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::p",
+            "unit": "rad/s",
+            "measured_scale": 0.7811821126956846,
+            "absolute": 0.001036554597411732,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.010365545974117318,
+              "reference_error_half_dt": 0.010159484230255922,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::beta",
+            "unit": "rad",
+            "measured_scale": 1.5828213053184843,
+            "absolute": 0.00308895608404276,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0308895608404276,
+              "reference_error_half_dt": 0.028565266083908858,
+              "floor": 2.8116554512509216e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::beta_dot",
+            "unit": "rad/s",
+            "measured_scale": 3.94659692532575,
+            "absolute": 0.11285694208753494,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.1285694208753494,
+              "reference_error_half_dt": 0.8749428903940143,
+              "floor": 7.0105644406583954e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::delta_r",
+            "unit": "rad",
+            "measured_scale": 0.0,
+            "absolute": 1.7763568394002505e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 0.0,
+              "reference_error_half_dt": 0.0,
+              "floor": 1.7763568394002505e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::l_sheet",
+            "unit": "m",
+            "measured_scale": 4.5,
+            "absolute": 7.993605777301127e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 1.6364687382974807e-13,
+              "reference_error_half_dt": 7.37188088351104e-14,
+              "floor": 7.993605777301127e-12,
+              "steps": 1000.0
+            }
+          },
+          {
+            "fixture": "tier2_trajectories",
+            "quantity": "sheet_transient::t",
+            "unit": "s",
+            "measured_scale": 4.999999999999916,
+            "absolute": 8.881784197001102e-12,
+            "relative": 0.0,
+            "ulp": null,
+            "measured": {
+              "reference_error_dt": 3.383959779057477e-13,
+              "reference_error_half_dt": 3.494982081519993e-13,
+              "floor": 8.881784197001102e-12,
+              "steps": 1000.0
+            }
+          }
+        ]
+      }
+    ],
+    "wind_kernel": {
+      "domain": "theta in [-1e5, 1e5] rad (700 000 points); wind sampled over x, y in [-2000, 2000] m and t in [0, 600] s (4 000 points per non-uniform field)",
+      "kernel_vs_libm_absolute": 4.440892098500626e-16,
+      "kernel_vs_libm_at": -29.205313449272936,
+      "summation_vs_compensated_absolute": 8.881784197001252e-16,
+      "summation_vs_compensated_relative": 1.7763568394002506e-16,
+      "derivation": "F16.6, measured on this build. `environment::wind::wave` is a hand-rolled Cody-Waite reduction and Estrin-evaluated polynomial, not `libm`: over the domain above it differs from `f64::cos` by at most 4.440892098500626e-16 (at theta = -29.205313449272936). `sample_inner` sums the modes in a fixed two-slot pairwise order required by F9.4; against a Kahan-compensated sum of the same modes the field differs by at most 8.881784197001252e-16 m/s. A port that reproduces the kernel and the order verbatim is held to the tier-0 bound for `tier0_wave` and `tier0_wind_sample`; a port that calls its host's cosine, or reassociates the sum, is held to these measured numbers instead and reports the divergence as a number, not as a pass or a fail."
+    },
+    "notes": [
+      "Conformance is implementation agreement, not physical validation (F16.2). Two implementations that agree to the last bit may share a modelling mistake.",
+      "No conformance test may assert equality across stacks (F16.1). These are tolerances; the Rust runner's bit-for-bit comparison is a staleness check on this bundle, not a cross-stack claim.",
+      "An ULP distance and a relative error are distinct metrics. Both are given; neither is meaningful near cancellation, which is what the absolute bound is for (F16.2).",
+      "A tolerance change requires a new derivation, never merely a green port test (F16.2). Regenerate the bundle; do not edit a number here.",
+      "There is no tier 3 in this bundle. The brief section 35 invariants exist for Rust in crates/sailgym-physics/tests/invariants.rs; porting them is a later section's work, and agreement here is scoped to the regimes sampled below."
+    ]
+  },
+  "gz": {
+    "version": 1,
+    "form": "odd_sine_harmonics",
+    "coefficients": [
+      -0.14410169777809198,
+      0.39078441155691707,
+      0.015712976738662475,
+      -0.03365151388793238
+    ]
+  },
+  "trajectory_cases": [
+    {
+      "name": "beam_reach_capsize",
+      "scenario": "beam_reach_capsize",
+      "seconds": 2.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": -1.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        0.0,
+        0.0,
+        1.0404326023342405,
+        0.0
+      ],
+      "wind": "scenario_beam_reach_capsize"
+    },
+    {
+      "name": "close_hauled",
+      "scenario": "close_hauled",
+      "seconds": 2.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": 0.0,
+          "release": false
+        },
+        {
+          "t": 0.8,
+          "rudder_rate": -0.3,
+          "sheet_rate": 0.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        2.356194490192345,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        0.0,
+        0.0,
+        2.0,
+        0.0
+      ],
+      "wind": "scenario_close_hauled"
+    },
+    {
+      "name": "free_sail",
+      "scenario": "free_sail",
+      "seconds": 2.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": -1.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        0.0,
+        0.0,
+        4.5,
+        0.0
+      ],
+      "wind": "scenario_free_sail"
+    },
+    {
+      "name": "gybe",
+      "scenario": "gybe",
+      "seconds": 2.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": 0.0,
+          "release": false
+        },
+        {
+          "t": 0.6,
+          "rudder_rate": 0.8,
+          "sheet_rate": 0.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        -1.3962634015954636,
+        0.0,
+        2.5,
+        0.0,
+        0.0,
+        0.0,
+        -1.3089969389957472,
+        0.0,
+        0.0,
+        4.0,
+        0.0
+      ],
+      "wind": "scenario_gybe"
+    },
+    {
+      "name": "sheet_release_recovery",
+      "scenario": "sheet_release_recovery",
+      "seconds": 2.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": -1.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        0.0,
+        0.0,
+        1.0404326023342405,
+        0.0
+      ],
+      "wind": "scenario_sheet_release_recovery"
+    },
+    {
+      "name": "tack",
+      "scenario": "tack",
+      "seconds": 2.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": 0.0,
+          "release": false
+        },
+        {
+          "t": 0.6,
+          "rudder_rate": -1.0,
+          "sheet_rate": 0.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        0.7853981633974483,
+        0.0,
+        1.8,
+        0.0,
+        0.0,
+        0.0,
+        0.6108652381980153,
+        0.0,
+        0.0,
+        2.0,
+        0.0
+      ],
+      "wind": "scenario_tack"
+    },
+    {
+      "name": "sheet_transient",
+      "scenario": "free_sail",
+      "seconds": 5.0,
+      "cues": [
+        {
+          "t": 0.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": -1.0,
+          "release": false
+        },
+        {
+          "t": 2.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": 1.0,
+          "release": false
+        },
+        {
+          "t": 3.0,
+          "rudder_rate": 0.0,
+          "sheet_rate": -1.0,
+          "release": false
+        }
+      ],
+      "initial_state": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        0.0,
+        0.0,
+        4.5,
+        0.0
+      ],
+      "wind": "scenario_free_sail"
+    }
+  ],
+  "file_bytes": {
+    "parameters.json": 2152,
+    "tier0_apparent.npy": 85824,
+    "tier0_foil.npy": 191360,
+    "tier0_gz.npy": 65920,
+    "tier0_hydro.npy": 90512,
+    "tier0_sail.npy": 106880,
+    "tier0_sheet.npy": 238128,
+    "tier0_wave.npy": 30608,
+    "tier0_wind_sample.npy": 26048,
+    "tier0_wrap_pi.npy": 5504,
+    "tier1_derivative.npy": 151160,
+    "tier2_trajectories.npy": 408968,
+    "wind_modes.json": 12912
+  },
+  "data_bytes": 1415976
+}

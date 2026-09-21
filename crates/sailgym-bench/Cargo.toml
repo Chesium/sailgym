@@ -7,9 +7,22 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-sailgym-physics = { workspace = true }
+# `testkit` is on because `gen_conformance` (section 02 task 2.4) writes the
+# bundle through `sailgym_physics::testkit::npy`, the one `.npy` codec both it
+# and `tests/conformance.rs` use, and keys the bundle with
+# `sailgym_physics::digest`. The feature is off by default and
+# `wasm-pack build crates/sailgym-wasm` does not enable it, so the browser
+# build's dependency graph is unaffected.
+sailgym-physics = { workspace = true, features = ["testkit"] }
 # `gen_golden` writes the committed golden trajectories, which are JSON. The
 # control scripts it shares with `tests/regression.rs` derive serde traits, so
 # both consumers of that one file need the same two crates (section 09).
 serde = { workspace = true }
 serde_json = { workspace = true }
+# Section 02 task 2.7: `vec_bench` steps N independent `Simulation`s across
+# threads to answer, with a number, whether there is a throughput problem at
+# all. v2 F16.5 permits parallelism over **independent** boats — they share no
+# accumulator, so F9.6 is untouched — and permits it in `sailgym-env` and
+# `sailgym-bench` only. **`rayon` may not appear in `sailgym-physics`**, and
+# `tests/determinism.rs` greps for it there.
+rayon = "1"

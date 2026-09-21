@@ -10,10 +10,10 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
 | Delta | Subject | Status |
 |---|---|---|
-| **F12′** | The gate grows to eleven steps | step 3 **implemented** by section 11; the rest proposed, sections 02 and 03 |
+| **F12′** | The gate grows to eleven steps | step 3 **implemented** by section 11 and step 4 by section 02; the rest proposed, section 03 |
 | **F14** | Agent interface — sensors, actions, cadence, helm | blocked on V-A |
 | **F15** | Task and course — routes, marks, guidance, passage | blocked on V-A |
-| **F16** | Conformance, digests and the tolerance contract | proposed; section 02 |
+| **F16** | Conformance, digests and the tolerance contract | **implemented** by section 02; see F16.9 |
 | **F17** | The Python boundary | proposed; sections 03 and 07 |
 | **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08, F18.2 by 09, F18.3 by 10, F18.4 by 11 |
 
@@ -21,12 +21,15 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 
 ## F12′. The gate
 
-**Step 3 now includes `sailgym-task`, and that part is implemented.** Section
-11 made the change in `scripts/check.sh`, `scripts/check.ps1` and the table in
-`CLAUDE.md`; everything else below is still proposed. Only when 03 lands does
-the chain become **eleven** steps. The chain is **nine** steps today. Steps
-1–9 keep their numbers and their meaning; step 4's test list gains one entry
-when 02 lands.
+**Step 3 includes `sailgym-task` and step 4 includes `--test conformance`, and
+both parts are implemented.** Section 11 added `-p sailgym-task`; section 02
+added `--test conformance` on **2026-09-21 by human approval**, the same
+approval with a date that section 01's D1 received, recorded in
+`docs/v2/prds/02-conformance-bundle.md` D1 and in
+`docs/v2/progress/02-handoff.md`. Steps 10 and 11 are still proposed. Only
+when 03 lands does the chain become **eleven** steps. The chain is **nine**
+steps today, and `[ValidateRange(1, 9)]` in `check.ps1` is unchanged. Steps
+1–9 keep their numbers and their meaning.
 
 ```
  1. cargo fmt --check
@@ -34,7 +37,7 @@ when 02 lands.
  3. cargo test -p sailgym-physics -p sailgym-task                            ← done, section 11
  4. cargo test -p sailgym-physics --test invariants --test no_shortcuts \
                                   --test convergence --test symmetry \
-                                  --test provenance --test conformance     ← + conformance
+                                  --test provenance --test conformance     ← done, section 02
  5. cargo test -p sailgym-physics --test regression
  6. wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm
  7. pnpm --dir web typecheck
@@ -55,6 +58,9 @@ Three properties of this shape are deliberate:
 - **Step 4 grows rather than a step 12 appearing.** `--test conformance` proves
   a property of the physics crate, which is what step 4 is for. A separate step
   would make a red step 4 no less ambiguous and would cost another F12 change.
+  What it proves is **staleness**: the committed bundle is recomputed from
+  current source and compared bit for bit, so a physics change that does not
+  regenerate the bundle fails the way `cargo fmt --check` fails.
 - **Step 11 delegates to a script**, exactly as step 6 delegates to
   `build-wasm.sh`. Later sections add `maturin develop` in front of `pytest`
   inside `scripts/py-test.{sh,ps1}` **without amending F12 again**. This is the
@@ -64,6 +70,10 @@ Every site that spells the chain out moves together, or the gate lies about
 itself: `scripts/check.sh` (the `step_names` array **and** the `run_step` case),
 `scripts/check.ps1` (the `$Steps` array **and** `[ValidateRange(1, 9)]` →
 `(1, 11)`), the table in `CLAUDE.md`, the chain in `README.md`, and F12 itself.
+Section 02's step-4 edit moved four of those five — `check.sh` at both sites,
+`check.ps1`'s `$Steps`, `CLAUDE.md`'s table and this clause — and left the
+repository root `README.md` alone for the same ownership reason recorded
+below.
 
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
@@ -75,9 +85,11 @@ the whole practice evaluator out of the gate silently.
 
 **One site did not move with the rest**, and it is recorded rather than
 edited: the nine-step table in the repository's root `README.md` still spells
-step 3 as `cargo test -p sailgym-physics`. No section-11 task owns that file
-(F13.2), so `docs/v2/progress/11-handoff.md` reports the exact one-line change
-it needs. `docs/v1/00-foundations.md` F12 is deliberately **not** edited: a v1
+step 3 as `cargo test -p sailgym-physics` and step 4 without
+`--test conformance`. No section-11 task and no section-02 task owns that file
+(F13.2), so `docs/v2/progress/11-handoff.md` and
+`docs/v2/progress/02-handoff.md` report the exact two one-line changes it
+needs. `docs/v1/00-foundations.md` F12 is deliberately **not** edited: a v1
 clause is amended by a recorded v2 delta — this one — and never in place.
 
 ---
@@ -235,7 +247,12 @@ scored at all, is a **termination**, never a force.
 
 ## F16. Conformance, digests and the tolerance contract
 
-*Proposed for sections 02 and 03, after 08 and 10. S1/S2 and these deltas require a recorded implementation decision; neither section is unconditionally dispatchable.*
+*Implemented by section 02 on 2026-09-21, after 08 and 10; section 03 remains
+proposed. The implementation decision brief §5 asks for — the selected S row
+(S1), the exact F deltas, the decision source and date, and the validation
+performed — is recorded in [`progress/02-handoff.md`](progress/02-handoff.md)
+§1, which brief §5 names as one of the two places it may live. **F16.9 below
+records where the implementation departed from F16.1–F16.8 and why.***
 
 ### F16.1 Bit-identity across stacks is not available, and is not claimed
 
@@ -347,6 +364,86 @@ assumption.
 If f32 proves inadequate, the escalation is **not** to raise `c_sheet` or lower
 `k_sheet` — brief §43 forbids it and R1's mitigation order is explicit. Sub-step
 the rigging DOF in the port, or run that DOF in f64.
+
+---
+
+### F16.9 What section 02 implemented, and where it departed
+
+*Recorded here because F16.1–F16.8 were a proposal and this is what they
+became. The evidence is [`conformance.md`](conformance.md),
+[`throughput.md`](throughput.md) and
+[`progress/02-handoff.md`](progress/02-handoff.md). **F3, F4, F5, F6, F7, F8
+and F9 are unchanged** — no equation, no coefficient, no state field and no
+summation order moved; `git diff` over `forces/`, `dynamics.rs`,
+`integrator.rs` and `parameters.rs` is empty, and `--test regression` measures
+a worst `|Δ|` of exactly `0.0`.*
+
+1. **The bundle is `conformance/<key>/`**, `.npy` v1.0 rather than the
+   discussion note's `.npz`: `.npz` is a zip container and this workspace's
+   dependency graph is `serde`, `serde_json` and a test-only `sha2`. Every
+   `.npy` is 2-D `<f8`, leading columns inputs and trailing columns outputs,
+   with the column names in `manifest.json`. The debt is tracked in the
+   section PRD and is repaid only if a stack appears that cannot read `.npy`.
+
+2. **`sha256_hex` is `sha2`, an optional dependency behind the `testkit`
+   feature.** F16.4 requires "an established SHA-256 implementation, not
+   handwritten cryptography"; gating it on `testkit` keeps the default and
+   `wasm-pack` builds on the dependency graph they had.
+
+3. **The key covers the bundle's *contract*, and deliberately excludes
+   `model.source`.** F16.4 asks the key to cover the model/source identity;
+   section 02 keys on the declared `model_version` plus every fixture's
+   **data digest**, and records the full `ModelIdentity` — `state` included —
+   in the canonical record beside it. The reason is that a source tree id
+   changes on every commit that touches `crates/sailgym-physics/src`,
+   including the commit that adds the bundle, so a directory keyed on it
+   would be stale the instant it was committed; whereas a changed equation
+   changes the *numbers*, which changes the data digest, which changes the
+   key. That is strictly stronger than a source id for RV10's purpose, and
+   `digest::tests::an_equation_change_with_identical_parameters_invalidates_the_bundle`
+   measures it. `BundleIdentity::is_release_baseline` is false for a dirty or
+   unknown source, so such a bundle still cannot certify a release.
+
+4. **Tolerances are measured, per tier, and none is retyped.** F16.2's rule is
+   stated once per tier in the manifest; the numbers that instantiate it are
+   measured on the generating build. Tier 2 is a **fresh** dt/dt2/dt4 study on
+   section 08's model, per case and per state quantity, with the bound at 10 %
+   of the measured reference discretization error and a stated numerical
+   floor. **No order is asserted anywhere**, because F18.1b's tension law is
+   discontinuous at take-up. Nothing is read from `docs/v1/convergence.md`.
+
+5. **F16.6's gap is now a measurement, not a characterisation.** F16.6 says
+   the `wave` kernel agrees with `f64::cos` "to about `1e-14`". Measured over
+   `θ ∈ [−10⁵, 10⁵]` at 700 000 points the worst gap is **4.44e-16** — about
+   two ULP of the result, two decades tighter than the clause's figure. The
+   clause's number was a bound and remains a safe one; the manifest carries
+   the measurement, and section 03 consumes that rather than choosing its own.
+   The fixed two-slot pairwise reduction of `sample_inner` differs from a
+   Kahan-compensated sum of the same modes by at most **8.88e-16 m/s**.
+
+6. **F16.5's parallelism argument is now a fact.** `rayon` entered
+   `sailgym-bench` only; `crates/sailgym-bench/src/bin/vec_bench.rs` asserts
+   that the parallel run's final states are `to_bits()`-identical to the
+   serial run's at every N and every thread count, and
+   `determinism.rs::no_rayon_in_physics` is not needed because
+   `no_wall_clock`'s existing scan already covers the crate — the dependency
+   simply is not there, and `sailgym-physics/Cargo.toml` is the record.
+
+7. **There is no tier-3 runner**, as the section PRD scoped. The brief §35
+   invariants exist for Rust in `tests/invariants.rs`; agreement claimed by
+   this bundle is scoped to the regimes its samplers visit.
+
+8. **One consequence for every later section, found and measured by the
+   gate.** The two section-11 browser tests that assert
+   `data-verdict="same_conditions"` are red for **any** uncommitted edit
+   under `crates/sailgym-physics/src`, because F18.1d makes a dirty identity
+   comparable with nothing, including itself. That is the contract working as
+   written, not a defect, but it means **a section that touches physics
+   source cannot see a green step 9 until its work is committed**. Measured:
+   the same source committed in a throwaway worktree runs step 9 at 349
+   passed, exit 0, against 343 passed / 6 failed uncommitted.
+   `docs/v2/progress/02-handoff.md` §7 records the method and the command
+   that follows the commit.
 
 ---
 

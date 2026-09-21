@@ -82,6 +82,53 @@ const EPS_PIVOT: f64 = 1e-12;
 /// sample above this is shape, not rounding.
 const EPS_PEAK: f64 = 1e-12;
 
+/// The form [`GzRepresentation`] declares, and the only one this build reads.
+///
+/// A string rather than an enum on purpose: a port that meets an unknown form
+/// must be able to say *which* form it did not recognise, and a stale bundle
+/// generated under a different representation has to fail loudly rather than
+/// be silently reinterpreted as this one.
+pub const GZ_FORM: &str = "odd_sine_harmonics";
+
+/// The version of the exported representation's **schema** — the field set of
+/// [`GzRepresentation`] and the meaning of [`GZ_FORM`].
+///
+/// Bumped by hand when a reader written against the previous version would
+/// misread the record. It is not the coefficient count: the count travels as
+/// data, and no consumer may assume it (v2 F18.1a).
+pub const GZ_REPRESENTATION_VERSION: u32 = 1;
+
+/// The solved righting-arm curve, exported as read-only versioned data
+/// (section 02 task 2.3, v2 F16.4).
+///
+/// Enough to evaluate `GZ`, its derivative and its integral under the
+/// identified model, and nothing more. Three properties are deliberate:
+///
+/// * **The coefficient count is data.** v1 had three harmonics and v2 F18.1a
+///   has four; a bundle, a port or a manifest that hard-codes either is wrong
+///   the next time the representation is corrected. `coefficients.len()` is
+///   the count, and [`GzCurve::from_representation`] refuses a length this
+///   build cannot evaluate rather than padding or truncating.
+/// * **`form` says what the numbers mean.** `odd_sine_harmonics` is
+///   `GZ(φ) = Σ_{n=1..N} c_n · sin(n φ)`, with the analytic derivative
+///   `Σ n·c_n·cos(n φ)` and the analytic integral
+///   `Σ c_n·(1 − cos(n φ))/n`. All three are one set of coefficients, never
+///   three approximations.
+/// * **No tunable travels.** `GM`, `φ_p`, `GZ_max` and `φ_v` are the *inputs*
+///   to the fit, and the fit's shape rules are this crate's business. What a
+///   second implementation needs is the solved curve; giving it the tunables
+///   instead would make it re-solve a 4×4 system and compare a different
+///   number.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GzRepresentation {
+    /// [`GZ_REPRESENTATION_VERSION`].
+    pub version: u32,
+    /// [`GZ_FORM`].
+    pub form: String,
+    /// `c_1 … c_N`, in ascending harmonic order. `N` is the length.
+    pub coefficients: Vec<f64>,
+}
+
 /// The righting-arm curve of F6.7 / v2 F18.1a, as solved coefficients.
 ///
 /// Serialisable so that section 02's conformance bundle can carry the resolved
@@ -412,6 +459,59 @@ impl GzCurve {
         self.c
     }
 
+    /// The curve as read-only versioned data (section 02 task 2.3).
+    ///
+    /// The coefficients are copied out, so the exported record cannot be a
+    /// window onto a live curve; nothing here re-derives anything.
+    pub fn representation(&self) -> GzRepresentation {
+        GzRepresentation {
+            version: GZ_REPRESENTATION_VERSION,
+            form: GZ_FORM.to_string(),
+            coefficients: self.c.to_vec(),
+        }
+    }
+
+    /// Rebuild a curve from [`GzCurve::representation`].
+    ///
+    /// **No shape validation, deliberately.** `fit` is the gate that decides
+    /// whether a *parameter set* describes a boat; this reproduces a curve
+    /// that was already admitted, exactly as it was written — including one
+    /// generated under a different (earlier or later) set of shape rules,
+    /// which is the whole point of a conformance fixture. What it does refuse
+    /// is a record it cannot evaluate faithfully: an unknown version, an
+    /// unknown form, the wrong number of coefficients, or a non-finite one.
+    pub fn from_representation(r: &GzRepresentation) -> Result<Self, ParamError> {
+        let reject = |reason: String| ParamError::OutOfRange {
+            field: "stability.gz_representation",
+            reason,
+        };
+        if r.version != GZ_REPRESENTATION_VERSION {
+            return Err(reject(format!(
+                "representation version {} was written by another schema; this build reads {}",
+                r.version, GZ_REPRESENTATION_VERSION
+            )));
+        }
+        if r.form != GZ_FORM {
+            return Err(reject(format!(
+                "unknown righting-arm form `{}`; this build implements `{GZ_FORM}`",
+                r.form
+            )));
+        }
+        if r.coefficients.len() != HARMONICS {
+            return Err(reject(format!(
+                "{} coefficients, but this build's `{GZ_FORM}` has {HARMONICS}. \
+                 The count is data and must not be padded or truncated to fit",
+                r.coefficients.len()
+            )));
+        }
+        if let Some(bad) = r.coefficients.iter().find(|v| !v.is_finite()) {
+            return Err(reject(format!("coefficient {bad} is not finite")));
+        }
+        let mut c = [0.0; HARMONICS];
+        c.copy_from_slice(&r.coefficients);
+        Ok(Self { c })
+    }
+
     /// `GZ(φ)`, metres. Odd in `φ`, bit for bit.
     ///
     /// The fold is left to right and its order is fixed (F9.4); an iterator
@@ -510,6 +610,114 @@ mod tests {
             g.gz(s.phi_vanish)
         );
         eprintln!("hydrostatics: coefficients {:?}", g.coefficients());
+    }
+
+    /// Section 02 task 2.3: a curve rebuilt from its exported record
+    /// reproduces `gz`, `dgz` and `gz_integral` **bit for bit** across the
+    /// whole supported domain, extrema, roots and inversion included.
+    ///
+    /// Bit-for-bit rather than to a tolerance, because the two curves are the
+    /// same coefficients evaluated by the same code on the same build: any
+    /// difference at all would mean the export lost a mantissa bit, and a
+    /// conformance fixture built on a lossy export would be comparing ports
+    /// against the wrong numbers.
+    #[test]
+    fn the_exported_representation_rebuilds_the_curve_exactly() {
+        let p = params();
+        let g = default_curve();
+        let r = g.representation();
+        assert_eq!(r.version, GZ_REPRESENTATION_VERSION);
+        assert_eq!(r.form, GZ_FORM);
+        assert_eq!(r.coefficients.len(), HARMONICS);
+        assert_eq!(r.coefficients, g.coefficients().to_vec());
+
+        // Through JSON, which is what the bundle ships: a struct copy would
+        // not notice a `Serialize` that rounded.
+        let text = serde_json::to_string(&r).expect("the record must serialise");
+        let read: GzRepresentation = serde_json::from_str(&text).expect("and parse back");
+        let back = GzCurve::from_representation(&read).expect("and rebuild");
+        assert_eq!(back, g);
+
+        let s = p.stability;
+        let mass = p.total_mass();
+        // The named places first: the origin, both peaks, both vanishing
+        // angles, inversion, and the quarter turns.
+        let mut points: Vec<f64> = vec![
+            0.0,
+            -0.0,
+            s.phi_peak,
+            -s.phi_peak,
+            s.phi_vanish,
+            -s.phi_vanish,
+            PI,
+            -PI,
+            PI / 2.0,
+            -PI / 2.0,
+        ];
+        // Then the whole supported domain, densely.
+        let n = 20_001;
+        for i in 0..n {
+            points.push(-PI + 2.0 * PI * (i as f64) / ((n - 1) as f64));
+        }
+        // And past it, where F18.1a extends the curve by its own periodicity
+        // (`state.phi` is unwrapped, F3).
+        for i in 0..400 {
+            points.push(-4.0 * PI + 8.0 * PI * (i as f64) / 399.0);
+        }
+        for phi in points {
+            assert_eq!(back.gz(phi).to_bits(), g.gz(phi).to_bits(), "gz at {phi}");
+            assert_eq!(
+                back.dgz(phi).to_bits(),
+                g.dgz(phi).to_bits(),
+                "dgz at {phi}"
+            );
+            assert_eq!(
+                back.gz_integral(phi).to_bits(),
+                g.gz_integral(phi).to_bits(),
+                "gz_integral at {phi}"
+            );
+            assert_eq!(
+                righting_moment(phi, &back, mass).to_bits(),
+                righting_moment(phi, &g, mass).to_bits(),
+                "righting_moment at {phi}"
+            );
+        }
+
+        // Non-vacuity: the sweep has to have seen the shape it claims to
+        // cover, or the bit comparisons above prove nothing.
+        assert!(g.gz(s.phi_peak) > 0.0);
+        assert!(g.gz(s.phi_vanish + 0.1) < 0.0);
+        assert!(g.dgz(PI) > 0.0, "inversion must be a stable equilibrium");
+    }
+
+    /// A record this build cannot evaluate faithfully is refused, by name.
+    /// Padding or truncating a coefficient list would produce a different
+    /// boat and call it the same one.
+    #[test]
+    fn an_unreadable_representation_is_refused() {
+        let good = default_curve().representation();
+        let bad = |edit: fn(&mut GzRepresentation)| {
+            let mut r = good.clone();
+            edit(&mut r);
+            r
+        };
+        let cases = [
+            bad(|r| r.version += 1),
+            bad(|r| r.form = "cubic_spline".to_string()),
+            bad(|r| r.coefficients.push(0.1)),
+            bad(|r| {
+                r.coefficients.pop();
+            }),
+            bad(|r| r.coefficients[0] = f64::NAN),
+            bad(|r| r.coefficients[1] = f64::INFINITY),
+        ];
+        for r in cases {
+            assert!(
+                GzCurve::from_representation(&r).is_err(),
+                "accepted an unreadable record: {r:?}"
+            );
+        }
+        assert!(GzCurve::from_representation(&good).is_ok());
     }
 
     #[test]

@@ -10,6 +10,13 @@
 pub mod aero;
 pub mod constants;
 pub mod diagnostics;
+/// Conformance-bundle identity and its compact key (v2 F16.4, section 02).
+///
+/// Compiled only under `cfg(test)` or the `testkit` feature, like
+/// [`testkit`] itself, so the `sha2` dependency it carries never reaches the
+/// wasm build.
+#[cfg(any(test, feature = "testkit"))]
+pub mod digest;
 pub mod dynamics;
 pub mod environment;
 pub mod foil;

@@ -12,6 +12,7 @@ React/TypeScript front end. Read this file first, then the normative docs below.
 | `docs/v1/NN-<name>.md` | The executable PRD for one section (milestone). |
 | `docs/v1/progress/NN-handoff.md` | Written on completing section NN; read by section NN+1. |
 | `docs/v2/README.md`, `docs/v2/00-foundations.md`, `docs/v2/prds/NN-*.md` | The v2 milestone: its index, its **normative deltas** to the table above, and its section PRDs. A v2 delta amends v1 only where it says so, in writing. |
+| `conformance/<key>/manifest.json` | The committed conformance bundle's own record: what a second implementation is held to, and to what tolerance (v2 F16). Generated, never edited. |
 
 `00-foundations.md` outranks the section PRDs. The brief outranks everything on
 scope. **No agent may redefine anything in `00-foundations.md`.** If you find a
@@ -38,7 +39,7 @@ Nine steps, in order, failing fast. What each one proves:
 | 1 | `cargo fmt --check` | Source is canonically formatted, so diffs are semantic. |
 | 2 | `cargo clippy --all-targets -- -D warnings` | No lint regressions, tests and benches included. |
 | 3 | `cargo test -p sailgym-physics -p sailgym-task` | The physics core and the practice evaluator are correct **and build on the host with no WASM toolchain**. |
-| 4 | `cargo test -p sailgym-physics --test invariants` | The physical invariants still hold (brief section 35). |
+| 4 | `cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance --test conformance` | The physical invariants still hold (brief section 35), no prohibited shortcut has crept in, the integrator converges, port/starboard symmetry holds, no coefficient has drifted from the F7 catalogue, and the committed conformance bundle still describes the compiled physics (v2 F16, section 02). |
 | 5 | `cargo test -p sailgym-physics --test regression` | Recorded scenarios still reproduce bit-for-bit (determinism). |
 | 6 | `wasm-pack build …` | The Rust core still compiles to WASM and the JS glue regenerates. |
 | 7 | `pnpm --dir web typecheck` | The TypeScript side still matches the WASM surface. |

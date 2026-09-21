@@ -12,11 +12,26 @@ publish.workspace = true
 # dev-dependency below is what turns it on for the integration-test targets
 # under `tests/`, which are separate crates and therefore do not see
 # `cfg(test)` of the library.
-testkit = []
+#
+# Section 02 added `src/digest.rs` behind the same flag, and with it the
+# optional `sha2` dependency below: the conformance key is a test-and-tooling
+# concern, so it must not enter the browser build.
+testkit = ["dep:sha2"]
 
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
+# SHA-256 for the section 02 conformance bundle's compact key (v2 F16.4,
+# task 2.1). **Optional, and enabled only by `testkit`**, so the default
+# build — and therefore `wasm-pack build crates/sailgym-wasm` — keeps the
+# dependency graph it has always had: serde and serde_json and nothing else.
+#
+# F16.4 requires "an established SHA-256 implementation, not handwritten
+# cryptography", and this crate implements no cryptographic primitive of its
+# own (F18.1d says the same about the source id). `sha2` is the RustCrypto
+# implementation of FIPS 180-4; `src/digest.rs` pins it against the FIPS and
+# NIST CAVP vectors so a version bump cannot silently rename every bundle.
+sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
 sailgym-physics = { path = ".", features = ["testkit"] }

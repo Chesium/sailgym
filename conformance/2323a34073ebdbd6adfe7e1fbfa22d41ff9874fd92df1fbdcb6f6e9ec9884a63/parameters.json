@@ -1,0 +1,120 @@
+{
+  "hull": {
+    "loa": 4.23,
+    "lwl": 3.81,
+    "beam": 1.37,
+    "m_hull": 58.0,
+    "m_sailor": 80.0,
+    "sailor_pos_b": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.35
+    }
+  },
+  "inertia": {
+    "i_zz": 155.0,
+    "i_xx": 28.0,
+    "a_x": 7.0,
+    "a_y": 100.0,
+    "a_psi": 60.0,
+    "a_phi": 15.0
+  },
+  "resistance": {
+    "x_u": 5.0,
+    "x_uu": 9.0,
+    "y_v": 40.0,
+    "y_vv": 512.0,
+    "n_r": 250.0,
+    "n_rr": 180.0,
+    "k_p": 60.0,
+    "k_pp": 40.0
+  },
+  "sail": {
+    "area": 7.06,
+    "ar": 3.7,
+    "alpha_stall": 0.262,
+    "stall_blend": 0.105,
+    "cn_max": 1.8,
+    "cd0": 0.06,
+    "oswald": 0.85,
+    "alpha_camber": 0.0,
+    "camber_blend": 0.2,
+    "boom_length": 2.72,
+    "d_ce": 1.05,
+    "z_ce": 2.4,
+    "mast_pos_b": {
+      "x": 1.2,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "i_boom": 12.0,
+    "c_beta": 2.0,
+    "beta_max": 1.745,
+    "k_lim": 400.0,
+    "c_lim": 40.0
+  },
+  "board": {
+    "area": 0.2,
+    "ar": 4.9,
+    "alpha_stall": 0.209,
+    "stall_blend": 0.087,
+    "cn_max": 1.9,
+    "cd0": 0.012,
+    "oswald": 0.9,
+    "alpha_camber": 0.0,
+    "camber_blend": 0.2,
+    "pos_b": {
+      "x": 0.45,
+      "y": 0.0,
+      "z": -0.45
+    }
+  },
+  "rudder": {
+    "area": 0.105,
+    "ar": 3.9,
+    "alpha_stall": 0.209,
+    "stall_blend": 0.087,
+    "cn_max": 1.9,
+    "cd0": 0.012,
+    "oswald": 0.9,
+    "alpha_camber": 0.0,
+    "camber_blend": 0.2,
+    "pos_b": {
+      "x": -2.0,
+      "y": 0.0,
+      "z": -0.28
+    },
+    "delta_r_max": 0.698,
+    "delta_r_rate_max": 2.09,
+    "delta_r_return_rate": 1.57,
+    "delta_r_self_centre": true
+  },
+  "sheet": {
+    "k_sheet": 20000.0,
+    "c_sheet": 300.0,
+    "d_sheet": 2.45,
+    "z_boom": 0.7,
+    "block_pos_b": {
+      "x": -2.1,
+      "y": 0.0,
+      "z": 0.1
+    },
+    "l_sheet_min": 1.0404326023342405,
+    "l_sheet_max": 4.5,
+    "sheet_haul_rate": 1.5,
+    "sheet_ease_rate": 3.0,
+    "sheet_release_rate": 6.0
+  },
+  "stability": {
+    "gm": 0.55,
+    "phi_peak": 0.785,
+    "gz_max": 0.3,
+    "phi_vanish": 1.396,
+    "phi_capsize": 1.396,
+    "t_capsize": 1.0
+  },
+  "sim": {
+    "dt": 0.005,
+    "integrator": "Rk2Midpoint"
+  }
+}

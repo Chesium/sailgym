@@ -15,6 +15,18 @@
 //! [`mirror_state`] is the backbone of the port/starboard symmetry invariant
 //! (brief §35). Its definition follows directly from F2 and is given in
 //! task 4.1 of `docs/v1/04-hydro.md`.
+//!
+//! ## `npy` (v2 section 02, task 2.4)
+//!
+//! [`npy`] is the bounded `.npy` codec the conformance bundle is written in.
+//! It lives here rather than in the generator because **two** consumers read
+//! the same bytes — `crates/sailgym-bench`'s `gen_conformance` writes them
+//! and `crates/sailgym-physics/tests/conformance.rs` reads them back — and a
+//! physics test may not depend on the bench crate, which depends on it. One
+//! codec, behind the same feature as everything else here, and none of it
+//! reaches `wasm-pack build`.
+
+pub mod npy;
 
 use crate::dynamics::{ForceModel, Generalized, Load};
 use crate::environment::wind::{ProceduralWind, WindConfig, WindMode};

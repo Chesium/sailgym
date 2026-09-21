@@ -124,8 +124,43 @@ const ROUND_MAGIC: f64 = 6_755_399_441_055_744.0;
 /// Both seams are continuous: at `|r| = π/2` the two branches give the same
 /// `x` and `cos(π/2) = 0`, and at `|r| = π` both give `−1`. No seam can appear
 /// in the field's gradient, which `tests::smoothness` would catch.
+///
+/// ## Exposed for the conformance bundle (v2 F16.6, section 02 task 2.2)
+///
+/// F16.6 is blunt about what this function is not: it is **not** `libm`, and
+/// it is not `f64::cos`. It is the Cody-Waite reduction and Estrin-evaluated
+/// polynomial above, it agrees with `f64::cos` only to about `1e-14`
+/// (`tests::wave_matches_cos` measures it), and `sample_inner` sums it in a
+/// fixed two-slot pairwise order that F9.4 makes part of the result.
+///
+/// A port therefore ships **two arms**: one reproducing this kernel and that
+/// summation order verbatim, held to the tier-0 tolerance; and one calling
+/// the host library's cosine, held to a **measured** bound. The divergence
+/// between the two is reported as a number, not as a pass or a fail. The
+/// generator writes the measured `wave` vs `f64::cos` gap into the bundle
+/// manifest so section 03 consumes a measurement rather than choosing a
+/// tolerance of its own.
+///
+/// Visible only under `cfg(test)` or the `testkit` feature: this is a private
+/// numerical kernel that the bundle needs to sample, not a public API.
+#[cfg(any(test, feature = "testkit"))]
+#[inline(always)]
+pub fn wave(theta: f64) -> f64 {
+    wave_kernel(theta)
+}
+
+#[cfg(not(any(test, feature = "testkit")))]
 #[inline(always)]
 fn wave(theta: f64) -> f64 {
+    wave_kernel(theta)
+}
+
+/// The kernel itself. `wave` above is the same function under whichever
+/// visibility the build asks for; splitting the two costs nothing (both are
+/// `inline(always)`) and keeps exactly one copy of the arithmetic, which is
+/// what F9 and the golden trajectories depend on.
+#[inline(always)]
+fn wave_kernel(theta: f64) -> f64 {
     // Round to the nearest integer without `round_ties_even`, which is a
     // *library call* on the baseline `x86-64` target this project builds for
     // (no SSE4.1, hence no `roundsd`) and cost more than the rest of the
@@ -270,12 +305,56 @@ impl WindConfig {
 /// `sample` to a multiply-add per component and makes the perpendicularity —
 /// and hence the zero divergence — a property of the stored data rather than
 /// of the sampling loop.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct WindMode3 {
     k: Vec2,
     amp: Vec2,
     omega: f64,
     phase: f64,
+}
+
+impl WindMode3 {
+    /// Rebuild a mode from data (v2 F16.7, section 02 task 2.2).
+    ///
+    /// The mode table is what the conformance bundle ships in place of an
+    /// RNG: `ProceduralWind::new` draws `κ_k`, `ϕ_k` and `ω_k` once at
+    /// construction, and `sample` is a pure, branch-free sum over the result.
+    /// **No stack other than Rust implements PCG32** — a port reads the
+    /// twelve numbers instead of reimplementing a stratified draw to
+    /// regenerate them.
+    ///
+    /// `amp` is already `a_k · n̂_k` with `n̂_k ⟂ κ_k`; see the struct's note.
+    /// Nothing is validated here, because this constructor exists to
+    /// reproduce a table exactly as it was written, including a degenerate
+    /// one.
+    pub fn new(k: Vec2, amp: Vec2, omega: f64, phase: f64) -> Self {
+        Self {
+            k,
+            amp,
+            omega,
+            phase,
+        }
+    }
+
+    /// `κ_k`, the wavenumber vector, rad/m.
+    pub fn k(&self) -> Vec2 {
+        self.k
+    }
+
+    /// `a_k · n̂_k`, the velocity amplitude vector, m/s.
+    pub fn amp(&self) -> Vec2 {
+        self.amp
+    }
+
+    /// `ω_k`, rad/s. Exactly zero for a frozen field.
+    pub fn omega(&self) -> f64 {
+        self.omega
+    }
+
+    /// `ϕ_k`, rad.
+    pub fn phase(&self) -> f64 {
+        self.phase
+    }
 }
 
 /// The F6.1 procedural wind field.
@@ -368,9 +447,38 @@ impl ProceduralWind {
         Self { base, modes, cfg }
     }
 
+    /// Rebuild a field from a configuration and an already-drawn mode table
+    /// (v2 F16.7, section 02 task 2.2).
+    ///
+    /// The base vector is re-derived from `cfg` through the one conversion
+    /// `wind_from_bearing` (F6.1) rather than travelling in the table, so a
+    /// bundle cannot ship a base that disagrees with its own configuration.
+    /// Everything else is the table, verbatim: this constructor draws nothing
+    /// and consumes no RNG, which is what makes a bundle-driven field
+    /// bit-identical to the field that produced the bundle.
+    ///
+    /// An empty table is a uniform field, exactly as
+    /// [`ProceduralWind::new`] produces for `WindMode::Uniform`.
+    pub fn from_modes(cfg: WindConfig, modes: Vec<WindMode3>) -> Self {
+        Self {
+            base: wind_from_bearing(cfg.speed, cfg.bearing_deg),
+            modes,
+            cfg,
+        }
+    }
+
     /// The configuration this field was built from.
     pub fn config(&self) -> &WindConfig {
         &self.cfg
+    }
+
+    /// The drawn Fourier modes, as data (v2 F16.7).
+    ///
+    /// Read-only, and the whole of the field's randomness: with `cfg` and
+    /// this slice, [`ProceduralWind::from_modes`] reproduces `sample` bit for
+    /// bit and no PCG32 is involved.
+    pub fn modes(&self) -> &[WindMode3] {
+        &self.modes
     }
 
     /// The number of Fourier modes actually in use. Zero for a uniform field.
@@ -714,6 +822,95 @@ mod tests {
         assert_eq!(wave(0.0), 1.0);
         assert_eq!(wave(TAU * 0.25), wave(-TAU * 0.25));
         assert!((wave(TAU * 0.5) + 1.0).abs() < 1e-15);
+    }
+
+    /// v2 F16.7, section 02 task 2.2: the modes are the field's whole
+    /// randomness, and a field rebuilt from them is the same field — bit for
+    /// bit, not to a tolerance.
+    ///
+    /// The round trip goes through **JSON**, not through a struct copy, because
+    /// JSON is what the bundle ships and a `Serialize` that lost a bit of a
+    /// mantissa would still pass a struct copy. `WindMode3` derives only
+    /// `Serialize` (task 2.2's list), so the way back is the public
+    /// constructor, which is also the way a port's generator would do it.
+    #[test]
+    fn modes_are_the_whole_of_the_randomness() {
+        /// The serialised form of one mode, as `wind_modes.json` carries it.
+        #[derive(serde::Deserialize)]
+        struct Xy {
+            x: f64,
+            y: f64,
+        }
+        #[derive(serde::Deserialize)]
+        struct Mode {
+            k: Xy,
+            amp: Xy,
+            omega: f64,
+            phase: f64,
+        }
+
+        for (mode, variation, seed) in [
+            (WindMode::Gust, 0.3, 7u64),
+            (WindMode::Spatial, 0.25, 4242),
+            (WindMode::Uniform, 0.4, 99),
+        ] {
+            let c = cfg(mode, variation);
+            let w = ProceduralWind::new(c, seed);
+            assert_eq!(
+                w.modes().len(),
+                w.mode_count(),
+                "modes() and mode_count() must agree"
+            );
+
+            let text = serde_json::to_string(w.modes()).expect("the modes must serialise");
+            let read: Vec<Mode> = serde_json::from_str(&text).expect("and parse back");
+            let rebuilt = ProceduralWind::from_modes(
+                c,
+                read.iter()
+                    .map(|m| {
+                        WindMode3::new(
+                            Vec2::new(m.k.x, m.k.y),
+                            Vec2::new(m.amp.x, m.amp.y),
+                            m.omega,
+                            m.phase,
+                        )
+                    })
+                    .collect(),
+            );
+            assert_eq!(rebuilt.mode_count(), w.mode_count());
+
+            let mut pts = Points::new();
+            for i in 0..1000 {
+                let (x, y, t) = pts.next(5000.0, 1000.0);
+                let a = w.sample(x, y, t);
+                let b = rebuilt.sample(x, y, t);
+                assert_eq!(a.x.to_bits(), b.x.to_bits(), "{mode:?} case {i}, wx");
+                assert_eq!(a.y.to_bits(), b.y.to_bits(), "{mode:?} case {i}, wy");
+            }
+        }
+    }
+
+    /// The accessors report what the field actually holds, and the stored
+    /// amplitude is perpendicular to the wavenumber — which is *why* the
+    /// field is divergence-free (see the struct note). A port that read the
+    /// table and lost that property would have a field with sources in it.
+    #[test]
+    fn the_accessors_expose_the_stored_table() {
+        let w = ProceduralWind::new(cfg(WindMode::Gust, 0.3), 2024);
+        assert!(w.mode_count() > 0);
+        for (i, m) in w.modes().iter().enumerate() {
+            assert_eq!(m.k().x.to_bits(), w.modes[i].k.x.to_bits());
+            assert_eq!(m.k().y.to_bits(), w.modes[i].k.y.to_bits());
+            assert_eq!(m.amp().x.to_bits(), w.modes[i].amp.x.to_bits());
+            assert_eq!(m.amp().y.to_bits(), w.modes[i].amp.y.to_bits());
+            assert_eq!(m.omega().to_bits(), w.modes[i].omega.to_bits());
+            assert_eq!(m.phase().to_bits(), w.modes[i].phase.to_bits());
+            let dot = m.k().x * m.amp().x + m.k().y * m.amp().y;
+            assert!(
+                dot.abs() < 1e-12 * m.k().length() * m.amp().length().max(1.0),
+                "mode {i}: amplitude is not perpendicular to the wavenumber"
+            );
+        }
     }
 
     #[test]

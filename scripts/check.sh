@@ -32,7 +32,7 @@ step_names=(
     'cargo fmt --check'
     'cargo clippy --all-targets -- -D warnings'
     'cargo test -p sailgym-physics -p sailgym-task'
-    'cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance'
+    'cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance --test conformance'
     'cargo test -p sailgym-physics --test regression'
     'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'
     'pnpm --dir web typecheck'
@@ -57,11 +57,18 @@ run_step() {
         3) cargo test -p sailgym-physics -p sailgym-task ;;
         # Every audit target in one invocation: the brief §35 invariants, the
         # prohibited-shortcut greps (section 07), the convergence study and the
-        # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), and the F7
-        # provenance audit (task 10.7).
+        # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), the F7
+        # provenance audit (task 10.7), and — added 2026-09-21 by human
+        # approval (v2 normative delta D1; see
+        # docs/v2/prds/02-conformance-bundle.md) — the conformance-bundle
+        # freshness check of v2 section 02. A stale bundle is a property of
+        # the physics crate, so it belongs in the step that already asks
+        # whether the physics crate is still what it says it is (v2 F12').
+        # The chain is still **nine** steps.
         4) cargo test -p sailgym-physics \
                --test invariants --test no_shortcuts \
-               --test convergence --test symmetry --test provenance ;;
+               --test convergence --test symmetry --test provenance \
+               --test conformance ;;
         5) cargo test -p sailgym-physics --test regression ;;
         6) "$script_dir/build-wasm.sh" ;;
         7) pnpm --dir web typecheck ;;
