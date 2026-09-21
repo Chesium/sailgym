@@ -4,7 +4,10 @@ import { readFileSync } from 'node:fs'
 import {
   DEFAULT_SCENARIO,
   EPISODE_SCHEMA_VERSION,
+  IDENTITY_VERSION,
+  PRACTICE_ENVELOPE_VERSION,
   SCENARIO_SCHEMA_VERSION,
+  SUPPORTED_SCHEMA_VERSIONS,
   summarise,
   type Scenario,
 } from '../../src/sim/scenarioTypes'
@@ -58,6 +61,7 @@ const PAIRS: ReadonlyArray<[string, string, string]> = [
   ['InitialState', SCENARIO_RS, 'pub struct InitialState {'],
   ['EpisodeHeader', RECORDING_RS, 'pub struct EpisodeHeader {'],
   ['EpisodeFrame', RECORDING_RS, 'pub struct EpisodeFrame {'],
+  ['FrameDiagnostics', RECORDING_RS, 'pub struct FrameDiagnostics {'],
   ['ToolchainInfo', RECORDING_RS, 'pub struct ToolchainInfo {'],
   ['Episode', RECORDING_RS, 'pub struct Episode {'],
 ]
@@ -71,7 +75,11 @@ describe('scenario and episode field parity', () => {
       expect(tsFields(`export interface ${name} {`).length, `${name} (TS)`).toBeGreaterThan(1)
     }
     expect(rustFields(SCENARIO_RS, 'pub struct Scenario {')).toHaveLength(9)
-    expect(rustFields(RECORDING_RS, 'pub struct EpisodeFrame {')).toHaveLength(9)
+    // Schema 2 added `diag` to the frame and seven header fields; both
+    // counts are pinned so a silent addition on either side fails here.
+    expect(rustFields(RECORDING_RS, 'pub struct EpisodeFrame {')).toHaveLength(10)
+    expect(rustFields(RECORDING_RS, 'pub struct EpisodeHeader {')).toHaveLength(14)
+    expect(rustFields(RECORDING_RS, 'pub struct FrameDiagnostics {')).toHaveLength(23)
   })
 
   it('has the same fields on both sides, in the same order', () => {
@@ -84,7 +92,47 @@ describe('scenario and episode field parity', () => {
     }
   })
 
+  /**
+   * The identity records are written on one line each in TypeScript, by the
+   * same convention the scenario helpers use, so {@link block} cannot bracket
+   * them. They are compared by name instead — which is what the field lists
+   * are for.
+   */
+  it('mirrors the identity records, which are one-line declarations', () => {
+    const ts = readFileSync(TS, 'utf8')
+    const ONE_LINERS: ReadonlyArray<[string, string]> = [
+      ['TaskIdentity', 'pub struct TaskIdentity {'],
+      ['ActionIdentity', 'pub struct ActionIdentity {'],
+      ['ObservationField', 'pub struct ObservationField {'],
+      ['ObservationIdentity', 'pub struct ObservationIdentity {'],
+      ['PracticeEvent', 'pub struct PracticeEvent {'],
+      ['PracticeEnvelope', 'pub struct PracticeEnvelope {'],
+    ]
+    for (const [name, opening] of ONE_LINERS) {
+      const rust = rustFields(RECORDING_RS, opening)
+      expect(rust.length, `${name} (Rust)`).toBeGreaterThan(1)
+      const line = ts
+        .split('\n')
+        .find((l) => l.startsWith(`export interface ${name} {`))
+      expect(line, `${name} must be declared on one line in ${TS}`).toBeDefined()
+      const declared = [...(line ?? '').matchAll(/(\w+)[?]?:/g)].map((m) => m[1])
+      expect(declared, `${name}: fields and order`).toEqual(rust)
+    }
+  })
+
   it('mirrors the schema versions and the default scenario id', () => {
+    const recording = readFileSync(RECORDING_RS, 'utf8')
+    expect(recording).toContain(`pub const IDENTITY_VERSION: u32 = ${IDENTITY_VERSION};`)
+    expect(recording).toContain(
+      `pub const PRACTICE_ENVELOPE_VERSION: u32 = ${PRACTICE_ENVELOPE_VERSION};`,
+    )
+    // The read set, spelled the same on both sides. A schema this build can
+    // no longer read is a recording someone has lost (RV60).
+    expect(recording).toContain(
+      `pub const SUPPORTED_SCHEMA_VERSIONS: [u32; ${SUPPORTED_SCHEMA_VERSIONS.length}] = [${SUPPORTED_SCHEMA_VERSIONS.join(', ')}];`,
+    )
+    expect(SUPPORTED_SCHEMA_VERSIONS).toContain(EPISODE_SCHEMA_VERSION)
+    expect(SUPPORTED_SCHEMA_VERSIONS).toContain(1)
     const scenarioRs = readFileSync(SCENARIO_RS, 'utf8')
     const recordingRs = readFileSync(RECORDING_RS, 'utf8')
     expect(scenarioRs).toContain(

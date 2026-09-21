@@ -8,6 +8,13 @@
  * overlay changes the deck layer count by one in each direction, which is only
  * a meaningful check if the overlay is a fixed size.
  *
+ * ## Live only
+ *
+ * The lattice reads the cached **live** grid, so it is not built while a
+ * recorded episode is being inspected: `App.tsx` passes `null` and the layer
+ * is absent. An arrow field drawn from the live simulation behind a recorded
+ * boat would be two timelines in one picture (v2 section 10, RV57).
+ *
  * ## No trigonometry
  *
  * The barbs are built from the arrow vector and its perpendicular

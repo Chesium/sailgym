@@ -1482,8 +1482,7 @@ fn heel_reduces_drive() {
 fn deterministic_replay() {
     use sailgym_physics::diagnostics::diagnostics;
     use sailgym_physics::recording::{
-        iso8601_utc, Episode, EpisodeHeader, Recorder, ToolchainInfo, EPISODE_SCHEMA_VERSION,
-        FRAME_LEN,
+        iso8601_utc, Episode, EpisodeFrame, EpisodeHeader, Recorder, FRAME_LEN,
     };
     use sailgym_physics::scenario::load_shipped;
 
@@ -1513,17 +1512,16 @@ fn deterministic_replay() {
 
         let mut rec = Recorder::start(
             LOG_HZ,
-            EpisodeHeader {
-                schema_version: EPISODE_SCHEMA_VERSION,
-                scenario: sc.clone(),
-                parameters: p,
-                dt: p.sim.dt,
-                log_hz: LOG_HZ,
-                toolchain: ToolchainInfo::current(),
+            EpisodeHeader::manual(
+                sc.clone(),
+                p,
+                LOG_HZ,
                 // A constant, not a clock: physics reads no wall time (F9.1)
                 // and neither may a test that asserts reproducibility.
-                created_utc: iso8601_utc(0.0),
-            },
+                iso8601_utc(0.0),
+                Simulation::initial_state(&p),
+                Controls::default(),
+            ),
         );
 
         let mut next = 0usize;
@@ -1562,8 +1560,15 @@ fn deterministic_replay() {
             a.frames.len()
         );
 
+        // Both blocks of every schema-2 frame, bit for bit.
+        let scalars = |f: &EpisodeFrame| -> Vec<f64> {
+            let mut out = f.to_common_array().to_vec();
+            out.extend_from_slice(&f.diagnostics_array().expect("schema 2 records diagnostics"));
+            out
+        };
         for (k, (x, y)) in a.frames.iter().zip(b.frames.iter()).enumerate() {
-            let (p, q) = (x.to_array(), y.to_array());
+            let (p, q) = (scalars(x), scalars(y));
+            assert_eq!(p.len(), FRAME_LEN);
             for i in 0..FRAME_LEN {
                 assert_eq!(
                     p[i].to_bits(),

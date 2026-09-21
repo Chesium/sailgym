@@ -15,11 +15,22 @@ import { BoatSvg } from './render/BoatSvg'
 import { ForceOverlay, OverlayControls, OverlayLegend } from './render/ForceOverlay'
 import { HeelIndicator, HeelProbe } from './render/HeelIndicator'
 import { DEFAULT_INPUT } from './sim/controls'
-import { importEpisode } from './sim/episodeIo'
+import {
+  compareEpisodes,
+  describeIdentity,
+  importEpisode,
+  megabytes,
+  readEpisodeIdentity,
+  readRecordingLimit,
+  recordingSeconds,
+  type RecordingLimit,
+} from './sim/episodeIo'
+import { NOT_RECORDED } from './sim/diagnostics'
 import {
   createReplaySource,
-  snapshotFromFrame,
+  selectInspection,
   LIVE,
+  type InspectionView,
   type PlaybackMode,
   type ReplayProbe,
 } from './sim/replay'
@@ -31,7 +42,7 @@ import {
   type SheetInputState,
 } from './sim/sheetInput'
 import { useSimulation, type RenderParams } from './sim/useSimulation'
-import { Charts, useChartSampler } from './ui/Charts'
+import { Charts, replayChartData, useChartSampler } from './ui/Charts'
 import { ClockControls } from './ui/ClockControls'
 import { DebugPanel } from './ui/DebugPanel'
 import { Hud } from './ui/Hud'
@@ -280,8 +291,24 @@ export default function App() {
   const wind = useWindField()
   const cameraRef = useRef<Camera | null>(null)
 
+  /**
+   * The world view is showing a recorded episode.
+   *
+   * A ref as well as state because the frame hook below is handed to
+   * `useSimulation` once and must not be rebuilt when playback changes.
+   */
+  const inspectingRef = useRef(false)
+
   const onFrame = useCallback(
     (sim: Parameters<typeof wind.onFrame>[0], snapshot: { t: number }) => {
+      // In replay the wind layer is not drawn at all (see `windField` below),
+      // and sampling the **live** field behind a recorded boat is precisely
+      // the mixed timeline RV57 names. So the field is not sampled, the
+      // particles are not advected, and `wind_at_boat()` is not read: the
+      // replay's wind comes from the episode.
+      if (inspectingRef.current) {
+        return
+      }
       const camera = cameraRef.current
       if (camera !== null) {
         wind.onFrame(sim, camera, snapshot.t)
@@ -294,7 +321,6 @@ export default function App() {
   const ui = useUiStore()
   const { viewport, mainRef, worldRef } = useWorldViewport()
   const compact = useCompactLayout()
-  const charts = useChartSampler(sim.diagnostics, ui.sampleHz)
   const [mode, setMode] = useState<CameraMode>('northUp')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<Vec2>({ x: 0, y: 0 })
@@ -310,6 +336,8 @@ export default function App() {
   const [showArrows, setShowArrows] = useState(false)
   const [showBoatProbes] = useState(boatProbesRequested)
   const baseCentre = useRef<Vec2>({ x: 0, y: 0 })
+  /** The current inspection view, for the E2E probe. Written every render. */
+  const viewRef = useRef<InspectionView | null>(null)
 
   // --- recording and replay (brief §33) ----------------------------------
   const [episode, setEpisode] = useState<Episode | null>(null)
@@ -318,21 +346,68 @@ export default function App() {
   const [replayPlaying, setReplayPlaying] = useState(false)
   const [replaySpeed, setReplaySpeed] = useState<PlaybackSpeed>(1)
 
+  /**
+   * The recording bound, read once from the core when it is ready.
+   *
+   * The dependency list is `ready` and the **stable** `withSim` callback, not
+   * the handle. `useSimulation` returns a fresh object every render, so
+   * depending on it would re-run this effect on every frame and set a fresh
+   * `RecordingLimit` object each time — which React reports as
+   * "Maximum update depth exceeded" and which is the same identity trap
+   * section 01 recorded as RV4.
+   */
+  const { withSim } = sim
+  const [limit, setLimit] = useState<RecordingLimit | null>(null)
+  useEffect(() => {
+    if (!sim.ready) {
+      return
+    }
+    setLimit(withSim((core) => readRecordingLimit(core)))
+  }, [sim.ready, withSim])
+
+  /**
+   * The held episode's canonical identity, and the core's verdict on comparing
+   * it with itself.
+   *
+   * Both are the **core's** answers (`Sim.episode_identity_json`,
+   * `Sim.episode_comparability_json`). Comparing an episode with itself is the
+   * honest test of whether it names a baseline at all: a legacy or
+   * dirty-source episode is `indeterminate` even against itself, which is
+   * F18.1d's rule and is what stops the page calling it a same-conditions
+   * experiment (RV58).
+   */
+  // Memoised on the **episode**, not on the handle: both calls serialise the
+  // whole episode across the boundary, which is far too expensive to repeat
+  // sixty times a second, and neither answer changes until the episode does.
+  const identity = useMemo(
+    () =>
+      episode === null || !sim.ready
+        ? null
+        : withSim((core) => readEpisodeIdentity(core, episode)),
+    [episode, sim.ready, withSim],
+  )
+  const comparability = useMemo(
+    () =>
+      episode === null || !sim.ready
+        ? null
+        : withSim((core) => compareEpisodes(core, episode, episode)),
+    [episode, sim.ready, withSim],
+  )
+  const identityIsBaseline = comparability?.verdict === 'same_conditions'
+
   const enterReplay = useCallback(() => {
     if (episode === null) {
       return
     }
     const source = createReplaySource(episode)
     // The live boat and the replayed one would otherwise animate past each
-    // other in the same view. Pausing is also what makes "replay works with
-    // the physics clock paused" the ordinary case rather than a special one.
-    sim.pause()
-    // Entering replay is one of the clear paths (RV53): a finger or a key that
-    // was down belongs to the live run, and the controls now drive nothing the
-    // viewer can see. `sim.pause()` already clears, so this is belt and braces
-    // against the pause becoming conditional later — and it is the call the
-    // PRD names.
-    sim.clearInput()
+    // other in the same view. `setInspecting(true)` does three things at once:
+    // it pauses the clock, it clears every held input (RV53 — a finger or a
+    // key that was down belongs to the live run), and it stops the frame loop
+    // ticking the clock at all, so no route back to `advance` remains however
+    // the clock controls are used afterwards (task 10.3, RV57).
+    inspectingRef.current = true
+    sim.setInspecting(true)
     setPlayback({ kind: 'replay', source })
     setReplayTime(source.startTime)
     setReplayPlaying(false)
@@ -341,7 +416,20 @@ export default function App() {
   const exitReplay = useCallback(() => {
     setReplayPlaying(false)
     setPlayback(LIVE)
-  }, [])
+    // **Only when actually leaving a replay.** `selectScenario` calls this
+    // unconditionally to make sure a scenario switch never happens underneath
+    // a replay, and `setInspecting(false)` pauses the clock — so doing it when
+    // no replay was open would pause the live run every time the picker
+    // changed. Caught by `scenarios.spec.ts`, in all three browsers.
+    if (!inspectingRef.current) {
+      return
+    }
+    // The PRD's rule: leaving replay leaves the simulation **paused**. The run
+    // is where the viewer left it and resuming is their decision, not a side
+    // effect of closing the timeline.
+    inspectingRef.current = false
+    sim.setInspecting(false)
+  }, [sim])
 
   // Read the wind mode the core actually started with, and take the 128×128
   // grid timing once, in this browser (task 3.3).
@@ -395,7 +483,6 @@ export default function App() {
   )
 
   // The E2E probe. See `ReplayProbe`.
-  const { withSim } = sim
   useEffect(() => {
     const probe: ReplayProbe = {
       episodeJson: () => (episode === null ? null : JSON.stringify(episode)),
@@ -417,17 +504,37 @@ export default function App() {
         }
       },
       frameTime: (index) =>
-        playback.kind === 'replay' ? playback.source.frameAt(index).t : null,
-      frameState: (index) =>
-        playback.kind === 'replay' ? [...playback.source.frameAt(index).state] : null,
+        playback.kind === 'replay' ? (playback.source.frameAt(index)?.t ?? null) : null,
+      frameState: (index) => {
+        const frame = playback.kind === 'replay' ? playback.source.frameAt(index) : null
+        return frame === null ? null : [...frame.state]
+      },
       patchFrame: (index, field, value) => {
         if (playback.kind === 'replay') {
           // Mutates the stored frame in place. If the render follows this,
           // the renderer is reading stored data and not recomputing it.
-          playback.source.frameAt(index).state[field] = value
+          const frame = playback.source.frameAt(index)
+          if (frame !== null) {
+            frame.state[field] = value
+          }
         }
       },
       frameCount: () => (playback.kind === 'replay' ? playback.source.frameCount : 0),
+      identityJson: () =>
+        episode === null
+          ? null
+          : (withSim((core) => JSON.stringify(readEpisodeIdentity(core, episode))) ?? null),
+      comparabilityJson: () =>
+        episode === null
+          ? null
+          : (withSim((core) => JSON.stringify(compareEpisodes(core, episode, episode))) ??
+            null),
+      unavailable: () => [...(viewRef.current?.unavailable ?? [])],
+      inspection: () => ({
+        source: viewRef.current?.source ?? 'live',
+        sampleIndex: viewRef.current?.sampleIndex ?? null,
+        sampleT: viewRef.current?.diagnostics?.t ?? null,
+      }),
     }
     window.__sailgym = probe
     return () => {
@@ -435,10 +542,43 @@ export default function App() {
     }
   }, [episode, playback, withSim])
 
-  // In replay the renderer reads a stored frame exactly as it reads a live
-  // snapshot — same layout, same components, no physics (brief §33).
-  const replayFrame = playback.kind === 'replay' ? playback.source.sampleAt(replayTime) : null
-  const s = replayFrame === null ? sim.snapshot : snapshotFromFrame(replayFrame)
+  // ---------------------------------------------------------------------
+  // The one display selection (v2 section 10, task 10.3)
+  // ---------------------------------------------------------------------
+  //
+  // Chosen **once**, here, and handed to every consumer below: the boat, the
+  // HUD, the wind readout, the force overlay, the charts and the debug panel.
+  // Before this, a replay showed a recorded pose inside the live run's
+  // numbers, which is RV57. `sim.snapshot`, `sim.diagnostics` and
+  // `wind.windAtBoat()` appear on this line and nowhere else in the render.
+  const view = selectInspection(playback, replayTime, {
+    snapshot: sim.snapshot,
+    diagnostics: sim.diagnostics,
+    wind: wind.windAtBoat(),
+  })
+  // An empty episode has no pose to show; the last live one stays on screen
+  // and the timeline says the episode has no samples.
+  const s = view.emptyEpisode ? sim.snapshot : view.snapshot
+  const diagnostics = view.diagnostics
+  const replaying = view.source === 'replay'
+  const capsized = replaying
+    ? (playback.kind === 'replay'
+        ? (playback.source.frameAt(view.sampleIndex ?? 0)?.capsized ?? null)
+        : null)
+    : (sim.diagnostics?.capsize.capsized ?? null)
+  viewRef.current = view
+  // The **live** chart history, sampled from the live record only; and, in
+  // replay, the episode's own samples bounded by the playhead. A replay can
+  // neither append to the live buffer nor carry it into playback (task 10.4).
+  const liveCharts = useChartSampler(sim.diagnostics, ui.sampleHz, !replaying)
+  // Memoised on the source and the playhead. `replayChartData` is pure and
+  // walks every sample up to the playhead, which at the recording cap is
+  // thirteen thousand of them — cheap once per scrub, not once per frame.
+  const replayCharts = useMemo(
+    () => (playback.kind === 'replay' ? replayChartData(playback.source, replayTime) : null),
+    [playback, replayTime],
+  )
+  const charts = replayCharts ?? liveCharts
   const scale = PIXELS_PER_METRE * zoom
   baseCentre.current = trackedCentre(
     baseCentre.current,
@@ -475,9 +615,17 @@ export default function App() {
     [params],
   )
 
-  const grid = wind.grid()
+  // The dense field and the arrow lattice are the *live* field, sampled from
+  // the live simulation. A replay may draw them only if the episode carries
+  // enough version-matched data to reconstruct its own field — which this
+  // build cannot do, so in replay they are hidden and the reason is shown.
+  // The recorded vector at the boat does not identify the whole field
+  // (`replayWindField`), and drawing the live one behind a recorded boat is
+  // RV57 exactly.
+  const showWindField = view.windField.available
+  const grid = showWindField ? wind.grid() : null
   const arrows: ArrowField | null =
-    showArrows && grid !== null ? buildArrows(grid, camera) : null
+    showArrows && showWindField && grid !== null ? buildArrows(grid, camera) : null
   // Sail Mode draws the field thinner and fainter so the hull, the boom, the
   // heading and the wind's own direction all stay readable (RV55). It is a
   // **presentation** setting: the same field is sampled, the same particles
@@ -571,7 +719,12 @@ export default function App() {
   // brief §29's seven, and only those. The wind readout is handed in rather
   // than rendered inside the HUD: it belongs to the wind layer.
   const readouts = (
-    <Hud diagnostics={sim.diagnostics} snapshot={s} wind={<WindReadout wind={wind.windAtBoat()} />} />
+    <Hud
+      diagnostics={diagnostics}
+      snapshot={s}
+      wind={<WindReadout wind={view.wind} />}
+      capsized={capsized}
+    />
   )
 
   const world = (
@@ -590,12 +743,18 @@ export default function App() {
         <BoatSvg
           camera={camera}
           pose={{ x: s.x, y: s.y, psi: s.psi, phi: s.phi, beta: s.beta, deltaR: s.deltaR }}
-          alpha={sim.diagnostics?.alpha_sail ?? 0}
+          // The sail's drawn camber and the rope's drawn sag are the two
+          // places a *picture* needs a diagnostic. A schema-1 episode records
+          // neither, so both fall back to the neutral drawing — a flat sail
+          // and a rope at its own path length, claiming no angle of attack and
+          // no tension — and the replay notice below says which fields are not
+          // recorded. Nothing is taken from the live simulation (RV57).
+          alpha={diagnostics?.values.alpha_sail ?? 0}
           params={params}
           hull={hull}
           sheet={sheetRig}
           lSheet={s.lSheet}
-          ropeLength={sim.diagnostics?.sheet_rope_length ?? 0}
+          ropeLength={diagnostics?.values.sheet_rope_length ?? s.lSheet}
           trajectory={sim.trajectory}
           onSheet={(ev) => {
             const [next, rate] = reduceSheetInput(sheetInput.current, ev, DEFAULT_INPUT)
@@ -623,13 +782,53 @@ export default function App() {
           }}
         />
       </div>
+      {replaying && (
+        <div
+          data-testid="replay-notice"
+          data-unavailable={view.unavailable.length}
+          data-empty={view.emptyEpisode ? 'true' : 'false'}
+          data-interpolated={view.interpolated ? 'true' : 'false'}
+          data-wind-field={view.windField.available ? 'true' : 'false'}
+          style={{
+            position: 'absolute',
+            left: 8,
+            top: 8,
+            zIndex: 3,
+            maxWidth: 'calc(100% - 16px)',
+            padding: '4px 8px',
+            borderRadius: 4,
+            background: 'rgba(255, 255, 255, 0.88)',
+            border: '1px solid #cbd',
+            color: '#334',
+            fontSize: 12,
+            pointerEvents: 'none',
+          }}
+        >
+          <strong>Replay</strong> · every number below is this episode's ·{' '}
+          {view.emptyEpisode
+            ? 'this episode has no samples'
+            : `pose at t = ${view.t.toFixed(2)} s${
+                view.interpolated ? ' (interpolated)' : ''
+              }, values from the sample at t = ${(diagnostics?.t ?? 0).toFixed(2)} s`}
+          <br />
+          wind field hidden — {view.windField.reason}
+          {view.unavailable.length > 0 && (
+            <>
+              <br />
+              {view.unavailable.length} diagnostic
+              {view.unavailable.length === 1 ? '' : 's'} {NOT_RECORDED.toLowerCase()} in this
+              episode
+            </>
+          )}
+        </div>
+      )}
       {/* Over the boat, and only in Debug Mode. `pointerEvents: none` inside,
           so the mainsheet drag and the camera pan still reach the SVG. */}
       {ui.mode === 'debug' && (
         <ForceOverlay
           camera={camera}
           pose={{ x: s.x, y: s.y, psi: s.psi }}
-          diagnostics={sim.diagnostics}
+          diagnostics={diagnostics}
           enabled={ui.overlays}
           newtonsPerPixel={ui.newtonsPerPixel}
           auto={ui.autoScale}
@@ -650,7 +849,7 @@ export default function App() {
         onAuto={ui.setAutoScale}
       />
       <OverlayLegend
-        diagnostics={sim.diagnostics}
+        diagnostics={diagnostics}
         enabled={ui.overlays}
         newtonsPerPixel={ui.newtonsPerPixel}
         auto={ui.autoScale}
@@ -661,6 +860,8 @@ export default function App() {
         onToggle={ui.setChart}
         sampleHz={ui.sampleHz}
         onSampleHz={ui.setSampleHz}
+        source={replaying ? 'recorded' : 'live'}
+        resolutionHz={playback.kind === 'replay' ? playback.source.logHz : ui.sampleHz}
       />
       <ParameterPanel
         withSim={sim.withSim}
@@ -671,7 +872,7 @@ export default function App() {
         onResetRequired={ui.setResetRequired}
         onReset={sim.reset}
       />
-      <DebugPanel diagnostics={sim.diagnostics} />
+      <DebugPanel diagnostics={diagnostics} />
     </>
   )
 
@@ -686,6 +887,31 @@ export default function App() {
           onReplay={enterReplay}
           replaying={playback.kind === 'replay'}
         />
+        {/* The recording bound, visible before it is reached. The cap and the
+            bytes per sample are the core's (`recording::MAX_EPISODE_FRAMES`,
+            derived from a stated byte budget); nothing here restates one. */}
+        {limit !== null && (
+          <div data-testid="record-limit" data-frames={limit.frames} data-bytes={limit.bytes}
+               style={{ color: '#667', fontSize: 12 }}>
+            recording limit {limit.frames.toLocaleString()} samples ·{' '}
+            {megabytes(limit.bytes)} · {(recordingSeconds(limit, 20) / 60).toFixed(1)} min at
+            20 Hz
+          </div>
+        )}
+        {episode !== null && identity !== null && (
+          <div
+            data-testid="episode-identity"
+            data-baseline={identityIsBaseline ? 'true' : 'false'}
+            data-comparable={comparability?.verdict ?? ''}
+            style={{ color: '#667', fontSize: 12 }}
+          >
+            episode identity: {describeIdentity(identity)}
+            {' · '}
+            {identityIsBaseline
+              ? 'may be compared with another episode of the same conditions'
+              : 'cannot be labelled a same-conditions experiment'}
+          </div>
+        )}
         {playback.kind === 'replay' && (
           <Timeline
             source={playback.source}
@@ -696,6 +922,8 @@ export default function App() {
             onPlaying={setReplayPlaying}
             onSpeed={setReplaySpeed}
             onExit={exitReplay}
+            unavailable={view.unavailable.length}
+            windFieldReason={view.windField.reason}
           />
         )}
       </div>
@@ -708,8 +936,8 @@ export default function App() {
           added above the boat moves the target out from under them. */}
       <HeelIndicator
         phi={s.phi}
-        capsized={sim.diagnostics?.capsize.capsized ?? false}
-        maxHeel={sim.diagnostics?.capsize.max_heel ?? 0}
+        capsized={capsized ?? false}
+        maxHeel={diagnostics?.values.capsize?.max_heel ?? 0}
       />
     </>
   )
@@ -732,12 +960,21 @@ export default function App() {
         data-beta-dot={s.betaDot}
         data-delta-r={s.deltaR}
         data-l-sheet={s.lSheet}
-        data-sheet-tension={sim.diagnostics?.sheet_tension ?? 0}
-        data-rope-length={sim.diagnostics?.sheet_rope_length ?? 0}
-        data-gz={sim.diagnostics?.gz ?? 0}
-        data-k-restore={sim.diagnostics?.righting_moment ?? 0}
-        data-capsized={sim.diagnostics?.capsize.capsized ? 'true' : 'false'}
-        data-max-heel={sim.diagnostics?.capsize.max_heel ?? 0}
+        // Every one of these is the *inspected* value: live while live,
+        // recorded while replaying, and the empty string when the episode did
+        // not record it. `''` rather than `0`, so a test can tell "not
+        // recorded" from "measured zero" (task 10.3).
+        //
+        // **Numbers only.** `fixtures.ts`'s `readSnapshot` turns every
+        // `data-*` on this element into a `Number`, so a word here becomes a
+        // `NaN` in every spec that reads it. Which timeline these came from
+        // lives on `[data-testid="inspection"]` below.
+        data-sheet-tension={diagnostics?.values.sheet_tension ?? ''}
+        data-rope-length={diagnostics?.values.sheet_rope_length ?? ''}
+        data-gz={diagnostics?.values.gz ?? ''}
+        data-k-restore={diagnostics?.values.righting_moment ?? ''}
+        data-capsized={capsized === null ? '' : capsized ? 'true' : 'false'}
+        data-max-heel={diagnostics?.values.capsize?.max_heel ?? ''}
       >
         t {s.t.toFixed(3)} s · x {s.x.toFixed(2)} m · y {s.y.toFixed(2)} m · ψ{' '}
         {((s.psi * 180) / Math.PI).toFixed(1)}° · u {s.u.toFixed(2)} m/s · δr{' '}
@@ -770,6 +1007,19 @@ export default function App() {
         {visibleCount(wind.particles().count, windVisual.density)} of{' '}
         {wind.particles().count} particles
       </div>
+
+      {/* Which timeline the page is showing, and which recorded sample the
+          diagnostics came from. Separate from `snapshot` because that element
+          is read as numbers (see the note there). */}
+      <div
+        data-testid="inspection"
+        data-source={view.source}
+        data-sample-index={view.sampleIndex ?? ''}
+        data-sample-t={diagnostics?.t ?? ''}
+        data-interpolated={view.interpolated ? 'true' : 'false'}
+        data-unavailable={view.unavailable.length}
+        data-empty={view.emptyEpisode ? 'true' : 'false'}
+      />
 
       <ArrowProbe field={arrows} />
       <HeelProbe />

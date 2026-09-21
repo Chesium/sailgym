@@ -6,6 +6,13 @@
  * is WebGL. `render.spec.ts` and `wind.spec.ts` both count SVG nodes to keep
  * it that way.
  *
+ * These layers draw the **live** field. A replay does not draw them: the
+ * caller passes no layers while a recorded episode is being inspected, because
+ * an episode records the wind vector at the boat and not the field around it
+ * (`sim/replay.ts`'s `replayWindField` says so, with the reason shown on the
+ * page). Nothing in this file decides that — it has no idea what is being
+ * replayed, and should not.
+ *
  * Positions are handed to deck.gl as **binary attributes**: the particle
  * system already keeps them in flat `Float32Array`s, so no per-particle object
  * is allocated on any frame. The `data` descriptor is rebuilt each frame, and

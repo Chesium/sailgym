@@ -163,6 +163,23 @@ export interface SimulationHandle {
    */
   clearInput(): void
   /**
+   * Suspend or resume **live advancement**, for replay (v2 section 10, F18.3).
+   *
+   * While inspecting:
+   *
+   * * the frame loop does not tick the clock, so no wall time can reach
+   *   `advance` however the clock controls are used;
+   * * {@link applyControls} pushes an idle `Controls` across the boundary, so
+   *   a key or a finger that is still down steers nothing.
+   *
+   * Both transitions pause the clock and clear the input. **Leaving replay
+   * leaves the simulation paused**, which is the PRD's rule: the run the
+   * viewer left is still where they left it, and resuming is their decision.
+   */
+  setInspecting(on: boolean): void
+  /** Whether live advancement is currently suspended. */
+  inspecting: boolean
+  /**
    * Bumped by every {@link SimulationHandle.clearInput}.
    *
    * A component that holds gesture state of its own — the touch pads — cannot
@@ -185,6 +202,16 @@ export interface SimulationHandle {
 }
 
 const ZERO_SNAPSHOT: Snapshot = readSnapshot(new Float64Array(SNAPSHOT_FIELDS.length))
+
+/**
+ * The held-keys set used while inspecting a replay: empty, and shared.
+ *
+ * Deliberately **not** the hook's own `heldRef` set. Clearing that one would
+ * throw away what the keyboard is holding; this composes an idle command
+ * without touching it, so nothing has to be restored on the way back to live.
+ * It is never written to.
+ */
+const EMPTY_HELD: ReadonlySet<string> = new Set<string>()
 
 /**
  * Browser test fixtures from sections 02–08: ad-hoc initial conditions that
@@ -318,6 +345,7 @@ export function useSimulation(
   })
   const [trajectory, setTrajectory] = useState<readonly WorldPoint[]>([])
   const [inputGeneration, setInputGeneration] = useState(0)
+  const [inspecting, setInspectingState] = useState(false)
   const [scenarios, setScenarios] = useState<readonly ScenarioSummary[]>([])
   const [scenario, setScenario] = useState<Scenario | null>(null)
 
@@ -387,6 +415,15 @@ export function useSimulation(
   const renderHzRef = useRef(renderHz)
   renderHzRef.current = renderHz
   const lastPublishRef = useRef(-Infinity)
+  /**
+   * Live advancement is suspended (replay).
+   *
+   * A ref as well as state because the frame loop and {@link applyControls}
+   * both read it, and neither may be rebuilt when it changes: restarting the
+   * frame loop on entering replay would drop the `previous` timestamp and give
+   * the next live frame a delta of zero.
+   */
+  const inspectingRef = useRef(false)
 
   // --- the one control-application boundary (task 9.1, v2 F18.2) -----------
 
@@ -411,7 +448,12 @@ export function useSimulation(
     if (sim === null) {
       return
     }
-    const c = composeControls(sourcesRef.current, inputRef.current)
+    // In replay the controls belong to the episode, not to the keyboard: push
+    // an idle command so a key or a finger that is still down cannot steer a
+    // simulation the viewer is not looking at (task 10.3).
+    const c = inspectingRef.current
+      ? composeControls({ ...clearTransient(), held: EMPTY_HELD }, inputRef.current)
+      : composeControls(sourcesRef.current, inputRef.current)
     // Task 10.5's input-lag measurement starts on the frame the helm first
     // asks for something, against the rudder angle currently drawn. The far
     // end is in `render/BoatSvg.tsx`, after the commit. Keyed on the composed
@@ -607,7 +649,14 @@ export function useSimulation(
       // Every call across the F8 boundary in this frame, and nothing else.
       beginSpan('wasm')
       applyControls()
-      clock.tick(delta)
+      // While a recorded episode is being inspected the live run does not
+      // advance — not by a tick, not by a rounding of one. This is the one
+      // `advance` path in the application, so gating it here is what makes
+      // "the paused live simulation cannot change under a replay" a property
+      // of the code rather than of the clock's current state (RV57).
+      if (!inspectingRef.current) {
+        clock.tick(delta)
+      }
       const next = readSnapshot(sim.snapshot())
       const diag = readDiagnostics(sim)
       // A live brief §31 edit has to reach the gauges that quote it
@@ -746,6 +795,19 @@ export function useSimulation(
       [applyControls],
     ),
     inputGeneration,
+    inspecting,
+    setInspecting: useCallback(
+      (on: boolean) => {
+        inspectingRef.current = on
+        setInspectingState(on)
+        // Both directions pause and clear. Entering: the live boat must not
+        // animate past the replayed one. Leaving: the run stays exactly where
+        // it was until the viewer resumes it themselves.
+        withClock((c) => c.pause())
+        clearInput()
+      },
+      [withClock, clearInput],
+    ),
     setTouchCommand: useCallback(
       (touch: TouchCommand) => {
         sourcesRef.current = { ...sourcesRef.current, touch }

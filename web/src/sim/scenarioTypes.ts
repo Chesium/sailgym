@@ -12,7 +12,9 @@
  * authored and no episode is decoded on this side of the boundary: the six
  * documents come from `Sim.scenarios_json()`, the angle conversions live in
  * `Scenario::to_boat_state`, and the binary codec lives in `Episode`. This
- * file is types and one default id (F8).
+ * file is types, four mirrored constants and one discriminant check
+ * ({@link recordedValue}, which reads a tag and returns what is behind it).
+ * No physics, and no second version check (F8).
  *
  * The helper shapes below are written on one line each on purpose: the parity
  * test reads top-level `  name:` declarations out of each interface, and a
@@ -33,8 +35,17 @@ export const DEFAULT_SCENARIO = 'free_sail'
 /** Mirrors `scenario::SCENARIO_SCHEMA_VERSION`. */
 export const SCENARIO_SCHEMA_VERSION = 1
 
-/** Mirrors `recording::EPISODE_SCHEMA_VERSION`. */
-export const EPISODE_SCHEMA_VERSION = 1
+/** Mirrors `recording::EPISODE_SCHEMA_VERSION` — the schema this build writes. */
+export const EPISODE_SCHEMA_VERSION = 2
+
+/** Mirrors `recording::SUPPORTED_SCHEMA_VERSIONS` — the schemas it reads. */
+export const SUPPORTED_SCHEMA_VERSIONS = [1, 2] as const
+
+/** Mirrors `recording::IDENTITY_VERSION`. `0` means "no canonical record". */
+export const IDENTITY_VERSION = 1
+
+/** Mirrors `recording::PRACTICE_ENVELOPE_VERSION` (section 11). */
+export const PRACTICE_ENVELOPE_VERSION = 1
 
 /** `scenario::CameraMode`. Same spelling as `render/Camera.ts`'s own mode. */
 export type ScenarioCameraMode = 'follow' | 'northUp'
@@ -97,7 +108,55 @@ export interface ToolchainInfo {
   profile: string
 }
 
-/** `recording::EpisodeHeader`. */
+/**
+ * `recording::Recorded<T>` — a value that may be recorded, unrecorded, or
+ * inapplicable (v2 F18.3).
+ *
+ * `'unknown'` and `'not_applicable'` are **not** the same thing and must not
+ * be collapsed: the first says this document does not say, the second says the
+ * concept does not exist for this episode. Only `{ value }` licenses a
+ * comparison.
+ */
+export type Recorded<T> = { value: T } | 'unknown' | 'not_applicable'
+
+/** The value, or `null` when the field is unknown or inapplicable. */
+export function recordedValue<T>(field: Recorded<T> | undefined): T | null {
+  return field !== undefined && typeof field === 'object' && 'value' in field
+    ? field.value
+    : null
+}
+
+/** `recording::identity::ModelIdentity` (v2 F18.1d). */
+export interface ModelIdentity {
+  model_version: number
+  source: { tree: string; state: 'clean' | 'dirty' | 'unknown' }
+}
+
+/** `recording::TaskIdentity` (section 11). */
+export interface TaskIdentity { id: string; version: number; thresholds: Record<string, number> }
+
+/** `recording::ActionIdentity` (v2 F14.2, F14.6). */
+export interface ActionIdentity { adapter: string; version: number; period_steps: number }
+
+/** `recording::ObservationField` (v2 F14.3). */
+export interface ObservationField { name: string; unit: string; normalisation: string; noise: number; privileged: boolean }
+
+/** `recording::ObservationIdentity` (v2 F14.3). */
+export interface ObservationIdentity { layout_version: number; fields: ObservationField[] }
+
+/** `recording::PracticeEvent` — keyed by the physics step it was decided on. */
+export interface PracticeEvent { id: string; step: number; t: number; value: number }
+
+/** `recording::PracticeEnvelope` — section 11's reserved, typed envelope. */
+export interface PracticeEnvelope { envelope_version: number; task: TaskIdentity; events: PracticeEvent[] }
+
+/**
+ * `recording::EpisodeHeader`.
+ *
+ * The first seven fields are schema 1's. The rest arrived with schema 2 and
+ * are `'unknown'` in a schema-1 document — never zero and never invented
+ * (v2 F18.3).
+ */
 export interface EpisodeHeader {
   schema_version: number
   scenario: Scenario
@@ -105,11 +164,75 @@ export interface EpisodeHeader {
   parameters: Record<string, unknown>
   /** s, the fixed physics timestep the episode was produced at. */
   dt: number
-  /** Hz, the logging rate — not the physics rate (brief §33). */
+  /** Hz, the logging rate — not the physics rate (brief §33). Metadata. */
   log_hz: number
   toolchain: ToolchainInfo
   /** Metadata only; never read by physics (F9.1). */
   created_utc: string
+  /** {@link IDENTITY_VERSION}, or `0` in a pre-identity document. */
+  identity_version: number
+  /** F18.1d's model and physics-source identity. */
+  model: Recorded<ModelIdentity>
+  /** The complete F3 state at the first recorded sample, in F8.3 order. */
+  initial_state: Recorded<Record<string, number>>
+  initial_controls: Recorded<Record<string, unknown>>
+  /** Section 11's envelope; `null` in a hand-flown episode. */
+  practice: PracticeEnvelope | null
+  action: Recorded<ActionIdentity>
+  observation: Recorded<ObservationIdentity>
+}
+
+/**
+ * `recording::FrameDiagnostics` — the diagnostic subset recorded beside every
+ * schema-2 sample. **Field order is normative** — it is the binary layout.
+ *
+ * `recording.rs`'s own doc comment lists, by name, the
+ * `diagnostics::Diagnostics` fields that are deliberately **not** here; see
+ * `docs/v2/recording-format.md` for the table.
+ */
+export interface FrameDiagnostics {
+  /** m/s, true wind speed at the boat (`environment::wind_to_bearing`). */
+  wind_speed: number
+  /** deg, meteorological FROM bearing, clockwise from north. */
+  wind_bearing_deg: number
+  /** m/s, true wind in the horizontal body frame `H`; 2 values. */
+  true_wind_body: number[]
+  /** m/s, apparent wind at the CG, in `B`; 3 values (F6.2). */
+  apparent_wind_body: number[]
+  apparent_wind_speed: number
+  /** rad, FROM angle off the bow, positive to starboard. */
+  apparent_wind_angle: number
+  /** m/s, `hypot(u, v)`. */
+  speed_over_ground: number
+  /** m/s², `(u̇, v̇)` in `H`; 2 values (F4.2). */
+  acceleration_body: number[]
+  /** N, `(ΣX, ΣY)` in `H`; 2 values. */
+  total_force_h: number[]
+  /** N, the pull on the boom at `P_b`, in `B`; 3 values (F6.8). */
+  sheet_force: number[]
+  /** m, the sail's centre of effort in `B`; 3 values. */
+  sail_ce_b: number[]
+  /** m, the centreboard's centre in `B`; 3 values. */
+  board_centre_b: number[]
+  /** m, the rudder's centre in `B`; 3 values. */
+  rudder_centre_b: number[]
+  /** m, `P_b(β)`, the mainsheet's boom attachment; 3 values (F6.8). */
+  sheet_attach_b: number[]
+  /** m, `P_k`, the block on the hull; 3 values (F6.8). */
+  sheet_block_b: number[]
+  alpha_sail: number
+  alpha_board: number
+  alpha_rudder: number
+  /** m, `ℓ(β)`, the geometric rope path length (F6.8). */
+  sheet_rope_length: number
+  /** m, `e = ℓ − L`; negative when the rope is slack. */
+  sheet_extension: number
+  /** m, the righting arm `GZ(φ)` (F6.7). */
+  gz: number
+  /** s, `CapsizeState::since`. */
+  capsize_since: number
+  /** rad, `CapsizeState::max_heel`. */
+  capsize_max_heel: number
 }
 
 /**
@@ -127,13 +250,20 @@ export interface EpisodeFrame {
   wind_at_boat: number[]
   /** N, sail/board/rudder/hull force in `B`, xyz each; 12 values. */
   forces: number[]
-  /** N·m: yaw, heel, righting, boom. */
+  /** N·m: yaw, heel, righting, boom (the boom's total, F6.9). */
   moments: number[]
   /** N, mainsheet tension. */
   sheet_tension: number
-  /** Placeholder, always 0 in v1 (brief §33). */
+  /** Placeholder, always 0 (brief §33). */
   reward: number
   capsized: boolean
+  /**
+   * Schema 2's diagnostic subset, captured at this sample's own state and
+   * time. **Absent in a schema-1 frame**, and a replay must then show the
+   * fields it would have carried as unavailable rather than evaluating the
+   * model currently loaded (v2 F18.3, RV59).
+   */
+  diag?: FrameDiagnostics | null
 }
 
 /** `recording::Episode`. */

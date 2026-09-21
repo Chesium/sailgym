@@ -9,6 +9,17 @@
  *
  * All of it is bookkeeping around numbers Rust produced. There is no wind
  * model here — see `sampleGrid.ts`.
+ *
+ * ## It is the **live** field, and a replay does not call it
+ *
+ * Everything here samples the running `Sim`: the grid, the particles' drift
+ * and `windAtBoat()`. None of it describes a recorded episode, so while one is
+ * being inspected `App.tsx` does not call {@link WindFieldHandle.onFrame} at
+ * all and does not draw the layers — the replay's wind comes from the episode
+ * (`sim/replay.ts`'s `windFromFrame`), and the dense field is hidden with its
+ * reason on the page. Sampling the live field behind a recorded boat is the
+ * mixed timeline v2 section 10 exists to close (RV57), and the recorded vector
+ * at the boat does not identify the whole field.
  */
 
 import { useCallback, useRef } from 'react'

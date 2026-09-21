@@ -203,11 +203,23 @@ test.describe('replay', () => {
       header: Record<string, unknown> & { toolchain: Record<string, unknown> }
       frames: Array<Record<string, unknown>>
     }
+    // Schema 2 (v2 section 10): the seven schema-1 header keys plus the seven
+    // identity keys, and the frame's nine plus its diagnostics block. The
+    // lists are frozen here on purpose — `docs/v2/recording-format.md` is the
+    // contract and a silent addition to either is a schema change nobody
+    // declared.
     expect(Object.keys(parsed.header).sort()).toEqual([
+      'action',
       'created_utc',
       'dt',
+      'identity_version',
+      'initial_controls',
+      'initial_state',
       'log_hz',
+      'model',
+      'observation',
       'parameters',
+      'practice',
       'scenario',
       'schema_version',
       'toolchain',
@@ -215,6 +227,7 @@ test.describe('replay', () => {
     expect(Object.keys(parsed.frames[0]).sort()).toEqual([
       'capsized',
       'controls',
+      'diag',
       'forces',
       'moments',
       'reward',
@@ -223,7 +236,13 @@ test.describe('replay', () => {
       't',
       'wind_at_boat',
     ])
-    expect(parsed.header.schema_version).toBe(1)
+    expect(parsed.header.schema_version).toBe(2)
+    // A hand-flown browser episode: the research contracts do not apply, and
+    // saying so is information rather than a gap (v2 F18.3).
+    expect(parsed.header.identity_version).toBe(1)
+    expect(parsed.header.action).toBe('not_applicable')
+    expect(parsed.header.observation).toBe('not_applicable')
+    expect(parsed.header.practice).toBeNull()
     expect(Object.keys(parsed.header.toolchain).sort()).toEqual(['profile', 'rustc', 'target'])
     expect((parsed.frames[0].state as number[]).length).toBe(13)
     // brief §33's placeholder, and it really is zero everywhere.
@@ -290,7 +309,7 @@ test.describe('replay', () => {
     const error = page.getByTestId('record-error')
     await expect(error).toHaveCount(1)
     await expect(error).toContainText('schema_version 7')
-    await expect(error).toContainText('this build reads 1')
+    await expect(error).toContainText('this build reads 1 and 2')
 
     // The episode already held is untouched, and the page still works.
     const after = await page.evaluate(() => window.__sailgym?.episodeJson() ?? null)

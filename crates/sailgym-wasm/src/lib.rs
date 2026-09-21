@@ -9,7 +9,19 @@
 //! `set_wind` and `wind_json`, and the section 09 scenario and recording
 //! methods `scenarios_json`, `scenario_json`, `restart`, `start_recording`,
 //! `stop_recording`, `is_recording`, `recorded_frames`, `episode_to_binary`,
-//! `episode_from_binary` and `episode_from_json`.
+//! `episode_from_binary` and `episode_from_json`, plus the v2 section 10
+//! inspection methods `recording_capacity`, `recording_full`,
+//! `episode_identity_json` and `episode_comparability_json`.
+//!
+//! ## Section 10 keeps the codec, the identity and the cap in Rust
+//!
+//! The episode codec was already the core's. v2 section 10 adds two more
+//! things that a browser must not decide for itself: the canonical
+//! [`ExperimentIdentity`](sailgym_physics::recording::ExperimentIdentity) —
+//! whether two episodes describe the same conditions is a physics question,
+//! not a UI one — and the recording cap, which is `Recorder`'s and is only
+//! *reported* here so the page can show it before memory runs out. Both cross
+//! the boundary as JSON strings, coarse-grained, one call each (brief §24).
 //!
 //! ## The one thing this file reads that the core may not
 //!
@@ -28,7 +40,8 @@ use sailgym_physics::environment::wind::WindConfig;
 use sailgym_physics::environment::{wind_to_bearing, WindField};
 use sailgym_physics::parameters::BoatParameters;
 use sailgym_physics::recording::{
-    iso8601_utc, Episode, EpisodeHeader, Recorder, ToolchainInfo, EPISODE_SCHEMA_VERSION,
+    iso8601_utc, Comparability, Episode, EpisodeHeader, Recorder, BYTES_PER_FRAME,
+    MAX_EPISODE_FRAMES,
 };
 use sailgym_physics::scenario::{
     load_all_shipped, CameraSuggestion, InitialState, Scenario, SCENARIO_SCHEMA_VERSION,
@@ -276,17 +289,16 @@ impl Sim {
     /// the state the recording was started from. The recorder is an observer
     /// and cannot change a trajectory.
     pub fn start_recording(&mut self, hz: f64) {
-        let header = EpisodeHeader {
-            schema_version: EPISODE_SCHEMA_VERSION,
-            scenario: self.scenario.clone(),
-            parameters: *self.inner.params(),
-            dt: self.inner.params().sim.dt,
-            log_hz: hz,
-            toolchain: ToolchainInfo::current(),
+        let header = EpisodeHeader::manual(
+            self.scenario.clone(),
+            *self.inner.params(),
+            hz,
             // The one clock reading in the browser build. Metadata only: the
             // core formats it and nothing in the physics ever sees it (F9.1).
-            created_utc: iso8601_utc(date_now_ms()),
-        };
+            iso8601_utc(date_now_ms()),
+            *self.inner.state(),
+            *self.inner.controls(),
+        );
         let mut rec = Recorder::start(hz, header);
         let d = sailgym_physics::diagnostics::diagnostics(&self.inner);
         rec.observe(&self.inner, &d);
@@ -301,6 +313,74 @@ impl Sim {
     /// Frames logged so far, for the record button's readout.
     pub fn recorded_frames(&self) -> u32 {
         self.recorder.as_ref().map_or(0, |r| r.len() as u32)
+    }
+
+    /// The frames a recording will accept in total
+    /// (`recording::MAX_EPISODE_FRAMES`).
+    ///
+    /// Reported so the page can show the bound *before* it is reached rather
+    /// than growing until the tab dies. The cap itself is the core's and is
+    /// derived from a stated byte budget; see `docs/v2/recording-format.md` §8.
+    /// Available whether or not a recording is in progress, so the readout can
+    /// quote it from the moment the page loads.
+    pub fn recording_capacity(&self) -> u32 {
+        self.recorder
+            .as_ref()
+            .map_or(MAX_EPISODE_FRAMES, Recorder::capacity) as u32
+    }
+
+    /// Bytes one recorded sample occupies in the binary form
+    /// (`recording::BYTES_PER_FRAME`), so the page's size readout is
+    /// `bytes per frame × samples` and not a number somebody guessed.
+    pub fn recording_bytes_per_frame(&self) -> u32 {
+        BYTES_PER_FRAME as u32
+    }
+
+    /// The cap has been reached; nothing further is being logged.
+    pub fn recording_full(&self) -> bool {
+        self.recorder.as_ref().is_some_and(Recorder::is_full)
+    }
+
+    /// The canonical [`ExperimentIdentity`] of an episode document, as JSON.
+    ///
+    /// The record is built by the core from the episode's own header, so a
+    /// schema-1 file comes back with `model`, `initial_state`,
+    /// `initial_controls`, `task`, `action` and `observation` as `"unknown"` —
+    /// which is the honest answer and is what stops the page calling it a
+    /// same-conditions experiment (v2 F18.3).
+    pub fn episode_identity_json(&self, episode_json: &str) -> Result<JsValue, JsValue> {
+        let episode = Episode::from_json(episode_json).map_err(|e| js_err("episode", e))?;
+        let json = serde_json::to_string(&episode.header.identity())
+            .map_err(|e| js_err("episode_identity_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// Whether two episode documents may be compared quantity for quantity.
+    ///
+    /// `{ "verdict": "same_conditions" | "different" | "indeterminate",
+    ///    "reasons": [...], "describe": "..." }`. The decision is the core's
+    /// (`ExperimentIdentity::compare`); this only shapes it for the page, and
+    /// only `same_conditions` licenses the phrase.
+    pub fn episode_comparability_json(
+        &self,
+        a_json: &str,
+        b_json: &str,
+    ) -> Result<JsValue, JsValue> {
+        let a = Episode::from_json(a_json).map_err(|e| js_err("episode a", e))?;
+        let b = Episode::from_json(b_json).map_err(|e| js_err("episode b", e))?;
+        let verdict = a.header.identity().compare(&b.header.identity());
+        let kind = match verdict {
+            Comparability::SameConditions => "same_conditions",
+            Comparability::Different(_) => "different",
+            Comparability::Indeterminate(_) => "indeterminate",
+        };
+        let json = serde_json::to_string(&serde_json::json!({
+            "verdict": kind,
+            "reasons": verdict.reasons(),
+            "describe": verdict.describe(),
+        }))
+        .map_err(|e| js_err("episode_comparability_json", e))?;
+        Ok(JsValue::from_str(&json))
     }
 
     /// Close the recording and return the episode as a JSON **string**.
@@ -358,7 +438,8 @@ impl Sim {
     /// batched call, and `recording::tests::recording_does_not_perturb`
     /// asserts it. The full `Diagnostics` record is built only on the steps
     /// the sample interval actually keeps — at 20 Hz and `dt = 0.005` that is
-    /// one step in ten.
+    /// one step in ten, and none at all once the recorder is full, because
+    /// `Recorder::due` is `false` from then on.
     pub fn advance(&mut self, n: u32) -> u32 {
         if self.recorder.is_none() {
             return self.inner.advance(n);

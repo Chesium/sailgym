@@ -10,8 +10,16 @@
  *
  * The schema-version check is the core's too. An episode from another
  * `schema_version` therefore fails with the core's own message — "episode
- * schema_version 7 is not supported; this build reads 1" — rather than with a
- * second version check written on this side that could drift.
+ * schema_version 7 is not supported; this build reads 1 and 2" — rather than
+ * with a second version check written on this side that could drift. This
+ * build reads **schema 1 and schema 2** and re-encodes each in its own schema;
+ * `docs/v2/recording-format.md` is the contract.
+ *
+ * The same rule covers the two v2 section 10 additions below. Whether two
+ * episodes describe the same conditions is decided by
+ * `recording::ExperimentIdentity::compare` in Rust and only *displayed* here:
+ * a comparison rule written in TypeScript is how a changed equation comes to
+ * be called the same experiment (RV58).
  *
  * `download` is separated from the blob builders so tests can exercise the
  * whole encode path without a file dialog, which is what `replay.spec.ts`
@@ -19,7 +27,14 @@
  */
 
 import type { SimHandle } from './loadWasm'
-import type { Episode } from './scenarioTypes'
+import type {
+  ActionIdentity,
+  Episode,
+  ObservationIdentity,
+  Recorded,
+  TaskIdentity,
+} from './scenarioTypes'
+import { recordedValue } from './scenarioTypes'
 
 /** The MIME types the two forms are offered as. */
 export const JSON_MEDIA_TYPE = 'application/json'
@@ -106,4 +121,135 @@ export function importEpisode(sim: SimHandle, data: ArrayBuffer | Uint8Array | s
     throw new Error(`could not load that episode — ${message}`)
   }
   return JSON.parse(json) as Episode
+}
+
+// ---------------------------------------------------------------------------
+// Identity and comparability (v2 F18.3, task 10.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * `recording::ExperimentIdentity`, as `Sim.episode_identity_json` returns it.
+ *
+ * Declared here rather than in `scenarioTypes.ts` because it is **not** a
+ * document field list: the core *derives* it from an episode header, so there
+ * is no Rust struct in the recording document for the parity test to compare
+ * it against. The records it is built from — {@link TaskIdentity},
+ * {@link ActionIdentity}, {@link ObservationIdentity} — are mirrored there and
+ * are parity-checked.
+ *
+ * `parameters`, `initial_state` and `initial_controls` are left opaque for the
+ * same reason `EpisodeHeader.parameters` is: the browser displays the F7
+ * catalogue by walking it, never by naming its fields (F7, F8).
+ */
+export interface ExperimentIdentity {
+  identity_version: number
+  model: Recorded<{ model_version: number; source: { tree: string; state: string } }>
+  parameters: Recorded<Record<string, unknown>>
+  integrator: Recorded<string>
+  dt: Recorded<number>
+  initial_state: Recorded<Record<string, number>>
+  initial_controls: Recorded<Record<string, unknown>>
+  scenario: Recorded<string>
+  wind: Recorded<Record<string, unknown>>
+  seed: Recorded<number>
+  task: Recorded<TaskIdentity>
+  action: Recorded<ActionIdentity>
+  observation: Recorded<ObservationIdentity>
+}
+
+/** `Comparability`, as `Sim.episode_comparability_json` shapes it. */
+export interface ComparabilityVerdict {
+  verdict: 'same_conditions' | 'different' | 'indeterminate'
+  /** The identity fields behind a negative verdict, in the core's order. */
+  reasons: string[]
+  /** The core's one-line form, for a badge or a log. */
+  describe: string
+}
+
+/** The canonical identity of an episode, straight from the core. */
+export function readEpisodeIdentity(sim: SimHandle, episode: Episode): ExperimentIdentity {
+  return JSON.parse(
+    sim.episode_identity_json(JSON.stringify(episode)) as string,
+  ) as ExperimentIdentity
+}
+
+/** Whether two episodes may be compared, decided by the core. */
+export function compareEpisodes(
+  sim: SimHandle,
+  a: Episode,
+  b: Episode,
+): ComparabilityVerdict {
+  return JSON.parse(
+    sim.episode_comparability_json(JSON.stringify(a), JSON.stringify(b)) as string,
+  ) as ComparabilityVerdict
+}
+
+/**
+ * Whether this episode could ever be one half of a same-conditions
+ * comparison — before a second episode exists to compare it with.
+ *
+ * It is a **display rule over recorded data**, not a second comparison: an
+ * episode whose identity record is missing, or whose physics source was dirty
+ * or unknown when it was made, names no baseline and must never be labelled a
+ * same-conditions experiment (v2 F18.1d, F18.3). Whether two *particular*
+ * episodes agree is {@link compareEpisodes}'s question and the core's answer.
+ */
+export function identityNamesABaseline(identity: ExperimentIdentity): boolean {
+  if (identity.identity_version === 0) {
+    return false
+  }
+  const model = recordedValue(identity.model)
+  return model !== null && model.source.state === 'clean'
+}
+
+/** One line for a badge: what this episode's identity does and does not say. */
+export function describeIdentity(identity: ExperimentIdentity): string {
+  const model = recordedValue(identity.model)
+  if (identity.identity_version === 0) {
+    return 'identity unknown — a schema-1 episode records no model identity'
+  }
+  if (model === null) {
+    return 'identity unknown — this episode records no model identity'
+  }
+  if (model.source.state !== 'clean') {
+    return `model v${model.model_version}, physics source ${model.source.state} — names no baseline`
+  }
+  return `model v${model.model_version}, physics source ${model.source.tree.slice(0, 12)}`
+}
+
+// ---------------------------------------------------------------------------
+// The recording bound (task 10.2)
+// ---------------------------------------------------------------------------
+
+/** The cap and the byte budget, both read from the core. */
+export interface RecordingLimit {
+  /** Frames a recording will accept in total. */
+  frames: number
+  /** Bytes one sample occupies in the binary form. */
+  bytesPerFrame: number
+  /** `frames × bytesPerFrame`. */
+  bytes: number
+}
+
+/**
+ * The recording bound, from the core.
+ *
+ * Read rather than restated: the cap is derived in Rust from a stated byte
+ * budget (`docs/v2/recording-format.md` §8) and a literal here would be one
+ * more number to keep in step (F7, F8, RV56).
+ */
+export function readRecordingLimit(sim: SimHandle): RecordingLimit {
+  const frames = sim.recording_capacity()
+  const bytesPerFrame = sim.recording_bytes_per_frame()
+  return { frames, bytesPerFrame, bytes: frames * bytesPerFrame }
+}
+
+/** Simulated seconds a full-length recording covers at `logHz`. */
+export function recordingSeconds(limit: RecordingLimit, logHz: number): number {
+  return logHz > 0 ? limit.frames / logHz : 0
+}
+
+/** `7.5 MB`, for a readout. Binary megabytes, as the budget is stated. */
+export function megabytes(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }

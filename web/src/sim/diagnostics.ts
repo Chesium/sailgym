@@ -119,3 +119,56 @@ export type CapsizeReport = Diagnostics['capsize']
 export function readDiagnostics(sim: SimHandle): Diagnostics {
   return JSON.parse(sim.diagnostics() as string) as Diagnostics
 }
+
+// ---------------------------------------------------------------------------
+// Availability — the replay half (v2 section 10, F18.3)
+// ---------------------------------------------------------------------------
+
+/**
+ * A diagnostics record that may be missing fields.
+ *
+ * A **live** record has every one; a record reconstructed from a recorded
+ * sample has the subset that episode's schema carried, and a schema-1 episode
+ * carries none of the diagnostics block at all
+ * (`docs/v2/recording-format.md` §4).
+ *
+ * The type is what enforces the rule. Every field reads `T | undefined`, so a
+ * consumer cannot use one without deciding what to show when it is absent, and
+ * it cannot quietly substitute a live value or a zero — RV59 is the defect
+ * this shape exists to prevent, and the compiler is the guard.
+ */
+export type PartialDiagnostics = Partial<Diagnostics>
+
+/**
+ * The one set of diagnostic numbers the whole page is drawn from this frame.
+ *
+ * `source` and `t` travel with the values because a replay's diagnostics come
+ * from the **preceding recorded sample**, not from the playhead: interpolating
+ * a force is not a force calculation, so the sample's own timestamp is shown
+ * rather than implied (v2 section 10, task 10.3).
+ */
+// Written on one line, by the same convention as the helper shapes at the top
+// of this file: the two parity tests read top-level `  name:` declarations out
+// of this file, and a multi-line shape here would look like a `Diagnostics`
+// field. `source` is 'live' or 'recorded'; `t` is the simulated time the
+// values describe; `values` are the fields present.
+export interface DiagnosticsSample { source: 'live' | 'recorded'; t: number; values: PartialDiagnostics }
+
+/** What a readout shows in place of a value the episode does not carry. */
+export const NOT_RECORDED = 'Not recorded'
+
+/** The live record, as the shared sample shape. Nothing is dropped. */
+export function liveDiagnosticsSample(d: Diagnostics): DiagnosticsSample {
+  return { source: 'live', t: d.t, values: d }
+}
+
+/**
+ * Whether a field is present.
+ *
+ * A separate helper rather than `!== undefined` at each call site, so "is this
+ * recorded?" reads the same everywhere and `null` — which a JSON document can
+ * produce — counts as absent too.
+ */
+export function isRecorded<K extends keyof Diagnostics>(values: PartialDiagnostics, key: K): values is PartialDiagnostics & Required<Pick<Diagnostics, K>> {
+  return values[key] !== undefined && values[key] !== null
+}

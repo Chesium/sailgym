@@ -1,4 +1,4 @@
-import type { Diagnostics } from '../sim/diagnostics'
+import { NOT_RECORDED, type DiagnosticsSample } from '../sim/diagnostics'
 
 /**
  * Grouped numeric readouts for the whole diagnostics record (task 8.4).
@@ -6,12 +6,23 @@ import type { Diagnostics } from '../sim/diagnostics'
  * ## Every field, always
  *
  * The groups below are a *presentation* order, not a field list. The panel
- * renders one row per key of the record it was handed, and any key the groups
- * do not mention lands in "Other" — so a field added in `diagnostics.rs`
- * appears here the moment the WASM package is rebuilt, with no edit to this
- * file. `debug.spec.ts` enumerates the TypeScript type's keys and asserts a
+ * renders one row per key of the record it was handed **and one per group key
+ * the record is missing**, and any key the groups do not mention lands in
+ * "Other" — so a field added in `diagnostics.rs` appears here the moment the
+ * WASM package is rebuilt, with no edit to this file. `debug.spec.ts`
+ * enumerates the TypeScript type's keys and asserts a
  * `[data-testid="diag-<key>"]` for each; that test can only be satisfied by
  * enumerating, never by keeping a list in step by hand.
+ *
+ * ## In replay, a missing field says so (v2 section 10, task 10.3)
+ *
+ * The panel is handed a {@link DiagnosticsSample}, not a live record. In
+ * replay the values are the **preceding recorded sample's**, the panel shows
+ * which sample and at what simulated time, and a field the episode does not
+ * carry renders `Not recorded` with `data-recorded="false"`. It is never
+ * filled from the paused live simulation and never recomputed from the model
+ * currently loaded — that is RV57 and RV59, and it is why a row is rendered
+ * for an absent field rather than dropped.
  *
  * Nothing is computed here. Values are formatted and nothing else (F8).
  */
@@ -128,40 +139,67 @@ function slug(title: string): string {
     .replace(/^-|-$/g, '')
 }
 
-function Row({ name, value }: { name: string; value: unknown }) {
+function Row({ name, value, recorded }: { name: string; value: unknown; recorded: boolean }) {
   return (
     <div
       data-testid={`diag-${name}`}
-      data-value={typeof value === 'object' ? JSON.stringify(value) : String(value)}
+      data-recorded={recorded ? 'true' : 'false'}
+      data-value={
+        !recorded ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value)
+      }
       style={{ display: 'flex', gap: 8, lineHeight: 1.45 }}
     >
       <span style={{ flex: '0 0 170px', color: '#556' }}>{name}</span>
-      <span style={{ flex: 1, fontVariantNumeric: 'tabular-nums' }}>{format(value)}</span>
+      <span
+        style={{
+          flex: 1,
+          fontVariantNumeric: 'tabular-nums',
+          color: recorded ? undefined : '#889',
+        }}
+      >
+        {recorded ? format(value) : NOT_RECORDED}
+      </span>
     </div>
   )
 }
 
-export function DebugPanel({ diagnostics }: { diagnostics: Diagnostics | null }) {
-  if (diagnostics === null) {
+export function DebugPanel({ diagnostics: sample }: { diagnostics: DiagnosticsSample | null }) {
+  if (sample === null) {
     return null
   }
-  const record = diagnostics as unknown as Record<string, unknown>
-  const keys = Object.keys(record)
+  const record = sample.values as Record<string, unknown>
+  // Present keys **and** the group keys that are absent: a replay's missing
+  // fields have to be visible as missing, not simply gone.
+  const present = Object.keys(record)
   const grouped = new Set(DIAG_GROUPS.flatMap((g) => g.keys))
-  const ungrouped = keys.filter((k) => !grouped.has(k))
+  const ungrouped = present.filter((k) => !grouped.has(k))
   const groups: DiagGroup[] =
     ungrouped.length === 0
       ? [...DIAG_GROUPS]
       : [...DIAG_GROUPS, { title: 'Other', keys: ungrouped }]
+  const isRecordedKey = (k: string) => record[k] !== undefined && record[k] !== null
+  const shown = groups.flatMap((g) => g.keys)
+  const missing = shown.filter((k) => !isRecordedKey(k)).length
 
   return (
     <section
       data-testid="debug-panel"
-      data-fields={keys.length}
+      data-fields={shown.length}
+      data-recorded={present.length}
+      data-unavailable={missing}
+      data-source={sample.source}
+      data-sample-t={sample.t}
       style={{ border: '1px solid #ccd', borderRadius: 4, padding: 8 }}
     >
       <strong>Diagnostics</strong>
-      {diagnostics.hull_model_warning && (
+      <div data-testid="diag-source" style={{ color: '#667', fontSize: 12 }}>
+        {sample.source === 'live'
+          ? `live · t = ${sample.t.toFixed(3)} s`
+          : `recorded sample · t = ${sample.t.toFixed(3)} s${
+              missing === 0 ? '' : ` · ${missing} field${missing === 1 ? '' : 's'} not recorded`
+            }`}
+      </div>
+      {record.hull_model_warning === true && (
         <p
           data-testid="hull-model-warning"
           style={{
@@ -178,15 +216,14 @@ export function DebugPanel({ diagnostics }: { diagnostics: Diagnostics | null })
         </p>
       )}
       {groups.map((group) => {
-        const present = group.keys.filter((k) => k in record)
-        if (present.length === 0) {
+        if (group.keys.length === 0) {
           return null
         }
         return (
           <div key={group.title} data-testid={`diag-group-${slug(group.title)}`}>
             <div style={{ marginTop: 6, color: '#334', fontWeight: 600 }}>{group.title}</div>
-            {present.map((k) => (
-              <Row key={k} name={k} value={record[k]} />
+            {group.keys.map((k) => (
+              <Row key={k} name={k} value={record[k]} recorded={isRecordedKey(k)} />
             ))}
           </div>
         )

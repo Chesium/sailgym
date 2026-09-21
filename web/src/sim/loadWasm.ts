@@ -12,6 +12,14 @@ import init, { Sim } from '../wasm/sailgym_wasm.js'
  * The `Sim` surface, taken straight from the `wasm-pack`-generated
  * declarations rather than restated here: a hand-written mirror is one more
  * place for the TypeScript side to drift from the Rust one (F8).
+ *
+ * This is why nothing in this file changed when v2 section 10 added
+ * `recording_capacity`, `recording_bytes_per_frame`, `recording_full`,
+ * `episode_identity_json` and `episode_comparability_json` to `Sim`: the
+ * declarations regenerate at gate step 6 and the new methods are typed the
+ * moment they exist. The same finding was recorded for the six geometry fields
+ * of v2 section 01 and the six actuator limits of v2 section 09
+ * (`docs/v2/progress/09-handoff.md` §2.2).
  */
 export type SimHandle = Sim
 

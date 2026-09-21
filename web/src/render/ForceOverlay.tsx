@@ -12,7 +12,16 @@ import {
   pixelsFor,
   type ScreenVec,
 } from './vectorScale'
-import type { DiagLoad, DiagVec2, DiagVec3, Diagnostics } from '../sim/diagnostics'
+import {
+  isRecorded,
+  NOT_RECORDED,
+  type DiagLoad,
+  type DiagVec2,
+  type DiagVec3,
+  type Diagnostics,
+  type DiagnosticsSample,
+  type PartialDiagnostics,
+} from '../sim/diagnostics'
 import { OVERLAY_KEYS, type OverlayKey } from '../ui/store'
 
 /**
@@ -25,7 +34,18 @@ import { OVERLAY_KEYS, type OverlayKey } from '../ui/store'
  * ## No physics here
  *
  * Every quantity comes out of the diagnostics record; this file scales and
- * rotates, and that is all (F8). In particular the *horizontal* components of
+ * rotates, and that is all (F8).
+ *
+ * ## An overlay whose numbers were not recorded is not drawn
+ *
+ * v2 section 10 hands this component a {@link DiagnosticsSample} rather than a
+ * live record, and in replay that sample is an episode's own. An overlay needs
+ * **every** quantity it draws from — a vector needs its components *and* its
+ * application point — so {@link resolveOverlays} marks one unavailable the
+ * moment any of them is missing. An unavailable overlay draws nothing and its
+ * legend row reads `Not recorded`: a force arrow at a guessed origin, or drawn
+ * from the live simulation behind a recorded boat, is exactly the mixed
+ * timeline RV57 names and the re-simulation RV59 forbids. In particular the *horizontal* components of
  * a boat-fixed load are drawn as they arrive: the top-down view has never
  * shown heel (brief §26 gives heel its own stern view, and `geometry.ts`
  * places the mast, board and rudder by their `x` alone), so applying `R_x(φ)`
@@ -92,7 +112,7 @@ export interface ForceOverlayProps {
   camera: Camera
   /** Boat world position and heading, straight off the snapshot. */
   pose: { x: number; y: number; psi: number }
-  diagnostics: Diagnostics | null
+  diagnostics: DiagnosticsSample | null
   enabled: Record<OverlayKey, boolean>
   /** Newtons per pixel when `auto` is off. */
   newtonsPerPixel: number
@@ -102,6 +122,12 @@ export interface ForceOverlayProps {
 /** One drawable thing, resolved from the diagnostics record. */
 export interface ResolvedOverlay {
   def: OverlayDef
+  /**
+   * The episode being inspected does not carry everything this overlay needs.
+   * Nothing is drawn and the legend says so; `value` is meaningless and is
+   * held at zero purely so the shape stays uniform.
+   */
+  unavailable: boolean
   /** The number the legend prints. */
   value: number
   /** Application point in `B`, metres — for vectors and points. */
@@ -130,52 +156,128 @@ function horizontal(load: DiagLoad): DiagVec2 {
  * Resolved for all sixteen so the legend, the auto scale and the drawing all
  * read one table; the caller filters by `enabled`.
  */
-export function resolveOverlays(d: Diagnostics): ResolvedOverlay[] {
+export function resolveOverlays(d: PartialDiagnostics): ResolvedOverlay[] {
+  /** An overlay every one of whose inputs was recorded. */
+  const ok = (r: Omit<ResolvedOverlay, 'unavailable'>): ResolvedOverlay => ({
+    ...r,
+    unavailable: false,
+  })
+  /** An overlay the episode does not carry. Nothing is drawn for it. */
+  const gone = (def: OverlayDef): ResolvedOverlay => ({
+    def,
+    unavailable: true,
+    value: 0,
+    at: ORIGIN,
+  })
+  /** `ok(build(...))` when every named key is present, `gone(def)` otherwise. */
+  function when<K extends keyof Diagnostics>(
+    def: OverlayDef,
+    keys: readonly K[],
+    build: (v: Required<Pick<Diagnostics, K>>) => Omit<ResolvedOverlay, 'unavailable' | 'def'>,
+  ): ResolvedOverlay {
+    for (const k of keys) {
+      if (!isRecorded(d, k)) {
+        return gone(def)
+      }
+    }
+    return ok({ def, ...build(d as Required<Pick<Diagnostics, K>>) })
+  }
+
   const at = (l: DiagLoad) => l.r
   return [
-    { def: OVERLAYS_BY_KEY.trueWind, value: magnitude(d.true_wind_body), at: ORIGIN, vector: d.true_wind_body },
-    {
-      def: OVERLAYS_BY_KEY.apparentWind,
-      value: d.apparent_wind_speed,
+    when(OVERLAYS_BY_KEY.trueWind, ['true_wind_body'], (v) => ({
+      value: magnitude(v.true_wind_body),
       at: ORIGIN,
-      vector: { x: d.apparent_wind_body.x, y: d.apparent_wind_body.y },
-    },
-    { def: OVERLAYS_BY_KEY.velocity, value: magnitude(d.velocity_body), at: ORIGIN, vector: d.velocity_body },
-    {
-      def: OVERLAYS_BY_KEY.acceleration,
-      value: magnitude(d.acceleration_body),
+      vector: v.true_wind_body,
+    })),
+    when(
+      OVERLAYS_BY_KEY.apparentWind,
+      ['apparent_wind_speed', 'apparent_wind_body'],
+      (v) => ({
+        value: v.apparent_wind_speed,
+        at: ORIGIN,
+        vector: { x: v.apparent_wind_body.x, y: v.apparent_wind_body.y },
+      }),
+    ),
+    when(OVERLAYS_BY_KEY.velocity, ['velocity_body'], (v) => ({
+      value: magnitude(v.velocity_body),
       at: ORIGIN,
-      vector: d.acceleration_body,
-    },
-    { def: OVERLAYS_BY_KEY.sailForce, value: magnitude(d.sail.f), at: at(d.sail), vector: horizontal(d.sail) },
-    { def: OVERLAYS_BY_KEY.boardForce, value: magnitude(d.board.f), at: at(d.board), vector: horizontal(d.board) },
-    { def: OVERLAYS_BY_KEY.rudderForce, value: magnitude(d.rudder.f), at: at(d.rudder), vector: horizontal(d.rudder) },
-    { def: OVERLAYS_BY_KEY.hullForce, value: magnitude(d.hull.f), at: ORIGIN, vector: horizontal(d.hull) },
-    {
-      def: OVERLAYS_BY_KEY.totalForce,
-      value: magnitude(d.total_force_h),
+      vector: v.velocity_body,
+    })),
+    when(OVERLAYS_BY_KEY.acceleration, ['acceleration_body'], (v) => ({
+      value: magnitude(v.acceleration_body),
       at: ORIGIN,
-      vector: d.total_force_h,
-    },
-    { def: OVERLAYS_BY_KEY.yawMoment, value: d.yaw_moment, at: ORIGIN, moment: d.yaw_moment },
-    { def: OVERLAYS_BY_KEY.heelingMoment, value: d.heeling_moment, at: ORIGIN, moment: d.heeling_moment },
-    { def: OVERLAYS_BY_KEY.rightingMoment, value: d.righting_moment, at: ORIGIN, moment: d.righting_moment },
-    { def: OVERLAYS_BY_KEY.sailCe, value: d.sail_ce_b.x, at: d.sail_ce_b },
-    {
-      def: OVERLAYS_BY_KEY.foilCentres,
-      value: d.board_centre_b.x,
-      at: d.board_centre_b,
-      also: d.rudder_centre_b,
-    },
+      vector: v.acceleration_body,
+    })),
+    when(OVERLAYS_BY_KEY.sailForce, ['sail'], (v) => ({
+      value: magnitude(v.sail.f),
+      at: at(v.sail),
+      vector: horizontal(v.sail),
+    })),
+    when(OVERLAYS_BY_KEY.boardForce, ['board'], (v) => ({
+      value: magnitude(v.board.f),
+      at: at(v.board),
+      vector: horizontal(v.board),
+    })),
+    when(OVERLAYS_BY_KEY.rudderForce, ['rudder'], (v) => ({
+      value: magnitude(v.rudder.f),
+      at: at(v.rudder),
+      vector: horizontal(v.rudder),
+    })),
+    when(OVERLAYS_BY_KEY.hullForce, ['hull'], (v) => ({
+      value: magnitude(v.hull.f),
+      at: ORIGIN,
+      vector: horizontal(v.hull),
+    })),
+    when(OVERLAYS_BY_KEY.totalForce, ['total_force_h'], (v) => ({
+      value: magnitude(v.total_force_h),
+      at: ORIGIN,
+      vector: v.total_force_h,
+    })),
+    when(OVERLAYS_BY_KEY.yawMoment, ['yaw_moment'], (v) => ({
+      value: v.yaw_moment,
+      at: ORIGIN,
+      moment: v.yaw_moment,
+    })),
+    when(OVERLAYS_BY_KEY.heelingMoment, ['heeling_moment'], (v) => ({
+      value: v.heeling_moment,
+      at: ORIGIN,
+      moment: v.heeling_moment,
+    })),
+    when(OVERLAYS_BY_KEY.rightingMoment, ['righting_moment'], (v) => ({
+      value: v.righting_moment,
+      at: ORIGIN,
+      moment: v.righting_moment,
+    })),
+    when(OVERLAYS_BY_KEY.sailCe, ['sail_ce_b'], (v) => ({
+      value: v.sail_ce_b.x,
+      at: v.sail_ce_b,
+    })),
+    when(
+      OVERLAYS_BY_KEY.foilCentres,
+      ['board_centre_b', 'rudder_centre_b'],
+      (v) => ({
+        value: v.board_centre_b.x,
+        at: v.board_centre_b,
+        also: v.rudder_centre_b,
+      }),
+    ),
     // The boom's rate is an angular velocity about the mast, so it is drawn
     // the way the moments are: an arc, at the mast rather than at the CG.
-    { def: OVERLAYS_BY_KEY.boomRate, value: d.beta_dot, at: d.sheet_attach_b, moment: d.beta_dot },
-    {
-      def: OVERLAYS_BY_KEY.sheetTension,
-      value: d.sheet_tension,
-      at: d.sheet_attach_b,
-      vector: horizontal(d.sheet),
-    },
+    when(OVERLAYS_BY_KEY.boomRate, ['beta_dot', 'sheet_attach_b'], (v) => ({
+      value: v.beta_dot,
+      at: v.sheet_attach_b,
+      moment: v.beta_dot,
+    })),
+    when(
+      OVERLAYS_BY_KEY.sheetTension,
+      ['sheet_tension', 'sheet_attach_b', 'sheet'],
+      (v) => ({
+        value: v.sheet_tension,
+        at: v.sheet_attach_b,
+        vector: horizontal(v.sheet),
+      }),
+    ),
   ]
 }
 
@@ -188,7 +290,7 @@ export function overlayScales(
 ): OverlayScales {
   const largest = (scale: ScaleKind) =>
     resolved
-      .filter((r) => enabled[r.def.key] && r.def.scale === scale)
+      .filter((r) => enabled[r.def.key] && !r.unavailable && r.def.scale === scale)
       .reduce((m, r) => Math.max(m, Math.abs(r.value)), 0)
   return {
     force: auto ? autoScale(largest('force')) : newtonsPerPixel,
@@ -232,18 +334,22 @@ export function ForceOverlay({
     return null
   }
 
-  const resolved = resolveOverlays(diagnostics)
+  const resolved = resolveOverlays(diagnostics.values)
   const scales = overlayScales(resolved, enabled, newtonsPerPixel, auto)
   const theta = boatToScreenAngle(camera.rotation, pose.psi)
   const cg = camera.worldToScreen({ x: pose.x, y: pose.y })
   const point = (p: DiagVec3) => boatPointToScreen(cg, p.x, p.y, theta, camera.scale)
 
   const active = resolved.filter((r) => enabled[r.def.key])
+  const missing = active.filter((r) => r.unavailable).length
 
   return (
     <svg
       data-testid="force-overlay"
       data-active={active.length}
+      data-unavailable={missing}
+      data-source={diagnostics.source}
+      data-sample-t={diagnostics.t}
       data-force-scale={scales.force}
       data-moment-scale={scales.moment}
       data-velocity-scale={scales.velocity}
@@ -262,6 +368,13 @@ export function ForceOverlay({
       {active.map((r) => {
         const id = `overlay-${r.def.key}`
         const origin = point(r.at)
+
+        if (r.unavailable) {
+          // The group is still mounted — toggling an overlay must change the
+          // DOM by the same amount whether or not the episode recorded it —
+          // but nothing is drawn, because there is nothing to draw.
+          return <g key={id} data-testid={id} data-empty="true" data-unavailable="true" />
+        }
 
         if (r.vector !== undefined) {
           const perPixel = scales[r.def.scale]
@@ -317,7 +430,7 @@ export function OverlayLegend({
   newtonsPerPixel,
   auto,
 }: {
-  diagnostics: Diagnostics | null
+  diagnostics: DiagnosticsSample | null
   enabled: Record<OverlayKey, boolean>
   newtonsPerPixel: number
   auto: boolean
@@ -325,13 +438,17 @@ export function OverlayLegend({
   if (diagnostics === null) {
     return null
   }
-  const resolved = resolveOverlays(diagnostics)
+  const resolved = resolveOverlays(diagnostics.values)
   const scales = overlayScales(resolved, enabled, newtonsPerPixel, auto)
   const active = resolved.filter((r) => enabled[r.def.key])
+  const missing = active.filter((r) => r.unavailable).length
   return (
     <div
       data-testid="overlay-legend"
       data-count={active.length}
+      data-unavailable={missing}
+      data-source={diagnostics.source}
+      data-sample-t={diagnostics.t}
       style={{ display: 'grid', gap: 2, fontVariantNumeric: 'tabular-nums' }}
     >
       <div style={{ color: '#667' }}>
@@ -342,16 +459,22 @@ export function OverlayLegend({
         <div
           key={r.def.key}
           data-testid={`legend-${r.def.key}`}
-          data-value={r.value}
+          data-recorded={r.unavailable ? 'false' : 'true'}
+          data-value={r.unavailable ? '' : r.value}
           style={{ display: 'flex', gap: 6, alignItems: 'center' }}
         >
           <span
             aria-hidden
-            style={{ width: 10, height: 10, background: r.def.colour, display: 'inline-block' }}
+            style={{
+              width: 10,
+              height: 10,
+              background: r.unavailable ? '#ccd' : r.def.colour,
+              display: 'inline-block',
+            }}
           />
           <span style={{ flex: 1 }}>{r.def.label}</span>
-          <span>
-            {r.value.toFixed(2)} {r.def.unit}
+          <span style={{ color: r.unavailable ? '#889' : undefined }}>
+            {r.unavailable ? NOT_RECORDED : `${r.value.toFixed(2)} ${r.def.unit}`}
           </span>
         </div>
       ))}
