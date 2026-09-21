@@ -36,7 +36,7 @@ same shape sections 02, 03 and 04 used.
 | **D2 — `rng.rs` gains `STREAM_AGENT = 4`** | implemented, additively: one constant, one module-doc table row, and `stream_labels_are_distinct` widened to compare every label against every other **and** to assert the four streams' draws themselves differ |
 | **D3 — step 3 gains `-p sailgym-agent`** | implemented: `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent`, five sites moved together and **verified** (§6.1), step count unchanged so `[ValidateRange(1, 11)]` did not move |
 | **D4 — `brief.md` S3** | the controller half, in; the rule sailor and the web picker, out. This table is the record, since no section-05 task owns `docs/v2/brief.md` |
-| **validation performed** | 71 tests in the new crate (62 unit + 9 integration), the six committed goldens reproduced **bit for bit** through the funnel, the F9.7 identity with an agent attached over six chunkings, five demonstrations that the named guards can go red, and six full runs of the eleven-step gate (§6) |
+| **validation performed** | 71 tests in the new crate (62 unit + 9 integration), the six committed goldens reproduced **bit for bit** through the funnel, the F9.7 identity with an agent attached over six chunkings, five demonstrations that the named guards can go red, and eight full runs of the eleven-step gate — six green, and the two RV52 cost (§6, §7) |
 
 **No signature is claimed for anything beyond that.** This section makes no
 physical claim of any kind: it adds an interface, and an interface is not
@@ -131,7 +131,7 @@ that skipped the denormalisation step.
 `decide(&mut self, obs: &[f64], rng: &mut Pcg32)` means an agent cannot reach
 a `WindField`, a `Route`, a `WorldView` or a `BoatState`, because no such
 value is ever in scope. That is F14.4 made structural. The PRD asks for a
-`trybuild` case or a documented manual check; the manual check is §5.5, and
+`trybuild` case or a documented manual check; the manual check is §5.6, and
 `spec::tests::the_agent_trait_cannot_reach_the_world` asserts the signature
 permanently so the property cannot be lost by an ordinary edit.
 
