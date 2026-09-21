@@ -68,6 +68,10 @@
 // crate root, which is task 5.1's. Recorded in
 // `docs/v2/progress/05-handoff.md` rather than quietly absorbed (F13.2), as
 // section 04 recorded the same gap.
+pub mod sensor;
 pub mod spec;
+pub mod worldview;
 
+pub use sensor::{Sensor, SensorRegistry};
 pub use spec::{Action, ActionSpace, ActionVec, Agent, AgentDebug, AgentSpec, Cadence};
+pub use worldview::WorldView;
