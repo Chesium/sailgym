@@ -12,31 +12,17 @@ Conformance is **implementation agreement, not physical validation**. Two implem
 
 | | |
 |---|---|
-| key | `2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63` |
+| digest | `2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63` |
 | directory | `conformance/2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63/` |
 | bundle schema | 1 |
 | generator | 1 |
 | tolerance contract | 1 |
-| model | model v2 (physics src tree 55f3a73fd06aaa2001133f328676fd75b9c49943 PLUS UNCOMMITTED EDITS — not a baseline) |
+| model | model v2 (physics src tree 750c6d6c0159e3cf3adbd0cd1d661eb6b7fc5064) |
 | toolchain | rustc 1.98.1 (48a229cea 2026-09-01) / x86_64-unknown-linux-gnu / release |
 | integrator / `dt` | Rk2Midpoint / 0.005 s |
-| size | 1523456 bytes of the 2000000-byte budget (76.2 %) |
+| size | 1522949 bytes of the 2000000-byte budget (76.1 %) |
 
-> **This bundle was generated from a tree git could not certify.** It names no baseline and must not be presented as one. Declared:
->
-> ```
-> v2 section 02: the conformance bundle, its generator and its runner land together with the physics-source accessors they need (tasks 2.1-2.4)
-> 
-> Generated from an uncommitted working tree. git status --porcelain -- crates/sailgym-physics/src:
-> M crates/sailgym-physics/src/environment/wind.rs
->  M crates/sailgym-physics/src/lib.rs
->  M crates/sailgym-physics/src/stability/hydrostatics.rs
->  M crates/sailgym-physics/src/testkit.rs
-> ?? crates/sailgym-physics/src/digest.rs
-> ?? crates/sailgym-physics/src/testkit/
-> ```
-
-The key is SHA-256 over the bundle's **contract**: the schema, generator and tolerance-contract versions, the declared model version, the resolved F7 catalogue, the integrator and `dt`, the wind-mode tables and every fixture's column names and data digest. `model.source` is recorded but deliberately **not** keyed — a commit that touches `crates/sailgym-physics/src` without moving a single sampled number must not rename the directory, and a change that does move a number is caught by that fixture's data digest, which is strictly stronger than a source id (RV10). The full canonical record is in `manifest.json`; equality of records, not of hex strings, is the comparison authority (F16.4).
+The `digest` is SHA-256 over the bundle's **contract**: the schema, generator and tolerance-contract versions, the declared model version, the resolved F7 catalogue, the integrator and `dt`, the wind-mode tables and every fixture's column names and data digest. `model.source` is recorded but deliberately **not** keyed — a commit that touches `crates/sailgym-physics/src` without moving a single sampled number must not rename the directory, and a change that does move a number is caught by that fixture's data digest, which is strictly stronger than a source id (RV10). The full canonical record is in `manifest.json`; equality of records, not of hex strings, is the comparison authority (F16.4).
 
 ---
 

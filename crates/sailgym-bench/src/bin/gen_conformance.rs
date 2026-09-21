@@ -191,7 +191,7 @@ fn main() {
 
     let ctx = Context::new();
     let bundle = conformance::build(&ctx, &declared_changes);
-    let key = bundle.manifest.key.clone();
+    let key = bundle.manifest.digest.clone();
     let dir = repo_root().join("conformance").join(&key);
 
     check(&ctx, &bundle);
@@ -335,8 +335,8 @@ fn document(bundle: &Bundle, total: u64) -> String {
     let _ = writeln!(d, "## Identity\n");
     let _ = writeln!(d, "| | |");
     let _ = writeln!(d, "|---|---|");
-    let _ = writeln!(d, "| key | `{}` |", m.key);
-    let _ = writeln!(d, "| directory | `conformance/{}/` |", m.key);
+    let _ = writeln!(d, "| digest | `{}` |", m.digest);
+    let _ = writeln!(d, "| directory | `conformance/{}/` |", m.digest);
     let _ = writeln!(d, "| bundle schema | {} |", m.bundle_schema_version);
     let _ = writeln!(d, "| generator | {} |", m.generator_version);
     let _ = writeln!(
@@ -367,7 +367,7 @@ fn document(bundle: &Bundle, total: u64) -> String {
     }
     let _ = writeln!(
         d,
-        "The key is SHA-256 over the bundle's **contract**: the schema, generator and \
+        "The `digest` is SHA-256 over the bundle's **contract**: the schema, generator and \
          tolerance-contract versions, the declared model version, the resolved F7 \
          catalogue, the integrator and `dt`, the wind-mode tables and every fixture's \
          column names and data digest. `model.source` is recorded but deliberately **not** \

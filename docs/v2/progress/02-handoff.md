@@ -10,13 +10,15 @@ frame convention and no summation order moved, `STATE_LEN` is still 13, the
 F8.3 snapshot layout is unchanged, `parameters.rs` is byte identical, the F8.2
 WASM surface did not grow by a single method, and F9 is unchanged.
 
-Status: **complete.** `scripts/check.sh` is green at steps 1–8 on the working
-tree, and step 9 is green — 349 passed, exit 0 — on this same source
-**committed**, measured in a throwaway worktree because two section-11
-browser tests cannot pass while `crates/sailgym-physics/src` has uncommitted
-edits. §7 states the measurement, the cause and the one command the human
-runs after committing. Nothing was weakened to get there, no assertion was
-touched, and no file outside a task's `Owns:` list was written.
+Status: **complete, and the gate is green end to end** from the committed
+tree (`39068ba feat: v2-02`, physics src tree
+`750c6d6c0159e3cf3adbd0cd1d661eb6b7fc5064`). §7 has the run. Getting there
+took one thing the section could not do to itself — two section-11 browser
+tests cannot pass while `crates/sailgym-physics/src` has uncommitted edits,
+because F18.1d makes a dirty identity comparable with nothing — and §7 records
+that property, which is a standing one for every later section that touches
+physics source. Nothing was weakened, no assertion was touched, and no file
+outside a task's `Owns:` list was written.
 
 ---
 
@@ -112,7 +114,7 @@ section that implements them is what this handoff treats as resolving them.
 ### Task 2.5 — the committed bundle (P-group C, section agent)
 
 - **`conformance/2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63/`**
-  — 14 files, 1 523 456 bytes, **76.2 %** of the 2 MB budget.
+  — 14 files, 1 522 949 bytes, **76.1 %** of the 2 MB budget.
 
 ### Task 2.6 — the Rust runner (P-group S, section agent)
 
@@ -217,6 +219,19 @@ runner refuse a fixture whose column names are not unique. "The column names
 are the contract" is the PRD's phrase; a contract with a duplicate key is not
 one. This is why the committed key is `2323a340…` and not `403952e7…`.
 
+### 3.5 The manifest's key is spelled `digest`
+
+PRD 2.5's acceptance names the field: "`conformance/<digest>/manifest.json`
+exists, its **`digest`** field equals the directory name", and F16.4's layout
+sketch says `digest` too. The field is therefore `digest`.
+
+The Rust method that computes it is still `BundleIdentity::key()`, and that
+asymmetry is deliberate rather than sloppy: renaming the method would have
+edited `crates/sailgym-physics/src`, which would have made the tree dirty,
+which would have forced the bundle back through a `--allow-dirty` generation
+and undone the release baseline of §7 — for a name. The manifest field's doc
+comment says which method produces it, so there is no guessing.
+
 ---
 
 ## 4. What the bundle is, and every measured number in it
@@ -227,12 +242,13 @@ conformance/2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63/
 
 | | |
 |---|---|
+| `digest` (the directory name, and `manifest.digest`) | `2323a34073ebdbd6adfe7e1fbfa22d41ff9874fd92df1fbdcb6f6e9ec9884a63` |
 | Files | 11 × `.npy`, `parameters.json`, `wind_modes.json`, `manifest.json` |
-| Size | **1 523 456 bytes**, 76.2 % of the 2 MB budget |
+| Size | **1 522 949 bytes**, 76.1 % of the 2 MB budget, asserted by the generator |
 | Rows | 10 255 across the eleven fixtures; **98 401** recorded output values |
 | Tolerance entries | 80 tier-0, 13 tier-1, 91 tier-2 |
 | Wind fields shipped as data | 9 (three synthetic, one per F6.1 mode, and one per shipped scenario) |
-| Model | `model v2`, physics src tree `55f3a73f…` — **dirty**, see §7 |
+| Model | `model v2`, physics src tree `750c6d6c0159e3cf3adbd0cd1d661eb6b7fc5064`, **clean** — a release baseline (`BundleIdentity::is_release_baseline()` is true, `declared_changes` is empty) |
 | Toolchain | `rustc 1.98.1 (48a229cea 2026-09-01) / x86_64-unknown-linux-gnu / release` |
 
 ### 4.1 The measured `wave` gap — F16.6 was pessimistic by two decades
@@ -383,11 +399,37 @@ task's list, and `Cargo.lock` is named in 2.1's.
 
 ---
 
-## 7. The gate, and the one criterion this section cannot discharge for itself
+## 7. The gate, and the dirty-tree property every later section inherits
 
-### What was measured
+### The gate, from the committed tree
 
-`scripts/check.sh` on the finished working tree, nothing else running:
+`scripts/check.sh` from the committed tree, after the regeneration described
+below, nothing else running: **all nine steps green, exit 0, 751 s.**
+
+| step | | time |
+|---|---|---|
+| 1 | `cargo fmt --check` | 1 s |
+| 2 | `cargo clippy --all-targets -- -D warnings` | 0 s |
+| 3 | `cargo test -p sailgym-physics -p sailgym-task` | 63 s |
+| 4 | `--test invariants --test no_shortcuts --test convergence --test symmetry --test provenance --test conformance` | 42 s |
+| 5 | `--test regression` | 0 s |
+| 6 | `wasm-pack build` | 12 s |
+| 7 | `pnpm --dir web typecheck` | 1 s |
+| 8 | `pnpm --dir web test:unit` | 1 s — 20 files, 208 tests |
+| 9 | `pnpm --dir web test:e2e` | 630 s — **349 passed, 0 failed** |
+| | **all steps passed** | **751 s** |
+
+`--test conformance` is 7/7 inside step 4. Rust test counts in step 4:
+7 conformance, 4 convergence, 27 invariants, 5 no_shortcuts, 6 provenance,
+1 symmetry.
+
+The rest of this section records how the section got there, because the
+property it ran into is a standing one for every later section that touches
+physics source.
+
+### What a *dirty* tree measures, and why
+
+`scripts/check.sh` on the working tree **before** the commit:
 
 | step | | result |
 |---|---|---|
@@ -453,32 +495,41 @@ tests with the six red ones green. The worktree was removed, the working
 tree's own WASM was rebuilt with `scripts/check.sh 6`, and **nothing in the
 repository was committed**.
 
-### What the human does
+### The regeneration after the commit, and what it proved
+
+The bundle's manifest records the identity of the build that generated it, so
+the copy written before the commit said `state: "dirty"`. Regenerating once
+from the committed tree fixed that — and, because `build.rs` keys its re-run
+on source **mtimes**, which a commit does not change, the compiled identity
+had to be refreshed first:
 
 ```
-git add -A && git commit          # the section, as every previous one landed
-scripts/check.sh                  # nine steps, expected green
-```
-
-and then, **once**, because the bundle's manifest records the identity of the
-build that generated it:
-
-```
+touch crates/sailgym-physics/src/lib.rs
 cargo run --release -p sailgym-bench --bin gen_conformance -- --write docs/v2/conformance.md
-git add conformance docs/v2/conformance.md && git commit --amend --no-edit
 ```
 
-That second regeneration replaces `state: "dirty"` with `state: "clean"` and
-the pre-commit tree id with the committed one, exactly as `08-handoff.md` §8.6
-describes for the goldens. It is a one-field diff; the **key does not change**
-(§3.2), so the directory name and every `.npy` stay put, and
-`git status --porcelain conformance/` is empty from then on.
+No `--allow-dirty` this time; the generator ran on the clean-tree path and
+printed `identity model v2 (physics src tree 750c6d6c…)` with no warning.
+**This is the prediction §3.2 made, and it held exactly:**
 
-**Section 08 hit the same thing** and resolved it the same way — its §11 says
-the gate was run "from a clean working tree of this section's work". This
-handoff states it explicitly because it is a standing property of the
-repository that no document recorded, and F16.9 point 8 now records it in the
-foundations.
+| | |
+|---|---|
+| `digest` | `2323a340…a63` — **unchanged** |
+| Directory | unchanged |
+| The eleven `.npy` files | **byte identical**, all of them |
+| `parameters.json`, `wind_modes.json` | byte identical |
+| `manifest.json` | three lines: `tree` `55f3a73f…` → `750c6d6c…`, `state` `dirty` → `clean`, `declared_changes` → `""` (plus, in a later pass, the field rename of §3.5) |
+
+That is the whole diff, and it is the point of excluding `model.source` from
+the key: a commit that changed no sampled number did not rename the bundle.
+`08-handoff.md` §8.6 describes the same one-time marker replacement for the
+goldens.
+
+**Section 08 hit the dirty-tree property too** and resolved it the same way —
+its §11 says the gate was run "from a clean working tree of this section's
+work". This handoff states it explicitly because it is a standing property of
+the repository that no document recorded, and F16.9 point 8 now records it in
+the foundations.
 
 ---
 
@@ -525,10 +576,10 @@ re-measures on the real runner.
 
 | # | Criterion | Verdict |
 |---|---|---|
-| 1 | `scripts/check.sh` green, all nine steps | **Steps 1–8 green on the working tree; step 9 green (349 passed, exit 0) on the same source committed**, measured in a throwaway worktree. On the uncommitted tree step 9 reports 343 passed / 6 failed, all six being the two section-11 comparison tests that F18.1d makes impossible to pass with a dirty identity. §7 has the measurement, the cause and the two commands. Nothing was weakened. |
+| 1 | `scripts/check.sh` green, all nine steps | **Pass** — all nine, exit 0, 751 s, step 9 at 349 passed / 0 failed, from the committed tree. Before the commit it was steps 1–8 green and step 9 at 343/6, all six being the two section-11 comparison tests that F18.1d makes impossible to pass with a dirty identity; §7 records that property, which is standing. Nothing was weakened. |
 | 2 | `--test conformance` passes, and the three failure modes were demonstrated and reverted | **Pass.** 7/7; §5 has all three, verbatim. |
-| 3 | Regeneration on a clean tree leaves `git status --porcelain conformance/` empty | **Partially.** Two consecutive regenerations produce a **byte-identical** bundle (`diff -r`, no differences), so the generator is idempotent. The literal criterion needs a committed tree, and §7's second command is what discharges it. |
-| 4 | Bundle total ≤ 2 MB | **Pass.** 1 523 456 bytes, 76.2 %, asserted by the generator itself. |
+| 3 | Regeneration on a clean tree leaves `git status --porcelain conformance/` empty | **Pass.** Measured on the clean tree: `diff -r` between two consecutive regenerations reports no difference, so the second run leaves `conformance/` untouched. §7 records the one-time post-commit manifest update that preceded it — and the proof that the digest, the directory name and every `.npy` survived it byte for byte. |
+| 4 | Bundle total ≤ 2 MB | **Pass.** 1 522 949 bytes, 76.1 %, asserted by the generator itself rather than by review. |
 | 5 | `git diff` over `forces/`, `dynamics.rs`, `integrator.rs`, `parameters.rs` empty | **Pass.** §6. |
 | 6 | Every previously green test still green, same assertions — `regression`, `wind`, `provenance`, `determinism` | **Pass.** Worst regression `\|Δ\|` exactly `0.0`; no assertion touched. |
 | 7 | `throughput.md` and `conformance.md` both generated by a named command; the handoff states the §0 verdict | **Pass.** §8. |
@@ -550,7 +601,7 @@ green, and `modes_are_the_whole_of_the_randomness` reproduces `sample` bit for
 bit from a JSON round trip at 1 000 points in all three F6.1 modes.
 
 **RV9 — the committed bundle grows without bound. Did not fire, and the budget
-is asserted by the generator.** 76.2 % used. It was at **97.2 %** on the first
+is asserted by the generator.** 76.1 % used. It was at **97.2 %** on the first
 generation; the manifest was restructured so that F16.2's derivation is stated
 **once per tier** rather than repeated per column (which is what F16.2 asks
 for anyway), `tier0_sheet`'s slack sweep dropped a redundant rate-and-rate

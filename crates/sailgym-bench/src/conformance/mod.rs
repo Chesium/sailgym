@@ -1718,8 +1718,11 @@ pub struct Manifest {
     /// The command that produced this bundle.
     pub generator: String,
     pub generator_version: u32,
-    /// The compact key. Equals the containing directory's name.
-    pub key: String,
+    /// The bundle's compact key, under F16.4's name for it. Equals the
+    /// containing directory's name, and is exactly
+    /// [`BundleIdentity::key`] — a SHA-256 over the bundle's *contract*,
+    /// which is everything in `identity` except `model.source`.
+    pub digest: String,
     /// R7: a bundle is evidence about the build that produced it.
     pub toolchain: ToolchainInfo,
     /// The full canonical record (F16.4).
@@ -1839,7 +1842,7 @@ pub fn build(ctx: &Context, declared_changes: &str) -> Bundle {
         bundle_schema_version: BUNDLE_SCHEMA_VERSION,
         generator: GENERATOR_COMMAND.to_string(),
         generator_version: GENERATOR_VERSION,
-        key: identity.key(),
+        digest: identity.key(),
         toolchain: ToolchainInfo::current(),
         identity,
         declared_changes: declared_changes.to_string(),

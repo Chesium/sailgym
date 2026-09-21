@@ -330,7 +330,7 @@ fn every_fixture_matches_current_source() {
     eprintln!(
         "conformance: {} fixtures, {compared} values, bit-identical | bundle {}",
         fixtures.len(),
-        m.key
+        m.digest
     );
 }
 
@@ -361,9 +361,9 @@ fn the_manifest_identity_is_the_current_contract() {
          prevent (RV7)."
     );
     assert_eq!(
-        m.key,
+        m.digest,
         now.key(),
-        "the manifest's key is not the key of its own contract"
+        "the manifest's digest is not the key of its own contract"
     );
 
     // v2 F18.1d / RV51, the `regression.rs` treatment.
@@ -391,18 +391,18 @@ fn the_manifest_identity_is_the_current_contract() {
     eprintln!("conformance: {}", m.identity.source_note(&now));
 }
 
-/// The key is the directory name, and the manifest agrees with itself.
+/// The `digest` is the directory name, and the manifest agrees with itself.
 #[test]
-fn the_key_is_the_directory_name() {
+fn the_digest_is_the_directory_name() {
     let (dir, m) = manifest();
     let name = dir
         .file_name()
         .expect("a bundle directory")
         .to_string_lossy()
         .into_owned();
-    assert_eq!(m.key, name, "manifest.key is not the directory name");
-    assert_eq!(m.key.len(), 64);
-    assert!(m.key.chars().all(|c| c.is_ascii_hexdigit()));
+    assert_eq!(m.digest, name, "manifest.digest is not the directory name");
+    assert_eq!(m.digest.len(), 64);
+    assert!(m.digest.chars().all(|c| c.is_ascii_hexdigit()));
     assert_eq!(m.bundle_schema_version, m.identity.bundle_schema_version);
     assert_eq!(m.generator_version, m.identity.generator_version);
     assert_eq!(
