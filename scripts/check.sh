@@ -37,7 +37,7 @@ fi
 step_names=(
     'cargo fmt --check'
     'cargo clippy --all-targets -- -D warnings'
-    'cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent'
+    'cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent -p sailgym-env'
     'cargo test -p sailgym-physics --test invariants --test no_shortcuts --test convergence --test symmetry --test provenance --test conformance'
     'cargo test -p sailgym-physics --test regression'
     'wasm-pack build crates/sailgym-wasm --target web --out-dir ../../web/src/wasm'
@@ -59,16 +59,17 @@ run_step() {
         1) cargo fmt --check ;;
         2) cargo clippy --all-targets -- -D warnings ;;
         # v2 section 11 added `-p sailgym-task`, section 04
-        # `-p sailgym-course` and section 05 `-p sailgym-agent` (v2 F12′).
-        # Step 3 is what proves the pure Rust is correct **and builds on the
-        # host with no WASM toolchain**, and all three crates are pure Rust
-        # with the same property — so they belong in this step rather than
-        # each in a step of its own. None may be dropped by a later revision
-        # of this step: a chain rewritten for some new tool that lost one
-        # would take the whole practice evaluator, the whole course layer or
-        # the whole agent interface out of the gate silently (F12′). Section
-        # 06 extends this same list rather than adding a step.
-        3) cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent ;;
+        # `-p sailgym-course`, section 05 `-p sailgym-agent` and section 06
+        # `-p sailgym-env` (v2 F12′). Step 3 is what proves the pure Rust is
+        # correct **and builds on the host with no WASM toolchain**, and all
+        # four crates are pure Rust with the same property — so they belong
+        # in this step rather than each in a step of its own. None may be
+        # dropped by a later revision of this step: a chain rewritten for
+        # some new tool that lost one would take the whole practice
+        # evaluator, the whole course layer, the whole agent interface or the
+        # whole episode runner out of the gate silently (F12′). A later
+        # section extends this same list rather than adding a step.
+        3) cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent -p sailgym-env ;;
         # Every audit target in one invocation: the brief §35 invariants, the
         # prohibited-shortcut greps (section 07), the convergence study and the
         # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), the F7

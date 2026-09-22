@@ -307,6 +307,7 @@ name = "sailgym-bench"
 version = "0.1.0"
 dependencies = [
  "rayon",
+ "sailgym-env",
  "sailgym-physics",
  "serde",
  "serde_json",
@@ -317,6 +318,19 @@ name = "sailgym-course"
 version = "0.1.0"
 dependencies = [
  "sailgym-physics",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "sailgym-env"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "sailgym-agent",
+ "sailgym-course",
+ "sailgym-physics",
+ "sailgym-task",
  "serde",
  "serde_json",
 ]

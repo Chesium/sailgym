@@ -1,0 +1,31 @@
+[package]
+name = "sailgym-env"
+description = "The episode runner: Simulation + Route + Agent -> step/reset, Outcome, decision log and VecEnv (v2 F14.1, F16.5, F17.4)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The arrows run one way (v2 F14.1): `env -> {agent, course, task, physics}`,
+# and `sailgym-physics` depends on none of them. `vec_env`'s
+# `physics_depends_on_no_v2_crate` asserts it with `cargo tree` on every gate
+# run rather than leaving it to review.
+sailgym-physics = { workspace = true }
+sailgym-task = { workspace = true }
+sailgym-course = { workspace = true }
+sailgym-agent = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+# v2 F16.5 permits rayon across **independent** boats, and permits it in
+# `sailgym-env` and `sailgym-bench` **only**. F9.6 — no parallelism inside a
+# single simulation step — is unchanged, and **`rayon` may not appear in
+# `sailgym-physics`**. `vec_env::tests::rayon_appears_in_exactly_two_manifests`
+# greps every `Cargo.toml` in the workspace and says so (section acceptance 5,
+# RV40).
+rayon = "1"
+
+[dev-dependencies]
+# `mirror_state`, `uniform_wind` and `still_air` reach the tests and nothing
+# that ships, exactly as `sailgym-agent` takes them.
+sailgym-physics = { path = "../sailgym-physics", features = ["testkit"] }

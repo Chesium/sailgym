@@ -26,3 +26,11 @@ serde_json = { workspace = true }
 # `sailgym-bench` only. **`rayon` may not appear in `sailgym-physics`**, and
 # `tests/determinism.rs` greps for it there.
 rayon = "1"
+# Section 06 task 6.6: `env_bench` re-measures section 02's sweep on the real
+# episode runner, so the cost of the observation, the decision cadence and
+# the per-step `Outcome` evaluation is inside the figure rather than outside
+# it. **No section-06 task owns this manifest** — task 6.6's `Owns:` names
+# `src/bin/env_bench.rs` and `docs/v2/throughput.md` and not the crate that
+# has to build it — so the one-line dependency is recorded as an
+# `Owns:`-list gap in `docs/v2/progress/06-handoff.md` rather than absorbed.
+sailgym-env = { workspace = true }

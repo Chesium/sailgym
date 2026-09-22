@@ -5,6 +5,7 @@ members = [
     "crates/sailgym-task",
     "crates/sailgym-course",
     "crates/sailgym-agent",
+    "crates/sailgym-env",
     "crates/sailgym-wasm",
     "crates/sailgym-bench",
 ]
@@ -20,5 +21,6 @@ sailgym-physics = { path = "crates/sailgym-physics" }
 sailgym-task = { path = "crates/sailgym-task" }
 sailgym-course = { path = "crates/sailgym-course" }
 sailgym-agent = { path = "crates/sailgym-agent" }
+sailgym-env = { path = "crates/sailgym-env" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }

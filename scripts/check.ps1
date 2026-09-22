@@ -62,16 +62,17 @@ $E2E = if ($Fast) {
 $Steps = @(
     @{ Name = 'cargo fmt --check';                          Action = { cargo fmt --check } }
     @{ Name = 'cargo clippy --all-targets -- -D warnings';  Action = { cargo clippy --all-targets -- -D warnings } }
-    # v2 section 11 added `-p sailgym-task`, section 04 `-p sailgym-course`
-    # and section 05 `-p sailgym-agent` (v2 F12'). Step 3 is what proves the
-    # pure Rust is correct **and builds on the host with no WASM toolchain**,
-    # and all three crates are pure Rust with the same property, so they belong
-    # in this step rather than each in a step of its own. None may be dropped
-    # by a later revision of this step: a chain rewritten for some new tool
-    # that lost one would take the whole practice evaluator, the whole course
-    # layer or the whole agent interface out of the gate silently (v2 F12').
-    # Section 06 extends this same list rather than adding a step.
-    @{ Name = 'cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent'; Action = { cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent } }
+    # v2 section 11 added `-p sailgym-task`, section 04 `-p sailgym-course`,
+    # section 05 `-p sailgym-agent` and section 06 `-p sailgym-env`
+    # (v2 F12'). Step 3 is what proves the pure Rust is correct **and builds
+    # on the host with no WASM toolchain**, and all four crates are pure Rust
+    # with the same property, so they belong in this step rather than each in
+    # a step of its own. None may be dropped by a later revision of this step:
+    # a chain rewritten for some new tool that lost one would take the whole
+    # practice evaluator, the whole course layer, the whole agent interface or
+    # the whole episode runner out of the gate silently (v2 F12'). A later
+    # section extends this same list rather than adding a step.
+    @{ Name = 'cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent -p sailgym-env'; Action = { cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent -p sailgym-env } }
     # Every audit target in one invocation: the brief section 35 invariants,
     # the prohibited-shortcut greps (section 07), the convergence study and the
     # rotation/mirror sweep (section 10 tasks 10.2 and 10.3), the F7 provenance

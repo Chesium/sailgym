@@ -16,16 +16,18 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 | **F16** | Conformance, digests and the tolerance contract | **implemented** by section 02; see F16.9 |
 | **F17** | The Python boundary | F17.1 **implemented** by section 03; F17.2–F17.5 remain proposed, section 07 |
 | **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08, F18.2 by 09, F18.3 by 10, F18.4 by 11 |
+| **F19** | The episode runner — `Outcome`, autoreset, decision log, `VecEnv` | **implemented** by section 06; it records F16.5 and F17.4 rather than adding a rule. See F19 |
 
 ---
 
 ## F12′. The gate
 
 **The chain is eleven steps, and every part of it is implemented.** Section
-11 added `-p sailgym-task` to step 3, section 04 added `-p sailgym-course`
-and section 05 `-p sailgym-agent` to it on **2026-09-22 by human approval** —
-each its dispatch as the section PRD, whose task 4.7 and task 5.8 instruct
-the five-site edit explicitly — without changing the step count, so
+11 added `-p sailgym-task` to step 3; section 04 added `-p sailgym-course`,
+section 05 `-p sailgym-agent` and section 06 `-p sailgym-env` to it on
+**2026-09-22 by human approval** — each its dispatch as the section PRD,
+whose task 4.7, task 5.8 and task 6.8 instruct the five-site edit
+explicitly — without changing the step count, so
 `[ValidateRange(1, 11)]` did not move again; section 02 added
 `--test conformance`
 to step 4 on **2026-09-21 by human approval**, the same approval with a date
@@ -43,7 +45,7 @@ numbers and their meaning.
 ```
  1. cargo fmt --check
  2. cargo clippy --all-targets -- -D warnings
- 3. cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent   ← done, 11, 04, 05
+ 3. cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent -p sailgym-env   ← done, 11, 04, 05, 06
  4. cargo test -p sailgym-physics --test invariants --test no_shortcuts \
                                   --test convergence --test symmetry \
                                   --test provenance --test conformance     ← done, section 02
@@ -69,10 +71,10 @@ Three properties of this shape are deliberate:
   it depends on `sailgym-physics` and nothing depends on it except the
   wrapper. A separate step would have made the chain ten steps for a crate
   that answers the same question step 3 already asks. `sailgym-course` joined
-  it in section 04 and `sailgym-agent` in section 05, for the same reason and
-  by the same edit, and **section 06 extends this same list rather than
-  adding a step** — which is why the step count has not moved since
-  section 03.
+  it in section 04, `sailgym-agent` in section 05 and `sailgym-env` in
+  section 06, for the same reason and by the same edit — which is why the
+  step count has not moved since section 03, and why a later section
+  **extends this same list rather than adding a step**.
 - **Step 4 grows rather than a step 12 appearing.** `--test conformance` proves
   a property of the physics crate, which is what step 4 is for. A separate step
   would make a red step 4 no less ambiguous and would cost another F12 change.
@@ -99,21 +101,24 @@ parsed and their step-name lists diffed, agreeing at all eleven positions
 Additions to the pinned stack: `uv`, `ruff`, `pytest`, `jax`, `maturin`, `pyo3`,
 `rayon`. **`rayon` may not appear in `sailgym-physics`** — see F16.5.
 
-No gate change remains proposed. Four entries must be retained in every
-later revision of the chain: `-p sailgym-task`, `-p sailgym-course` and
-`-p sailgym-agent` in step 3, and `--test conformance` in step 4. A section
-that rewrote the chain and dropped one would take the whole practice
-evaluator, the whole course layer, the whole agent interface, or the whole
-bundle-freshness check, out of the gate silently.
+No gate change remains proposed. Five entries must be retained in every
+later revision of the chain: `-p sailgym-task`, `-p sailgym-course`,
+`-p sailgym-agent` and `-p sailgym-env` in step 3, and `--test conformance`
+in step 4. A section that rewrote the chain and dropped one would take the
+whole practice evaluator, the whole course layer, the whole agent interface,
+the whole episode runner, or the whole bundle-freshness check, out of the
+gate silently.
 
 **One site did not move with the rest**, and it is recorded rather than
 edited: the nine-step table in the repository's root `README.md` still spells
 step 3 as `cargo test -p sailgym-physics`, step 4 without
 `--test conformance`, and the chain as nine steps with no 10 or 11. No
-section-11, section-02 or section-03 task owns that file (F13.2), so
-`docs/v2/progress/11-handoff.md`, `docs/v2/progress/02-handoff.md` and
-`docs/v2/progress/03-handoff.md` report the exact changes it needs — now four
-lines rather than two. `docs/v1/00-foundations.md` F12 is deliberately **not**
+section-11, section-02, section-03, section-04, section-05 or section-06
+task owns that file (F13.2), so `docs/v2/progress/11-handoff.md`,
+`docs/v2/progress/02-handoff.md`, `docs/v2/progress/03-handoff.md`,
+`docs/v2/progress/05-handoff.md` and `docs/v2/progress/06-handoff.md` report
+the exact changes it needs — now five crates in step 3 and a chain of eleven
+steps, not two lines. `docs/v1/00-foundations.md` F12 is deliberately **not**
 edited: a v1 clause is amended by a recorded v2 delta — this one — and never
 in place.
 
@@ -552,6 +557,12 @@ explicit two-phase sample-then-step.
 
 **`rayon` may not appear in `sailgym-physics`.**
 
+Section 06 implemented this clause and turned its argument into a fact: see
+F19, and `crates/sailgym-env/src/vec_env.rs`, whose serial and parallel
+arms are asserted equal with `to_bits()` at N ∈ {1, 8, 64, 512} and every
+thread count, and whose `rayon_appears_in_exactly_two_manifests` greps every
+`Cargo.toml` in the workspace.
+
 ### F16.6 The wind kernel is not `libm`
 
 `environment/wind.rs`'s `wave` is a hand-rolled cosine — Cody–Waite reduction
@@ -703,6 +714,11 @@ reports `done` or the next one) is **pinned once, in Rust**, checked against the
 convention of the installed Gymnasium version rather than assumed, and asserted
 numerically: discounted returns for a fixed action sequence computed both ways
 must agree.
+
+Section 06 implemented this clause; F19.1 records what it found — that **no
+Gymnasium is pinned in `uv.lock`**, so the semantics were read out of the
+release's own source, both conventions were implemented, and section 07 must
+re-check them against whatever it pins.
 
 ### F17.5 Performance non-negotiables
 
@@ -963,3 +979,108 @@ moved, `STATE_LEN` is still 13, `parameters.rs` is byte identical and
    during an attempt ends it as `conditions_changed`, and a reset or a
    scenario change ends it as `cancelled`; neither produces a comparable
    result.
+
+---
+
+## F19. The episode runner
+
+*Implemented by section 06 on 2026-09-22, after 05. This section **adds no
+model rule and no API rule of its own**: the normative deltas section 06
+needed were F16.5 (parallelism across independent boats, in `sailgym-env`
+and `sailgym-bench` only) and F17.4 (`Outcome` and the autoreset convention
+authoritative in Rust), both already written above, plus D2 — step 3 gains
+`-p sailgym-env`. What follows is the record of what those clauses became,
+in the house style of F14.10, F15.5, F16.9 and F17.6, so that a later reader
+does not have to infer it. The evidence is
+[`progress/06-handoff.md`](progress/06-handoff.md) and the env section of
+[`throughput.md`](throughput.md). The implementation decision brief §5 asks
+for — the selected S row (S4, the environment half), the exact F deltas, the
+decision source and date, and the validation performed — is recorded in
+`progress/06-handoff.md` §1.*
+
+***No file in `crates/sailgym-physics/` changed***: `git diff --name-only
+crates/sailgym-physics/` is empty, which is the section's acceptance
+criterion 6. F3, F4, F5, F6, F7, F8 and F9 are exactly as section 05 left
+them — `STATE_LEN` is still 13, the F8.3 snapshot layout is untouched,
+`parameters.rs` is byte identical, there is no new WASM surface, and
+`sailgym-env` holds no equation of motion, no coefficient and no frame
+conversion of its own.*
+
+### F19.1 The autoreset convention is named in Gymnasium's own vocabulary
+
+`AutoresetMode::{NextStep, SameStep, Disabled}` and their serialised text
+are `gymnasium.vector.AutoresetMode`'s three values, verbatim. **No
+Gymnasium is pinned in `uv.lock`** — section 03's workspace has `jax`,
+`numpy`, `pytest` and `ruff`, and the binding that needs Gymnasium is
+section 07's — so the semantics were read out of the release's own source
+rather than assumed, and the version, files and lines are named in the
+handoff. Section 07 **must re-check them against whatever it pins** and
+select the mode its version declares in `metadata["autoreset_mode"]`; both
+live conventions are implemented and `crates/sailgym-env/tests/returns.rs`
+proves they produce the same discounted returns, so that selection is a
+configuration and not a rewrite.
+
+### F19.2 `Outcome` is an enum and the batch API reports two masks
+
+F17.4 says episode boundaries are authoritative in Rust. `Outcome` is
+`Running | Finished { time } | Terminated(TerminationReason) | Truncated`,
+and `TerminationReason` is `Capsized | OutOfBounds | MarkMissed`. **Only the
+step budget ever produces `Truncated`**, Gymnasium's `TimeLimit` wrapper is
+not used, and `VecEnv::step_all` reports `terminated` and `truncated` as two
+separate masks whose union it never computes. A grep over the crate's own
+sources refuses a `done: bool` anywhere.
+
+### F19.3 The order the terminal conditions are tested in is fixed
+
+F9.4 fixes force summation order; the same argument fixes this one, because
+two conditions can hold on the same step. The order is capsize, out of
+bounds, mark missed, route finished, step budget — stated once, in
+`outcome.rs`, and applied once, in `episode.rs`.
+
+### F19.4 A mark cut is detected with the course crate's own rule
+
+F15.3's passage rule has four clauses. "Cut the mark" is the first three
+holding while the fourth — the side-and-clearance clause — does not, and
+rather than write those three out again — RV20's mistake in a new place —
+an episode keeps a **probe route**: the same marks with every `Rounding`
+replaced by `Either`, which is `sailgym-course`'s own spelling of "crossed
+the plane, in the leg's direction, no side required". A step on which
+`passage::passed_between` accepts the probe and the real route does not is a
+cut. There is no second copy of the geometry.
+
+### F19.5 The research envelope wraps; it does not migrate
+
+`EPISODE_SCHEMA_VERSION` is **not** bumped and section 10's codec is not
+changed. `sailgym-env`'s `ResearchEnvelope` carries its own
+`RESEARCH_ENVELOPE_VERSION` and `RESEARCH_IDENTITY_VERSION`, holds the
+recorded `Episode` nested and writes and reads it **through
+`Episode::to_json` / `Episode::from_json`**, so a schema-1 document
+round-trips as a schema-1 document. Every research field is section 10's
+`Recorded<T>`, so a legacy recording enters the research world with
+everything `Unknown` — viewable, and refused for comparison, which is what
+`ResearchEnvelope::resimulate_actions_against` enforces.
+
+### F19.6 `Sensor` is not `Send`, and the repair is reported rather than made
+
+F16.5's parallel path needs an `Episode` to cross a rayon boundary, so every
+value it owns must be `Send`. `sailgym-agent`'s `Sensor` trait is not
+declared `Send`, and `Box<dyn Sensor>` therefore is not — nor can it be
+coerced to `Box<dyn Sensor + Send>` after the fact. No section-06 task owns
+`crates/sailgym-agent` (F13.2), so `sailgym-env` builds its own `Send` suite
+from the same five concrete sensor types and repeats the bodies of
+`ObsLayout::of` and `observation::observe` over it. **Neither repetition is
+a second rule**: a test in the gate builds the suite both ways and asserts
+the layouts, the digests and the observation vectors are equal, bit for bit.
+The one-word repair — `pub trait Sensor: Send` — belongs to whoever owns
+that crate next, and the handoff says so.
+
+### F19.7 The gate's step 3 grew again
+
+To
+`cargo test -p sailgym-physics -p sailgym-task -p sailgym-course -p sailgym-agent -p sailgym-env`,
+on **2026-09-22 by human approval** — the dispatch of
+`docs/v2/prds/06-env.md` as the section PRD, whose task 6.8 instructs the
+edit explicitly. The step count did not change, so `[ValidateRange(1, 11)]`
+is untouched. Five entries must now be retained by every later revision of
+the chain: `-p sailgym-task`, `-p sailgym-course`, `-p sailgym-agent` and
+`-p sailgym-env` in step 3, and `--test conformance` in step 4.
