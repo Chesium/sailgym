@@ -1,0 +1,41 @@
+# The pyo3 binding over `sailgym-env` (v2 `docs/v2/00-foundations.md` F17.2;
+# section 07 task 7.1).
+#
+# **`sailgym-wasm` is deliberately absent, and RV47 is why.** F17.2 keeps two
+# independent boundaries: this one binds `sailgym-env` and the browser's binds
+# `sailgym-physics` through `sailgym-wasm`. They have different performance
+# shapes — one call per animation frame against 20 Hz x N envs — and different
+# lifetimes, and a binding that reused the WASM surface would inherit F8.2's
+# deliberate coarseness.
+#
+# `abi3-py312` is RV48's mitigation and it is **measured, not hoped for**:
+# `cargo clippy --all-targets -- -D warnings` (gate step 2) completes with no
+# Python interpreter anywhere on `PATH`, because the stable ABI lets
+# `pyo3-build-config` produce a configuration without asking an interpreter for
+# one. `extension-module` is what stops the cdylib linking `libpython`.
+#
+# `crate-type = ["cdylib"]` only. There is no `rlib`, because nothing in this
+# workspace depends on this crate, and no `#[cfg(test)]` module, because a test
+# binary would have to link a Python interpreter that gate step 2 has just
+# proved is not required. **The tests for this crate are the Python ones**, in
+# `python/tests/`, and they run in gate step 11.
+
+[package]
+name = "sailgym-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "sailgym_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+sailgym-physics = { workspace = true }
+sailgym-course = { workspace = true }
+sailgym-agent = { workspace = true }
+sailgym-env = { workspace = true }
+serde_json = { workspace = true }
+pyo3 = { version = "0.29", features = ["abi3-py312", "extension-module"] }
+numpy = "0.29"

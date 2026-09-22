@@ -3,14 +3,18 @@
 F7's rule with teeth, restated for Python: **no number belongs loose in the
 source.** The Rust side enforces it with
 ``crates/sailgym-physics/tests/provenance.rs::no_stray_constants``; this is
-the same audit, in the same three tiers, over the two scopes F17.1 names —
-and it audits them **separately**, because they are held to different rules.
+the same audit, in the same three tiers, over the three scopes F17.1 names
+— and it audits them **separately**, because they are held to different rules.
 
 =========================  ==========================================
 Scope                      Rule
 =========================  ==========================================
 ``sailgym_conformance``    wrapper scope: no equation, no independently
                            defined parameter or layout value at all
+``sailgym``                wrapper scope, added by section 07. The
+                           Gymnasium binding is where this discipline
+                           usually collapses, which is the reason
+                           ``cross-stack.md`` §1.2 gives for stating it
 ``sailgym_jax``            the explicit F17.1 exception: an independent
                            verification implementation, so it holds the
                            equations it tests — and every constant in
@@ -22,20 +26,31 @@ allows: it is structural (``0.0``, ``1.0``, ``0.5``, ``2.0``); or it is on
 the right-hand side of a **module-level named constant that carries a doc
 string**; or it is in :data:`EXEMPT` with a stated reason.
 
-Four passes, and the last two are the ones a Python audit specifically needs:
+Six passes, and the last four are the ones this repository specifically
+needs:
 
-1. no stray literal;
-2. every named constant that introduces a number cites its source line;
-3. anti-vacuity — the scan visited files and found numbers;
-4. **no generator of the wind mode table** anywhere under
-   ``python/sailgym_jax/`` (F16.7, RV15, section acceptance 6).
+1. no stray literal, in any scope;
+2. every named constant that introduces a number **in the exception scope**
+   cites its source line;
+3. **wrapper scope defines no number at all** — not even a documented,
+   cited one. Section 07 added this pass: F17.1 permits a citation only to
+   the independent implementation, and a binding that cited ``dt`` would
+   still have a second copy of ``dt``;
+4. anti-vacuity — the scan visited files and found numbers;
+5. **the binding binds the env and not the WASM surface** — F17.2 and RV47,
+   a grep over the crate manifests. It is here because this file is where
+   the Python side's boundary rules are greps, and a boundary is a boundary;
+6. **no generator of the wind mode table** anywhere under
+   ``python/sailgym_jax/`` (F16.7, RV15, section 03 acceptance 6).
 
 ## Proven able to fail
 
 Task 3.6 requires the demonstration. ``1.225`` — ``RHO_AIR``, the most
 physical number in the project — was pasted into ``sailgym_jax/wind.py``,
 the audit named the file and the line, and it was reverted. The transcript
-is in ``docs/v2/progress/03-handoff.md`` §5.
+is in ``docs/v2/progress/03-handoff.md`` §5. Section 07 acceptance 2
+requires the same demonstration in ``python/sailgym/``; its transcript is
+in ``docs/v2/progress/07-handoff.md``.
 """
 
 from __future__ import annotations
@@ -44,8 +59,19 @@ import ast
 import re
 from pathlib import Path
 
-SCOPES = ("python/sailgym_conformance", "python/sailgym_jax")
-"""The two scopes F17.1 audits separately."""
+WRAPPER_SCOPES = ("python/sailgym", "python/sailgym_conformance")
+"""Binding and loader scope: **no** independently defined number at all.
+
+``python/sailgym`` joined in section 07. F17.1's exception is named and it
+names one package; everything else that imports from Rust is wrapper scope
+and holds no equation, no parameter and no layout.
+"""
+
+EXCEPTION_SCOPES = ("python/sailgym_jax",)
+"""The one package F17.1 excepts: an independent verification implementation."""
+
+SCOPES = WRAPPER_SCOPES + EXCEPTION_SCOPES
+"""The three scopes F17.1 audits separately."""
 
 UNIVERSAL = (0.0, 1.0, 2.0, 0.5)
 """Literals that carry no physical content and may appear anywhere.
@@ -75,15 +101,18 @@ the table has spent days reproducing a kilobyte, and is wrong in a way no
 tolerance catches — so the absence is asserted rather than trusted.
 """
 
-MIN_FILES = 3
+MIN_FILES = 6
 MIN_LITERALS = 12
 """Anti-vacuity floors, the two ``provenance.rs`` uses.
 
 An audit that silently scans nothing is worse than no audit: it is a green
 tick that means the opposite of what a reader takes it to mean. The counts
-are the current ones (4 files, 19 literals at the time of writing), set just
-below so that adding a file does not break the build and deleting the whole
-package does.
+are the current ones, set just below so that adding a file does not break
+the build and deleting a whole package does. Section 07 raised ``MIN_FILES``
+from 3 to 6 when ``python/sailgym`` brought the count from 4 to 8: a floor
+left at the old value would not have noticed the new package disappearing.
+Each scope additionally has to contribute at least one file, which is the
+check that catches a deletion the totals would hide.
 """
 
 
@@ -149,12 +178,15 @@ def test_no_stray_constants():
     scanned = 0
     inside_named = 0
     files = 0
+    per_scope: dict[str, int] = {}
 
     for scope in SCOPES:
         base = root / scope
         assert base.is_dir(), f"{scope} is missing; this audit would scan nothing"
+        per_scope[scope] = 0
         for path in sources(base):
             files += 1
+            per_scope[scope] += 1
             rel = path.relative_to(root).as_posix()
             text = path.read_text(encoding="utf-8")
             tree = ast.parse(text, filename=rel)
@@ -184,6 +216,8 @@ def test_no_stray_constants():
     assert files > MIN_FILES, (
         f"the audit visited only {files} files; it is not scanning"
     )
+    for scope, seen in per_scope.items():
+        assert seen > 0, f"{scope} contributed no file; the audit lost a scope"
     assert scanned > MIN_LITERALS, (
         f"the literal scan found only {scanned} numbers; it is not scanning"
     )
@@ -214,7 +248,7 @@ def test_every_named_constant_cites_its_source_line():
     missing: list[str] = []
     cited = 0
 
-    for scope in SCOPES:
+    for scope in EXCEPTION_SCOPES:
         for path in sources(root / scope):
             rel = path.relative_to(root).as_posix()
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=rel)
@@ -252,6 +286,104 @@ def test_every_named_constant_cites_its_source_line():
     assert not missing, "citations that point at no file:\n  " + "\n  ".join(missing)
     assert cited >= 12, f"only {cited} cited constants; the second pass is vacuous"
     print(f"[audit] {cited} named constants cite a Rust source line")
+
+
+def test_wrapper_scope_defines_no_number_at_all():
+    """F17.1's first half, with teeth — section 07, RV41.
+
+    The literal scan permits a number that sits on the right-hand side of a
+    documented, cited module-level constant. That escape route is F17.1's
+    **exception** and the exception names one package. In wrapper scope there
+    is nothing to except: a binding's job is to read the contract from Rust,
+    so a ``DT = 0.005`` in ``python/sailgym/`` would be a second copy of
+    ``dt`` no matter how well it cited the first.
+
+    This is the pass that makes RV41 a gate failure rather than a review
+    comment: *"any integer other than a shape derived from Rust appears in
+    ``spaces.py``"*. Integers are not audited — ``provenance.rs`` gives the
+    reason and it holds here — so what this pass forbids is the *named
+    constant*, which is the only way a number could have been made to look
+    respectable.
+    """
+    root = repo_root()
+    offenders: list[str] = []
+    files = 0
+    names = 0
+    for scope in WRAPPER_SCOPES:
+        base = root / scope
+        assert base.is_dir(), f"{scope} is missing; this pass would scan nothing"
+        seen = 0
+        for path in sources(base):
+            files += 1
+            seen += 1
+            rel = path.relative_to(root).as_posix()
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=rel)
+            for name, (value, _doc) in documented_constants(tree).items():
+                names += 1
+                introduces = [v for _, v in float_literals(value) if v not in UNIVERSAL]
+                if introduces:
+                    offenders.append(f"{rel}: {name} = {introduces}")
+        assert seen > 0, f"{scope} contributed no file"
+    assert files >= 4, f"only {files} files in wrapper scope; this pass is vacuous"
+    assert names > 0, "wrapper scope declares no module-level name at all"
+    assert not offenders, (
+        "a wrapper package defined a number of its own. F17.1 excepts "
+        f"{EXCEPTION_SCOPES} and nothing else: read it from Rust, or from the "
+        "identified bundle:\n  " + "\n  ".join(offenders)
+    )
+    print(
+        f"[audit] {files} files in wrapper scope declare {names} module-level "
+        "names and not one number"
+    )
+
+
+def test_the_binding_binds_the_env_and_not_the_wasm_surface():
+    """F17.2 and RV47, as a grep over the manifests.
+
+    *"The binding grows a shortcut through ``sailgym-wasm``, collapsing the
+    two boundaries."* The two have different performance shapes — one call
+    per animation frame against 20 Hz x N envs — and different lifetimes, and
+    F8.2's coarseness is right for one and wrong for the other. So the
+    dependency simply is not there, and its absence is asserted rather than
+    remembered.
+
+    The second half is the arrow's direction: **nothing depends on the
+    binding**. `sailgym-py` is a leaf, as `sailgym-wasm` is, and a crate that
+    acquired it would drag `pyo3` into a build that has no interpreter.
+
+    It lives in this file because this file is where the Python side's
+    boundary rules are greps. It is task 7.2's file and this assertion is
+    task 7.1's subject; ``docs/v2/progress/07-handoff.md`` records the seam.
+    """
+    root = repo_root()
+    binding = root / "crates/sailgym-py/Cargo.toml"
+    assert binding.is_file(), "the binding's manifest is missing"
+    text = binding.read_text(encoding="utf-8")
+    dependencies = text.split("[dependencies]", 1)[1]
+    assert "sailgym-wasm" not in dependencies, (
+        "sailgym-py declares a dependency on sailgym-wasm. F17.2 keeps the "
+        "two boundaries apart deliberately (RV47)"
+    )
+    assert "sailgym-env" in dependencies, (
+        "sailgym-py does not depend on sailgym-env; it binds the episode "
+        "runner and nothing else (F17.2)"
+    )
+
+    manifests = sorted((root / "crates").glob("*/Cargo.toml"))
+    assert len(manifests) >= 7, f"only {len(manifests)} manifests; not scanning"
+    dependents = [
+        m.relative_to(root).as_posix()
+        for m in manifests
+        if m != binding and "sailgym-py" in m.read_text(encoding="utf-8")
+    ]
+    assert not dependents, (
+        "a crate depends on the Python binding, which would drag pyo3 into a "
+        "build that needs no interpreter: " + ", ".join(dependents)
+    )
+    print(
+        f"[audit] {len(manifests)} manifests: sailgym-py binds sailgym-env, "
+        "names no sailgym-wasm, and nothing names it"
+    )
 
 
 def test_the_verification_implementation_has_no_generator_of_the_mode_table():

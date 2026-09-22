@@ -1,0 +1,31 @@
+# The compiled core, built by `maturin` (v2 section 07 task 7.1).
+#
+# It lives here, beside its `Cargo.toml`, rather than at the repository root,
+# because a `pyproject.toml` has exactly one build backend and the root one is
+# `hatchling`'s — it ships three pure-Python packages that no compiler is
+# involved in. `[tool.uv.workspace]` in the root file is what makes the two one
+# environment.
+#
+# The distribution is `sailgym-core` and the import name is `sailgym_core`.
+# `python/sailgym/` — the package a user imports — is the root distribution's,
+# and calls into this one. Keeping them separate is what lets an editable
+# install of the Python half not require a rebuild of the Rust half, and the
+# reverse.
+#
+# `version` is `dynamic` so that it comes from `Cargo.toml`, which takes it
+# from the cargo workspace. One version number for the whole repository.
+
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "sailgym-core"
+description = "sailgym: the pyo3 binding over sailgym-env (v2 F17.2)"
+requires-python = "==3.12.*"
+dynamic = ["version"]
+dependencies = ["numpy"]
+
+[tool.maturin]
+module-name = "sailgym_core"
+manifest-path = "Cargo.toml"

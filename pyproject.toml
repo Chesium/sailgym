@@ -14,6 +14,13 @@
 #
 # There is no `pip`, no `conda` and no `requirements.txt` (PRD 03, "What this
 # section does not do").
+#
+# Section 07 made this a **uv workspace**. The root project is still one
+# distribution — the three importable packages under `python/` — and
+# `crates/sailgym-py` is a second, built by `maturin` from Rust. They are
+# separated because they are built by different backends, not because they are
+# different projects: `hatchling` cannot compile a cdylib and `maturin` does
+# not want three unrelated pure-Python packages.
 
 [project]
 name = "sailgym"
@@ -24,23 +31,48 @@ dependencies = [
     "jax",
     "numpy",
     "pytest",
+    # Section 07. Pinned to an exact version rather than a floor, for the same
+    # reason `requires-python` is: F17.4 makes the autoreset convention part of
+    # the contract, `python/sailgym/vector.py` reads it out of **this** release
+    # (`gymnasium.vector.AutoresetMode` and `SyncVectorEnv`'s declared default)
+    # and `docs/v2/progress/07-handoff.md` records what it found. A floor would
+    # let that convention move under a recorded measurement.
+    "gymnasium==1.3.0",
+    # The compiled core. A workspace member, resolved by `[tool.uv.sources]`
+    # below; `python/sailgym/` is useless without it, so it is a dependency and
+    # not an extra.
+    "sailgym-core",
 ]
 
 [dependency-groups]
 dev = [
     "ruff",
+    # Section 07: `scripts/py-test.{sh,ps1}` runs `maturin develop` in front of
+    # `pytest`, which is the whole reason F12' step 11 is a script (D3).
+    "maturin>=1.9,<2",
 ]
+
+# The `uv` workspace. One member, and it is the Rust binding: two build
+# backends in one `pyproject.toml` is not a thing, so the extension gets its
+# own project file beside its `Cargo.toml`.
+[tool.uv.workspace]
+members = ["crates/sailgym-py"]
+
+[tool.uv.sources]
+sailgym-core = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Two distributions in one project, in the two scopes F17.1 audits separately:
-# `sailgym_conformance` is stack-neutral and holds no equation, and
-# `sailgym_jax` is the independent verification implementation and therefore
-# holds the equations it tests.
+# Three packages in one project, in the three scopes F17.1 audits separately:
+# `sailgym_conformance` is stack-neutral and holds no equation, `sailgym_jax`
+# is the independent verification implementation and therefore holds the
+# equations it tests, and `sailgym` (section 07) is **wrapper scope** — the
+# same rule as `sailgym_conformance`, and the audit that enforces it is
+# `python/tests/test_no_stray_constants.py`.
 [tool.hatch.build.targets.wheel]
-packages = ["python/sailgym_conformance", "python/sailgym_jax"]
+packages = ["python/sailgym", "python/sailgym_conformance", "python/sailgym_jax"]
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
@@ -58,4 +90,4 @@ src = ["python"]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["sailgym_conformance", "sailgym_jax"]
+known-first-party = ["sailgym", "sailgym_conformance", "sailgym_core", "sailgym_jax"]

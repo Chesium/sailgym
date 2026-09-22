@@ -46,7 +46,7 @@ Eleven steps, in order, failing fast. What each one proves:
 | 8 | `pnpm --dir web test:unit` | The pure TypeScript — projection, camera, clock, controls, schemas — is correct without a browser. |
 | 9 | `pnpm --dir web test:e2e` | The app actually runs in Chrome, Edge and Firefox, with no console or page errors. |
 | 10 | `uv run ruff check python && uv run ruff format --check python` | The Python is canonically formatted and lint-clean — steps 1 and 2 for the other language. |
-| 11 | `scripts/py-test.sh` | The Python suite: the conformance-bundle loader, the JAX wind port's two arms and the F17.1 constants audit (v2 F12′, section 03). A script, not a command line, so a later section can put `maturin develop` in front of `pytest` without amending F12 again. |
+| 11 | `scripts/py-test.sh` | The Python suite: the conformance-bundle loader, the JAX wind port's two arms, the F17.1 constants audit (v2 F12′, section 03) and — since section 07 — the Gymnasium binding's spaces, seeding, returns identity and performance assertions. A script, not a command line, which is why section 07 could put `maturin develop` in front of `pytest` **without amending F12**. |
 
 Every section must leave the app runnable and the gate green. No exceptions and
 no "will fix next section".
@@ -89,12 +89,14 @@ crates/sailgym-task/      pure practice-task evaluation; depends on physics, nev
 crates/sailgym-course/    routes, marks, guidance, ordered passage; depends on physics, never the reverse
 crates/sailgym-agent/     sensors, observation, actions, cadence; depends on course and physics, never the reverse
 crates/sailgym-env/       episode runner, Outcome, autoreset, decision log, VecEnv; depends on agent, course, task and physics, never the reverse
+crates/sailgym-py/        pyo3 binding over sailgym-env; binds the env and never sailgym-wasm (F17.2)
 crates/sailgym-wasm/      thin wasm_bindgen wrapper
 crates/sailgym-bench/     native headless benchmark / golden-trajectory generator
 web/                      Vite + React + TypeScript app and Playwright specs
+python/sailgym/           the Gymnasium environment; wrapper scope, so no equation and no layout of its own (F17.1)
 python/sailgym_conformance/  stack-neutral conformance-bundle loader; no equations (F17.1)
 python/sailgym_jax/       the JAX verification implementation; the one F17.1 exception
-python/tests/             pytest: the loader, the two arms, the constants audit
+python/tests/             pytest: the loader, the two arms, the constants audit, the binding
 scenarios/                scenario JSON
 scripts/                  build-wasm.(ps1|sh), check.(ps1|sh)
 docs/v1/                     brief, foundations, section PRDs, progress notes

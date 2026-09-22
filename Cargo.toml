@@ -6,6 +6,7 @@ members = [
     "crates/sailgym-course",
     "crates/sailgym-agent",
     "crates/sailgym-env",
+    "crates/sailgym-py",
     "crates/sailgym-wasm",
     "crates/sailgym-bench",
 ]
