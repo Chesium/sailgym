@@ -146,7 +146,7 @@ async function readResult(page: Page): Promise<Record<string, string>> {
 test.describe('v2 §11 — the practice loop', () => {
   test.setTimeout(ATTEMPT_TIMEOUT_MS)
 
-  test('the chooser offers exactly the three shipped challenges, with their goals', async ({
+  test('the chooser offers the three shipped skills, with their goals', async ({
     page,
   }) => {
     await gotoApp(page)
@@ -169,9 +169,23 @@ test.describe('v2 §11 — the practice loop', () => {
       expect(goal ?? '', `${id} states a measurable goal`).toMatch(/\d/)
       await expect(page.getByTestId(`practice-start-${id}`)).toBeEnabled()
     }
-    // And exactly three: a fourth would be a challenge nobody validated.
-    const cards = await page.locator('[data-testid^="practice-challenge-"]').count()
-    expect(cards).toBe(CHALLENGES.length)
+    // Exactly three **skills**: a fourth would be a skill nobody validated.
+    //
+    // v2 section 12 added the three waypoint courses, which the chooser lists
+    // in a group of their own; `data-kind` is the core's own word for which
+    // group a challenge is in (`practice_tasks_json`), so this counts skills
+    // rather than counting rows. The courses' own assertions are in
+    // `course.spec.ts`.
+    //
+    // **This edit is an `Owns:`-list gap**, recorded in
+    // `docs/v2/progress/12-handoff.md`: no section-12 task owns this file, and
+    // section 12's task 12.6 says in as many words that `practice_tasks_json`
+    // is unchanged "until 12.7 lists them" — which is the change this line was
+    // asserting the absence of.
+    const skills = await page.locator('[data-testid^="practice-challenge-"][data-kind="skill"]').count()
+    expect(skills).toBe(CHALLENGES.length)
+    const courses = await page.locator('[data-testid^="practice-challenge-"][data-kind="course"]').count()
+    expect(courses, 'the three v2 section 12 courses').toBe(3)
   })
 
   test('goal → attempt → result → inspect → retry, with the keyboard and a drag', async ({

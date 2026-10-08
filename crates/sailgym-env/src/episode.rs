@@ -36,7 +36,7 @@
 //! ```text
 //!   decide if `episode_step % period_steps == 0`   ← F14.6, the episode's own counter
 //!   sim.advance(1)
-//!   tracker / missed-mark probe / task observer / recorder
+//!   tracker / passage::cut_between / task observer / recorder
 //!   evaluate Outcome                               ← the fixed order in `outcome.rs`
 //!   accumulate reward
 //! ```
@@ -45,14 +45,21 @@
 //!
 //! F15.3's rule has four clauses and lives in `sailgym-course`. "Cut the
 //! mark" is exactly *three* of them: the boat crossed the mark's plane, in
-//! the leg's direction, and failed the side-and-clearance clause. Rather
-//! than write that out again here — RV20's mistake in a new place — the
-//! episode keeps a **probe route**: the same marks, the same laps, every
-//! `Rounding` replaced by [`Rounding::Either`](sailgym_course::Rounding).
-//! `Either` is the course crate's own spelling of "directed plane crossing,
-//! no side", so `passage::passed_between` on the probe answers the first two
-//! clauses using the definition that already exists. A step on which the
-//! probe passes and the real route does not is a mark cut.
+//! the leg's direction, and failed the side-and-clearance clause. That is
+//! `passage::cut_between`, in `sailgym-course`, and this crate **calls it**
+//! rather than carrying a copy of the geometry (v2 F19.4, RV66).
+//!
+//! Section 06 built the probe here instead, as `Route::new(marks, laps)`
+//! with every `Rounding` replaced by `Either`. Section 12's D1 gave a route
+//! an optional [`Route::start`](sailgym_course::Route), and
+//! `Route::new` sets it to `None` — so that copy's leg 0 would have run from
+//! the **last mark** while the real route's ran from the start, and a boat
+//! sailing cleanly through waypoint 1 of an open course would have been
+//! terminated as `MarkMissed`. `tests/course.rs`'s
+//! `a_probe_that_drops_the_start_reports_a_false_cut_on_leg_0` is that
+//! regression, measured on the shipped `reach` course; the repair is that
+//! there is no copy. `cut_between` builds its probe from the leg the real
+//! route computed, so the start and the laps travel with it by construction.
 
 use sailgym_agent::actuation::{apply, rate::Rate, Actuation};
 use sailgym_agent::observation::ObsLayout;
@@ -61,13 +68,13 @@ use sailgym_agent::sensor::imu::Imu;
 use sailgym_agent::sensor::rig::{ActuatorState, RigState};
 use sailgym_agent::sensor::wind::ApparentWind;
 use sailgym_agent::sensor::{sensor_stream, Sensor};
-use sailgym_agent::spec::{agent_rng, Agent, AgentSpec, SpecError};
+use sailgym_agent::spec::{agent_rng, Agent, AgentDebug, AgentSpec, SpecError};
 use sailgym_agent::worldview::WorldView;
 use sailgym_agent::Manual;
 
 use sailgym_course::guidance::{guidance, CourseParams};
 use sailgym_course::route::position;
-use sailgym_course::{passage, Guidance, Mark, Progress, Rounding, Route, RouteError, Tracker};
+use sailgym_course::{passage, Guidance, Progress, Route, RouteError, Tracker};
 
 use sailgym_physics::diagnostics::diagnostics;
 use sailgym_physics::parameters::BoatParameters;
@@ -467,9 +474,6 @@ pub struct Episode {
     /// autoreset and nothing else.
     scenario_rng: Pcg32,
     tracker: Option<Tracker>,
-    /// The same marks with every rounding replaced by `Either`: the course
-    /// crate's own spelling of "crossed the plane, in the leg's direction".
-    probe: Option<Route>,
     task: Option<TaskRun>,
     recorder: Option<Recorder>,
     /// The **episode** step counter. Not a per-`advance` counter, and not a
@@ -512,7 +516,6 @@ impl Episode {
 
         let params: BoatParameters = config.scenario.to_parameters()?;
         let sim = Simulation::new(params, seed);
-        let probe = config.route.as_ref().map(probe_route);
 
         let mut ep = Self {
             config,
@@ -526,7 +529,6 @@ impl Episode {
             rng: Pcg32::seed_from_u64(seed),
             scenario_rng: Pcg32::seed_from_u64(seed).stream(STREAM_SCENARIO),
             tracker: None,
-            probe,
             task: None,
             recorder: None,
             step: 0,
@@ -606,6 +608,40 @@ impl Episode {
             header.observation = Recorded::Value(observation_identity.clone());
             Recorder::start(hz, header)
         });
+        // The attached task's envelope, **before** the first sample, for the
+        // two reasons `Sim::begin_recording` gives: an event cannot be
+        // appended without one (`push_practice_event` returns `false`), and a
+        // recording stopped mid-attempt must still say which task it was
+        // flown against. A free sail has no task and the slot stays `None`,
+        // which is what makes a recorded baseline episode carry its waypoint
+        // events while an ordinary one carries no envelope at all (v2
+        // section 12, task 12.2). Written here rather than inside the `map`
+        // above because the closure would have to borrow `self.task` while
+        // `self.recorder` is being assigned.
+        if let (Some(rec), Some(task)) = (self.recorder.as_mut(), self.task.as_ref()) {
+            rec.set_practice(task.envelope());
+        }
+        // **The first sample is the state the recording was started from.**
+        //
+        // `Recorder::observe` fills the header's `initial_state` and
+        // `initial_controls` from whichever sample arrives first (section 10),
+        // and before this line the first sample was the one the advance loop
+        // logged — the state after **one step**. A recorded episode's own
+        // header therefore said it had started from somewhere it had not, and
+        // `ExperimentIdentity::compare` refused it against the identical
+        // conditions recorded by `Sim::begin_recording`, which has always
+        // logged its initial sample here.
+        //
+        // Found by v2 section 12's `run_baseline`, whose whole purpose is that
+        // comparison: the reasons came back `initial_state, initial_controls`
+        // on a baseline sailed from the attempt's own frozen contract (RV70's
+        // check had already passed, because the *state* was right and only the
+        // *record of it* was wrong). Recorded in
+        // `docs/v2/progress/12-handoff.md`.
+        if let Some(rec) = self.recorder.as_mut() {
+            let d = diagnostics(&self.sim);
+            rec.observe(&self.sim, &d);
+        }
 
         self.rng = agent_rng(&Pcg32::seed_from_u64(seed));
         // `observation::sensor_streams` takes `&[Box<dyn Sensor>]`; this is
@@ -711,6 +747,17 @@ impl Episode {
     /// which is the disagreement F17.4 exists to prevent.
     pub fn task_outcome(&self) -> Option<TaskOutcome> {
         self.task.as_ref().map(TaskRun::outcome)
+    }
+
+    /// The controller's own introspection, for an observer.
+    ///
+    /// F14's discipline, and F6.10's: `AgentDebug` is **written for
+    /// observers and read by no controller**. `run_baseline` turns the rule
+    /// sailor's mode changes into its narration from this (v2 section 12,
+    /// D5); nothing in this crate reads it, and nothing in it reaches a
+    /// decision.
+    pub fn agent_debug(&self) -> AgentDebug {
+        self.source.agent().debug()
     }
 
     /// The practice events the attached task recorded, in order.
@@ -918,22 +965,32 @@ impl Episode {
             if let Some(tracker) = &mut self.tracker {
                 let leg = tracker.leg_index();
                 let passed = tracker.observe(&st).is_some();
-                if !passed {
-                    if let Some(probe) = &self.probe {
-                        // The probe answers the plane-and-direction clauses
-                        // with the course crate's own rule; the real route
-                        // answered all four and said no. The difference is a
-                        // cut mark (F15.3).
-                        if passage::passed_between(probe, leg, self.prev_pos, position(&st)) {
-                            self.missed = true;
-                        }
-                    }
+                // One function, in `sailgym-course`, for what a cut *is*
+                // (v2 F19.4, RV66). The route is the tracker's own — start,
+                // laps and roundings included — so there is no second copy
+                // of the geometry to drift from it.
+                if !passed
+                    && passage::cut_between(tracker.route(), leg, self.prev_pos, position(&st))
+                {
+                    self.missed = true;
                 }
             }
             self.prev_pos = position(&st);
 
+            // The practice evaluator, then the recorder, in that order: an
+            // event decided on this step is already in the envelope when the
+            // frame beside it is logged. `Sim::observe_step` has the same
+            // order for the same reason, and neither observer can change the
+            // state — the evaluator takes a value and the recorder takes
+            // `&Simulation`.
             if let Some(task) = &mut self.task {
+                let before = task.events().len();
                 task.observe(&StepObservation::of(&self.sim));
+                if let Some(rec) = &mut self.recorder {
+                    for event in &task.events()[before..] {
+                        rec.push_practice_event(event.clone());
+                    }
+                }
             }
             if let Some(rec) = &mut self.recorder {
                 if rec.due(st.t) {
@@ -1153,33 +1210,6 @@ fn observe_into(
     debug_assert_eq!(at, total);
 }
 
-/// The same course with every rounding replaced by
-/// [`Rounding::Either`](sailgym_course::Rounding).
-///
-/// Built once, at construction, so the missed-mark test costs no
-/// allocation. One case is approximate and is recorded rather than hidden:
-/// a [`Rounding::Gate`](sailgym_course::Rounding) is a crossing of the
-/// segment between its posts, and its `Either` probe is the plane through
-/// the **mark's own position** perpendicular to the leg. For a gate square
-/// to the leg and centred on its mark those coincide, and passing outside
-/// the posts is a cut either way; for an oblique gate the two can differ by
-/// a step. A route with no leg direction — F15.1's lookahead point — has no
-/// plane at all, so its probe is its own disc and a miss can never fire,
-/// which is correct: a mark with no side cannot be cut.
-fn probe_route(route: &Route) -> Route {
-    Route::new(
-        route
-            .marks
-            .iter()
-            .map(|m| Mark {
-                rounding: Rounding::Either,
-                ..*m
-            })
-            .collect(),
-        route.laps,
-    )
-}
-
 /// The one shipped external-source episode: `manual`, at the given cadence.
 pub fn manual_source(cadence: sailgym_agent::spec::Cadence) -> Source {
     Source::Manual(Manual::new(cadence, Rate::DIM))
@@ -1188,6 +1218,12 @@ pub fn manual_source(cadence: sailgym_agent::spec::Cadence) -> Source {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // `Mark` and `Rounding` are the test module's own: the crate no longer
+    // builds a route of its own anywhere (task 12.2 replaced the probe with
+    // `passage::cut_between`), but the outcome fixtures below still author
+    // the geometry they are about.
+    use sailgym_course::{Mark, Rounding};
+
     use sailgym_agent::observation::{observe, sensor_streams};
     use sailgym_agent::sensor::SensorRegistry;
     use sailgym_agent::spec::{Action, ActionSpace, ActionVec, Cadence};

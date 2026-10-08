@@ -1,7 +1,17 @@
-//! Deterministic practice-task evaluation (v2 section 11, F18.4).
+//! Deterministic practice-task evaluation (v2 section 11, F18.4; v2 section 12,
+//! D3 and D7).
 //!
-//! Three guided-practice challenges — *get moving*, *complete a tack* and
-//! *recover from excessive heel* — as a pure observer over the physics.
+//! Three guided-practice skills — *get moving*, *complete a tack* and *recover
+//! from excessive heel* — and three waypoint **courses**, as a pure observer
+//! over the physics.
+//!
+//! ## `task → course`, added by v2 section 12 (D7)
+//!
+//! A course challenge needs passage and cuts, so this crate depends on
+//! `sailgym-course`. The arrows become `task → {course, physics}`; there is no
+//! cycle, because `course → physics` only and `sailgym-physics` depends on
+//! nothing. The rule for what a cut **is** lives in `sailgym-course` and is
+//! called from [`course`], never copied (RV66).
 //!
 //! ## What this crate is, and what it deliberately is not
 //!
@@ -54,12 +64,17 @@
 
 use std::collections::BTreeMap;
 
+use sailgym_course::CourseId;
 use sailgym_physics::frames::{world_to_body, wrap_pi};
 use sailgym_physics::recording::{PracticeEnvelope, PracticeEvent, TaskIdentity};
 use sailgym_physics::simulation::Simulation;
 use sailgym_physics::state::{BoatState, Controls};
 use sailgym_physics::vec::Vec2;
 use serde::{Deserialize, Serialize};
+
+pub mod course;
+
+pub use course::{CourseState, WaypointCourseConfig};
 
 // ---------------------------------------------------------------------------
 // Observation
@@ -275,21 +290,80 @@ fn ordered(field: &'static str, lo: f64, hi: f64) -> Result<(), ConfigError> {
     Ok(())
 }
 
-/// The three challenges, by stable id.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+/// Every shipped challenge, by stable id.
+///
+/// The three skills are section 11's. [`TaskId::Course`] is v2 section 12's and
+/// carries a [`CourseId`], which is why that is a `Copy` enum: a `TaskSpec` has
+/// to stay `Copy`.
+///
+/// `PartialOrd`/`Ord`/`Serialize`/`Deserialize` are written out rather than
+/// derived, because deriving them would demand `CourseId: Ord` and a `serde`
+/// shape for the new variant that nothing asked for. All four go through
+/// [`TaskId::as_str`] and [`TaskId::parse`], so there is **one** spelling of a
+/// task id: the one that appears in the recorded
+/// [`TaskIdentity`](sailgym_physics::recording::TaskIdentity), in the JSON the
+/// browser reads and in a log. The three skills' serialised form is byte for
+/// byte what section 11 wrote.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TaskId {
     GetMoving,
     CompleteTack,
     RecoverFromHeel,
+    /// One of the shipped waypoint courses (v2 section 12).
+    Course(CourseId),
 }
 
-/// Every shipped challenge, in the order the page offers them.
+impl PartialOrd for TaskId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for TaskId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.as_str().cmp(other.as_str())
+    }
+}
+
+impl Serialize for TaskId {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for TaskId {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let text = String::deserialize(d)?;
+        Self::parse(&text).ok_or_else(|| serde::de::Error::custom(format!("unknown task `{text}`")))
+    }
+}
+
+/// The three **skills**, in the order the page offers them.
+///
+/// Unchanged by v2 section 12, deliberately: the courses have their own list,
+/// so `practice_tasks_json` is unchanged until task 12.7 lists them and the
+/// gate stays green between groups.
 pub const TASK_IDS: [TaskId; 3] = [
     TaskId::GetMoving,
     TaskId::CompleteTack,
     TaskId::RecoverFromHeel,
 ];
+
+/// The three **courses**, in the order the page offers them (v2 section 12).
+pub const COURSE_TASK_IDS: [TaskId; 3] = [
+    TaskId::Course(CourseId::Reach),
+    TaskId::Course(CourseId::Triangle),
+    TaskId::Course(CourseId::WindwardLeeward),
+];
+
+/// Every shipped challenge: the skills, then the courses.
+pub fn all_task_ids() -> Vec<TaskId> {
+    TASK_IDS
+        .iter()
+        .chain(COURSE_TASK_IDS.iter())
+        .copied()
+        .collect()
+}
 
 impl TaskId {
     /// The stable id.
@@ -298,12 +372,23 @@ impl TaskId {
             Self::GetMoving => "get_moving",
             Self::CompleteTack => "complete_tack",
             Self::RecoverFromHeel => "recover_from_heel",
+            Self::Course(CourseId::Reach) => "course_reach",
+            Self::Course(CourseId::Triangle) => "course_triangle",
+            Self::Course(CourseId::WindwardLeeward) => "course_windward_leeward",
         }
     }
 
     /// The id, back from its string form.
     pub fn parse(s: &str) -> Option<Self> {
-        TASK_IDS.into_iter().find(|id| id.as_str() == s)
+        all_task_ids().into_iter().find(|id| id.as_str() == s)
+    }
+
+    /// The course this challenge is sailed on, if it is a course.
+    pub fn course(self) -> Option<CourseId> {
+        match self {
+            Self::Course(c) => Some(c),
+            _ => None,
+        }
     }
 
     /// The shipped scenario (brief §32) this challenge is set on.
@@ -311,11 +396,26 @@ impl TaskId {
     /// A challenge is a **scenario plus a task**: the same six documents the
     /// picker offers, with an instruction and an evaluator over them. No new
     /// scenario is shipped by section 11.
+    /// A course challenge's scenario is the **course document's**, and the
+    /// three literals below are a second copy of it.
+    ///
+    /// Written out because this method returns `&'static str` and a course
+    /// document's `scenario` is a `String` parsed at run time; the alternative
+    /// — widening the signature — would reach into
+    /// `crates/sailgym-wasm/src/lib.rs`, which no task in this group owns
+    /// (F13.2). The duplication is not left to a comment:
+    /// `tests/course.rs::every_course_challenges_scenario_is_its_documents`
+    /// loads all three documents and asserts the two agree, which is the same
+    /// device `sailgym-env`'s `make_sensor` uses for the same reason (F19.6).
     pub fn scenario(self) -> &'static str {
         match self {
             Self::GetMoving => "free_sail",
             Self::CompleteTack => "tack",
             Self::RecoverFromHeel => "sheet_release_recovery",
+            // Every shipped course is sailed in `free_sail`'s uniform
+            // northerly: the browser's own conditions (task 12.1's
+            // `courses/*.json`).
+            Self::Course(_) => "free_sail",
         }
     }
 
@@ -327,6 +427,10 @@ impl TaskId {
             Self::GetMoving => "speed_reached",
             Self::CompleteTack => "crossing",
             Self::RecoverFromHeel => "heel_max",
+            // A course's **Inspect** jumps to the first miss if there was one,
+            // and otherwise to the finish. `TaskRun::highlight` is where that
+            // "first, not last" rule lives; this names the event it looks for.
+            Self::Course(_) => "waypoint_missed",
         }
     }
 }
@@ -417,6 +521,8 @@ pub enum TaskSpec {
     GetMoving(GetMovingConfig),
     CompleteTack(CompleteTackConfig),
     RecoverFromHeel(RecoverHeelConfig),
+    /// *Sail the course* — through every waypoint, in order (v2 section 12).
+    WaypointCourse(WaypointCourseConfig),
 }
 
 /// The version of every shipped task configuration.
@@ -425,6 +531,11 @@ pub enum TaskSpec {
 /// because two attempts scored under different rules are not the same
 /// experiment — `ExperimentIdentity::compare` reads it out of the recorded
 /// [`TaskIdentity`] and refuses the comparison (v2 F18.3).
+///
+/// **Unchanged by v2 section 12.** The courses are new tasks with new ids and
+/// their own thresholds; no existing rule changed meaning, so an attempt at a
+/// skill recorded before this section and one recorded after it are still the
+/// same experiment.
 pub const TASK_VERSION: u32 = 1;
 
 impl TaskSpec {
@@ -482,6 +593,13 @@ impl TaskSpec {
                 heel_event_step_rad: 5.0f64.to_radians(),
                 time_limit_s: 30.0,
             }),
+            // v2 section 12: the geometry is the course document's and the one
+            // threshold is the limit, measured by the rule
+            // `docs/v2/baseline-validation.md` records.
+            TaskId::Course(course) => Self::WaypointCourse(WaypointCourseConfig {
+                course,
+                time_limit_s: course::shipped_time_limit_s(course),
+            }),
         }
     }
 
@@ -491,6 +609,7 @@ impl TaskSpec {
             Self::GetMoving(_) => TaskId::GetMoving,
             Self::CompleteTack(_) => TaskId::CompleteTack,
             Self::RecoverFromHeel(_) => TaskId::RecoverFromHeel,
+            Self::WaypointCourse(c) => TaskId::Course(c.course),
         }
     }
 
@@ -505,6 +624,7 @@ impl TaskSpec {
             Self::GetMoving(c) => c.time_limit_s,
             Self::CompleteTack(c) => c.time_limit_s,
             Self::RecoverFromHeel(c) => c.time_limit_s,
+            Self::WaypointCourse(c) => c.time_limit_s,
         }
     }
 
@@ -517,6 +637,8 @@ impl TaskSpec {
             Self::GetMoving(_) => ("top_speed", "m/s"),
             Self::CompleteTack(_) => ("tack_time", "s"),
             Self::RecoverFromHeel(_) => ("peak_heel", "rad"),
+            // Elapsed seconds, which is what a course is raced in (D5).
+            Self::WaypointCourse(_) => ("course_time", "s"),
         }
     }
 
@@ -528,6 +650,12 @@ impl TaskSpec {
     /// are *visible*, which is half of what makes them task configuration
     /// rather than a hidden coefficient.
     pub fn thresholds(&self) -> BTreeMap<String, f64> {
+        // The course arm is whole-map rather than key-by-key, because its
+        // waypoint keys are generated from the document; it returns early so
+        // the `put` closure's borrow of `m` ends before `extend` needs it.
+        if let Self::WaypointCourse(c) = self {
+            return course::thresholds(c);
+        }
         let mut m = BTreeMap::new();
         let mut put = |k: &str, v: f64| {
             m.insert(k.to_string(), v);
@@ -560,6 +688,10 @@ impl TaskSpec {
                 put("heel_event_step_rad", c.heel_event_step_rad);
                 put("time_limit_s", c.time_limit_s);
             }
+            // Returned above: the limit **and the course geometry**, under
+            // `course.*` keys, so the recorded identity is self-describing
+            // (v2 section 12, D5 and [`course::thresholds`]).
+            Self::WaypointCourse(_) => unreachable!("returned above"),
         }
         m
     }
@@ -626,6 +758,7 @@ impl TaskSpec {
                 )?;
                 ordered("recover_hold_s", c.recover_hold_s, c.time_limit_s)?;
             }
+            Self::WaypointCourse(c) => course::validate(c)?,
         }
         Ok(())
     }
@@ -763,11 +896,17 @@ struct HeelState {
     recover: Hold,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// The state of whichever challenge is being evaluated.
+///
+/// **No longer `Copy`**, because [`CourseState`] owns a `Tracker` and a
+/// `Tracker` owns a `Route`. The three skill states are still `Copy` and are
+/// still read out by value; the course arm is matched by reference.
+#[derive(Clone, Debug, PartialEq)]
 enum Machine {
     GetMoving(GetMovingState),
     Tack(TackState),
     Heel(HeelState),
+    Course(CourseState),
 }
 
 /// One attempt at one challenge.
@@ -834,6 +973,12 @@ impl TaskRun {
                 eased: false,
                 recover: Hold::default(),
             }),
+            // The route is built here, from the course document, so a course
+            // that does not load is a **refused configuration** rather than an
+            // attempt that fails on its first step.
+            TaskSpec::WaypointCourse(c) => {
+                Machine::Course(CourseState::start(c.course, &initial.state)?)
+            }
         };
         let mut run = Self {
             spec,
@@ -925,6 +1070,7 @@ impl TaskRun {
             Machine::GetMoving(_) => Self::step_get_moving(self, obs),
             Machine::Tack(_) => Self::step_tack(self, obs),
             Machine::Heel(_) => Self::step_heel(self, obs),
+            Machine::Course(_) => Self::step_course(self, obs),
         };
         if let Some((outcome, value)) = verdict {
             return self.finish(outcome, obs, value);
@@ -965,9 +1111,12 @@ impl TaskRun {
         let TaskSpec::GetMoving(c) = self.spec else {
             unreachable!("machine and spec are constructed together")
         };
-        let Machine::GetMoving(mut s) = self.machine else {
+        let Machine::GetMoving(ref state) = self.machine else {
             unreachable!("machine and spec are constructed together")
         };
+        // A copy, because `GetMovingState` is `Copy`; `Machine` is not, so the read is
+        // through a reference (see [`Machine`]).
+        let mut s = *state;
         let u = obs.state.u;
         s.top_speed = s.top_speed.max(u);
 
@@ -1018,9 +1167,12 @@ impl TaskRun {
         let TaskSpec::CompleteTack(c) = self.spec else {
             unreachable!("machine and spec are constructed together")
         };
-        let Machine::Tack(mut s) = self.machine else {
+        let Machine::Tack(ref state) = self.machine else {
             unreachable!("machine and spec are constructed together")
         };
+        // A copy, because `TackState` is `Copy`; `Machine` is not, so the read is
+        // through a reference (see [`Machine`]).
+        let mut s = *state;
         let twa = true_wind_angle(&obs.state, obs.wind_world);
         // `signed` is the angle measured **away from the starting tack**:
         // negative while the boat is still on the side it began on, positive
@@ -1106,9 +1258,12 @@ impl TaskRun {
         let TaskSpec::RecoverFromHeel(c) = self.spec else {
             unreachable!("machine and spec are constructed together")
         };
-        let Machine::Heel(mut s) = self.machine else {
+        let Machine::Heel(ref state) = self.machine else {
             unreachable!("machine and spec are constructed together")
         };
+        // A copy, because `HeelState` is `Copy`; `Machine` is not, so the read is
+        // through a reference (see [`Machine`]).
+        let mut s = *state;
         let heel = obs.state.phi.abs();
         s.peak_heel = s.peak_heel.max(heel);
         let mut events: Vec<(&str, f64)> = Vec::new();
@@ -1168,11 +1323,34 @@ impl TaskRun {
         None
     }
 
+    /// The course machine: the tracker's passages, and `cut_between`'s cuts.
+    ///
+    /// Nothing here decides a passage or a cut. The tracker decides the first
+    /// and `sailgym-course`'s own `cut_between` decides the second, which is
+    /// what makes this evaluator and `sailgym-env`'s episode runner incapable
+    /// of disagreeing about what a miss is (D2, RV66).
+    fn step_course(&mut self, obs: &StepObservation) -> Option<(Outcome, f64)> {
+        let origin_t = self.origin_t;
+        let Machine::Course(ref mut state) = self.machine else {
+            unreachable!("machine and spec are constructed together")
+        };
+        let (events, finished) = state.observe(obs, origin_t);
+        for (id, waypoint) in events {
+            self.push(id.to_string(), obs, f64::from(waypoint));
+        }
+        if finished {
+            // The elapsed time **is** the metric, so it is computed here rather
+            // than read back from a machine that has nothing else to say.
+            return Some((course::FINISHED, obs.t() - origin_t));
+        }
+        None
+    }
+
     // --- reporting ---------------------------------------------------------
 
     /// The headline metric's value as it stands.
     pub fn metric_value(&self) -> f64 {
-        match self.machine {
+        match &self.machine {
             Machine::GetMoving(s) => s.top_speed,
             // The tack's metric is how long the manoeuvre took, which only
             // exists once it has been completed.
@@ -1184,11 +1362,24 @@ impl TaskRun {
                 }
             }
             Machine::Heel(s) => s.peak_heel,
+            // Like the tack's: a course time only exists once the course has
+            // been finished, and reporting the clock of an attempt that did not
+            // would read as a result.
+            Machine::Course(_) => {
+                if self.outcome == Outcome::Succeeded {
+                    self.elapsed_s()
+                } else {
+                    0.0
+                }
+            }
         }
     }
 
     fn compute_progress(&self, t: f64) -> Progress {
-        match (self.spec, self.machine) {
+        if let Machine::Course(state) = &self.machine {
+            return state.progress();
+        }
+        match (self.spec, self.machine.clone()) {
             (TaskSpec::GetMoving(c), Machine::GetMoving(s)) => Progress {
                 phase: if s.reached { "holding" } else { "building" },
                 value: s.top_speed,
@@ -1225,10 +1416,46 @@ impl TaskRun {
         }
     }
 
-    /// The last event with the challenge's highlight id, for **Inspect**.
+    /// The event a result's **Inspect** action should jump to.
+    ///
+    /// The **last** event with the challenge's highlight id, which is what a
+    /// skill wants: the peak heel, the moment the target speed was reached, the
+    /// crossing.
+    ///
+    /// A course is the one exception, and the PRD states it: *Inspect jumps to
+    /// the first miss, or the finish.* A player who cut waypoint 2 wants to see
+    /// waypoint 2, not the last of four cuts; a player who sailed it clean
+    /// wants the finish. So the course arm looks **forward** for a
+    /// `waypoint_missed` and falls back to the terminal event.
     pub fn highlight(&self) -> Option<&PracticeEvent> {
         let id = self.spec.id().highlight_event();
+        if self.spec.id().course().is_some() {
+            return self
+                .events
+                .iter()
+                .find(|e| e.id == id)
+                .or_else(|| self.events.last());
+        }
         self.events.iter().rev().find(|e| e.id == id)
+    }
+
+    /// s since the attempt began, one per waypoint passed, in order.
+    ///
+    /// Empty for a skill. The page shows them against the baseline's; it does
+    /// not compute them (D5).
+    pub fn splits(&self) -> &[f64] {
+        match &self.machine {
+            Machine::Course(s) => s.splits(),
+            _ => &[],
+        }
+    }
+
+    /// The course attempt's state, for a page that draws the overlay.
+    pub fn course_state(&self) -> Option<&CourseState> {
+        match &self.machine {
+            Machine::Course(s) => Some(s),
+            _ => None,
+        }
     }
 
     /// Everything the browser is told, in one record.

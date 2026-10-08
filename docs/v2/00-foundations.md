@@ -17,6 +17,14 @@ Numbering continues from v1: F1–F13 are v1's, F14 onward are v2's.
 | **F17** | The Python boundary | F17.1 **implemented** by section 03; F17.2–F17.5 remain proposed, section 07 |
 | **F18** | Corrected model, input, replay and tasks | F18.1 **implemented** by section 08, F18.2 by 09, F18.3 by 10, F18.4 by 11 |
 | **F19** | The episode runner — `Outcome`, autoreset, decision log, `VecEnv` | **implemented** by section 06; it records F16.5 and F17.4 rather than adding a rule. See F19 |
+| **F15.6** | Waypoint courses — an open route, a waypoint as a gate, and one definition of a cut | **implemented** by section 12 (D1, D2) |
+| **F14.11** | The rule sailor, and `task → course` | **implemented** by section 12 (D6, D7) |
+
+Section 12 also amends three clauses in place rather than adding one of its
+own: **F8.2** gains `run_baseline` and `episode_course_json` and three extended
+outputs (D5), **F18.3** gains `compare_conditions` (D4), and **F18.4** gains the
+course challenge and the rule that a miss is an event (D3). Each is written in
+its own section below, under the heading the clause already has.
 
 ---
 
@@ -352,6 +360,93 @@ own.*
     The step count did not change, so `[ValidateRange(1, 11)]` is untouched.
     Section 06 extends the same list.
 
+### F14.11 The rule sailor, and `task → course` — what section 12 implemented (D6, D7)
+
+*Implemented by section 12 on 2026-10-08. The evidence is
+[`baseline-validation.md`](baseline-validation.md) and
+[`progress/12-handoff.md`](progress/12-handoff.md). **No file in
+`crates/sailgym-physics/` changed for this clause.** F14.1–F14.10 are
+otherwise unchanged: no new action space, no `Helm`, no `Setpoint`, no noise
+model, no new sensor and no change to the observation layout.*
+
+1. **The rule sailor lives in `crates/sailgym-agent/src/pilot/`**, not in a
+   crate of its own, so gate step 3's list does not change and F19.7's five
+   retained entries are intact. Its contract:
+   `AgentSpec { id: "rule_sailor", version: 1, action_space: Rates, cadence: Cadence::new(10) }`.
+
+2. **It reads observation columns by name, at `reset`.** Eight of the
+   eighteen: `apparent_wind.awa`, `guidance.bearing_to_target`,
+   `guidance.cross_track`, `imu.yaw_rate`, `imu.heel`, `imu.roll_rate`,
+   `actuator_state.delta_r` and `rig_state.l_sheet`. It never resolves
+   `guidance.leg_bearing_vs_wind`, which is derived from the **true** wind and
+   is marked `privileged` in the layout (F14.4), and it reads neither
+   acceleration. `replacing_the_privileged_column_changes_no_action` replaces
+   that column with arbitrary values — zero, ±3, a NaN — over observation
+   sequences recorded from all three courses and asserts every action is
+   unchanged bit for bit (RV67).
+
+3. **A missing column gives the all-zero action**, plus a `missing_fields`
+   debug note, and never a panic: a panic in WASM is a dead page. Each of the
+   eight dropped in turn, an empty layout, a short observation and a non-finite
+   one are all asserted.
+
+4. **Its numbers are F14.9 tunables, and three of them are written at a value
+   chosen partly so that it is not an F7 number.** `helm_kd` is 0.6 rather
+   than 0.55, `trim_rate_k` 5.5 rather than 6.0 and `roll_rate_ease` 0.8 rather
+   than 0.85, because a gain has no preferred value and a coincidental
+   collision with an unrelated catalogue number would have cost
+   `no_f7_literal_appears_in_the_pilot_module` an exemption entry — and an
+   audit with exemptions is an audit nobody reads (F17.6 §1 calls an empty
+   exemption table the intended steady state). Every angle is stored in radians
+   and written as the degrees it was chosen in, which is
+   `sailgym_task::TaskSpec::shipped`'s own device.
+
+5. **The trim table is measured, by a named command.**
+   `cargo run --release -p sailgym-bench --bin trim_sweep`, on `free_sail`'s
+   own field, 41 sheet lengths × 11 angles × both tacks, each a 40 s hold
+   averaged over its last quarter. Each entry is the **midpoint of the
+   admissible plateau** rather than the argmax, because the argmax moved by up
+   to 0.9 m between two sampling resolutions while the speed it bought moved by
+   under 3 %. The table is reported **as measured** and is not smoothed: it
+   decreases once, at 90.6° → 109.1°, and flattening that would be choosing a
+   number from how a run looks — v1 brief §43's discipline, applied to a
+   tunable. [`baseline-validation.md`](baseline-validation.md) §1 carries it.
+
+6. **Durations are counted in decisions, never in seconds.** An agent sees no
+   clock and no time column, and `dt` is an F7 value it may not carry (F9.1).
+   The decision counter is the one monotone quantity it owns.
+
+7. **Its mirror is bit-exact at the decision level**, which required one thing
+   worth recording: a **second, local `wrap_pi`**. `frames::wrap_pi`'s slow
+   path is a `%` and a conditional `+2π`, and `fl(a + π)` is not the exact
+   negation of `fl(−a + π)`, so a controller built on it could not satisfy a
+   bit-exact mirror test. The local form is `a`, `a − 2π` or `a + 2π`, which
+   *is* exactly odd; it agrees with `frames::wrap_pi` everywhere the controller
+   wraps, asserted over 20 001 points, and differs only at exactly `a = −π`,
+   where nothing downstream distinguishes them. Nowhere does the controller use
+   `signum` on a quantity that can be zero: `(0.0).signum()` is `+1` and
+   `(−0.0).signum()` is `−1`, which is precisely how a mirror-symmetric
+   controller acquires a side it prefers (F11's R3, RV72).
+
+8. **`AgentDebug` is reported and read by no controller**, F6.10's discipline
+   applied to agents. `Episode::agent_debug()` exposes it and `run_baseline`
+   turns its `mode` changes into the narration (D5). The narration is
+   presentation data for one run and is **not** part of the episode.
+
+9. **`task → course`** (D7). `sailgym-task` depends on `sailgym-course`,
+   because a course challenge needs passage and cuts and may not carry a second
+   copy of either. The arrows become `task → {course, physics}`; there is no
+   cycle, because `course → physics` only and `sailgym-physics` depends on
+   nothing. `cargo tree -p sailgym-physics` mentions no v2 crate, and
+   `cargo tree -p sailgym-course` mentions no `task`, `agent` or `env` — both
+   asserted in gate step 3.
+
+10. **No autopilot on the player's boat.** The rule sailor sails its own
+    episode and never the one the player is in. "Autopilot takes the helm"
+    still needs the engaged/released contract F14.10 §2 says does not exist.
+
+---
+
 ---
 
 ## F15. Task and course
@@ -465,6 +560,87 @@ frame conversion of its own.*
    `cargo test -p sailgym-physics -p sailgym-task -p sailgym-course`. The
    step count did not change, so `[ValidateRange(1, 11)]` is untouched.
    Sections 05 and 06 extend the same list rather than each adding a step.
+
+### F15.6 Waypoint courses — what section 12 implemented (D1, D2)
+
+*Implemented by section 12 on 2026-10-08, after 07. The implementation decision
+`brief.md` §5 asks for — the selected S row (S3's web-integration half), the
+exact F deltas, the decision source and date, and the validation performed — is
+recorded in [`progress/12-handoff.md`](progress/12-handoff.md) §1, which
+brief §5 names as one of the two places it may live. **One file in
+`crates/sailgym-physics/` changed**, `src/recording.rs`, and it gained one
+public method and its tests and no physics (D4);
+`git diff --name-only crates/sailgym-physics/` names only that file, which is
+the section's acceptance criterion 3. F3, F4, F5, F6, F7 and F9 are unchanged:
+`STATE_LEN` is still 13, the F8.3 snapshot layout is untouched,
+`parameters.rs` is byte identical and `scenarios/` is untouched (RV69).*
+
+1. **A route may say where it starts.** `Route` gains
+   `start: Option<Vec2>`, serialised only when present. With `start: Some(s)`
+   **leg 0 runs from `s`**; every later leg, including the first leg of lap 2,
+   runs from the previous mark as F15.5 §1 describes. With `start: None`
+   nothing changes and **every existing route document is byte identical**,
+   because the field is not written — which covers
+   `crates/sailgym-course/tests/replay/routes.json`, every research envelope's
+   `ResearchIdentity::route` and the Python binding's route documents.
+   `Route::new` keeps its signature and sets `start: None`; F15.1's lookahead
+   point keeps it, so its disc branch is unchanged. `validate` refuses a
+   non-finite start and a start on `marks[0]`; with a start, a single-mark route
+   **has** an incoming leg, so a sided rounding or a gate is valid on it.
+   `mirrored` mirrors the start. This amends F15.5 §1's "a course that wants a
+   distinct start makes the start a mark": **both spellings remain valid**, and
+   a circuit is still a circuit.
+
+2. **A waypoint is a gate square to its incoming leg, and F15.3 did not
+   change.** `Route::waypoints(start, points, half_width)` builds one
+   `Rounding::Gate` per point, `2·half_width` wide, square to the leg arriving
+   at it and centred on it; `Mark::position` is the waypoint and `Mark::radius`
+   is `half_width`, which passage ignores for gates and a display draws.
+   `Rounding::Either` would **not** have done: on a leg it requires only a
+   directed crossing of the mark's perpendicular *line*, with no lateral bound
+   at all, so an `Either` waypoint 200 m off the track is "passed" (RV65).
+
+   **Square and centred is load-bearing.** F19.4's probe is the plane through
+   the mark's own position perpendicular to the leg; for a gate square to its
+   leg and centred on its mark the probe line and the gate line coincide, so
+   "crossed the line outside the posts" is exactly a cut.
+
+3. **A cut has one definition, in `sailgym-course`.**
+   `passage::cut_between(route, leg_index, prev, cur)` is F19.4's probe, moved
+   into the crate that owns the passage rule and made public. It builds its
+   probe **from the leg the real route computed**, so the start and the laps
+   travel with it by construction rather than by a copy. `sailgym-env` and
+   `sailgym-task` both call it and neither carries geometry of its own (RV66).
+
+   Section 06's own copy — `Route::new(marks, laps)` with every rounding
+   replaced by `Either` — is **removed**, and it had to be: `Route::new` sets
+   `start: None`, so with D1 the copy's leg 0 ran from somewhere the real
+   route's did not. On a single-waypoint open course the copy degraded to the
+   mark's own **disc** and terminated a boat sailing straight at its waypoint as
+   `MarkMissed`; on the shipped `reach` course its leg 0 ran *west* where the
+   real one ran east, so a genuine eastward cut went unreported.
+   `crates/sailgym-env/tests/course.rs::a_probe_that_drops_the_start_disagrees_about_leg_0`
+   measures both halves and was demonstrated able to fail.
+
+4. **A recorded episode's first sample is the state it started from.**
+   `Episode::begin` now logs one sample as the recorder is created, exactly as
+   `Sim::begin_recording` always has. Section 10's `Recorder::observe` fills the
+   header's `initial_state` and `initial_controls` from whichever sample arrives
+   first, so before this an episode's own header said it had started one step
+   after it did — and `ExperimentIdentity::compare` then refused it against the
+   identical conditions recorded in the browser. Found by `run_baseline`, whose
+   whole purpose is that comparison.
+
+5. **The shipped courses are data.** `courses/{reach,triangle,windward_leeward}.json`,
+   embedded with `include_str!` exactly as `scenario.rs` embeds `scenarios/`,
+   each naming the shipped scenario it is sailed in. `CourseId` is a `Copy`
+   enum so a `TaskSpec` can carry one and stay `Copy`. Course geometry is **task
+   configuration and not physics**: no number in `sailgym-course` is an F7
+   coefficient and the crate never reads `parameters.rs`.
+
+6. **There are still no obstacles and no ray casting.** `brief.md` S6 is
+   deferred, `README.md` V-F excludes tasks 4.5–4.6 from default delivery, and
+   section 12 shipped neither (F15.5 §6 holds).
 
 ---
 
@@ -673,6 +849,34 @@ a worst `|Δ|` of exactly `0.0`.*
    passed, exit 0, against 343 passed / 6 failed uncommitted.
    `docs/v2/progress/02-handoff.md` §7 records the method and the command
    that follows the commit.
+
+---
+
+### F18.5 The WASM surface grows, coarse-grained (section 12, D5 — amends F8.2)
+
+`sailgym-wasm` gains dependencies on `sailgym-course`, `sailgym-agent` and
+`sailgym-env`. *Measured:* `cargo build -p sailgym-env --target
+wasm32-unknown-unknown` succeeds with the workspace's rayon; only `VecEnv` uses
+rayon and the browser never constructs one.
+
+| Method | Kind | Contract |
+|---|---|---|
+| `run_baseline(log_hz)` | new | Requires an active **course** attempt. Runs the rule sailor through a `sailgym_env::Episode` under the attempt's **frozen initial contract**, with the same course challenge attached. Returns `{episode, narration, conditions, outcome, task_outcome, time_s, splits}`. **One call per attempt, never one per decision** (brief §24); the answer is cached on the attempt, so two calls return the identical episode. It **refuses, naming the reason**, when no course attempt is active, when the attempt is a skill, and when the frozen contract cannot be reproduced by an `Episode` — the catalogue, the complete F3 state, the controls, the wind configuration and the seed are each compared before a single step (RV70). |
+| `episode_course_json(episode_json)` | new | The course recorded in an episode's `TaskIdentity`, rebuilt from its `course.*` thresholds, or `null`. Replay draws the **recorded** course and never today's catalogue (F18.3). |
+| `practice_tasks_json` | extended | The three skills, then the three courses, each row carrying `kind: "skill" \| "course"`; a course row also carries its document's `title` and `description` and its waypoint count. |
+| `practice_state_json` | extended | A `course` block: `waypoints: [{n, x, y, radius, posts, state}]` with `state ∈ {passed, next, pending, missed}`, plus `start`, `half_width`, `next`, `distance_to_next` and `splits`. Every state is decided in Rust. |
+| `episode_comparability_json` | extended | Adds `conditions` — the `compare_conditions` verdict — **beside** the existing verdict and never instead of it. |
+
+`narration` is presentation data for one run and is **not** part of the
+episode. Exporting it would need an envelope change section 12 does not make;
+the debt is tracked.
+
+**No course logic is implemented in TypeScript.** No passage decision, no gate
+post, no waypoint state and no split is computed in `web/`: the overlay's props
+**are** `practice_state_json`'s block, and the one derived thing a replay does —
+colouring a waypoint `passed` because the episode carries a `waypoint_passed`
+event with that number at or before the playhead — is reading a decision Rust
+already made (RV73).
 
 ---
 
@@ -927,6 +1131,36 @@ The web composes device input once into normalized Controls. Rust limits actuato
 
 ### F18.3 Recording and comparison — section 10
 
+#### F18.3a — section 12 adds a second named verdict (D4)
+
+```rust
+impl ExperimentIdentity {
+    /// `compare` with `action` and `observation` excluded: "same conditions,
+    /// different controller". Never a substitute for `compare`.
+    pub fn compare_conditions(&self, other: &Self) -> Comparability;
+}
+```
+
+`compare` refuses a hand-flown attempt against an agent run — `action` is
+`NotApplicable` on one side and a value on the other — and **that refusal is
+correct and stays**: section 11's two-attempt comparison still reads `compare`.
+A baseline exists to be compared *across controllers*, so it gets its own,
+named verdict. Everything else is still compared, the model clause included: a
+dirty or unknown source is `Indeterminate` under both (F18.1d).
+
+There is **one** list of compared fields and **one** fixed order; the two entry
+points differ by a flag at the last two notes, so a field added to one is added
+to both. Splits against the baseline and the ghost are shown only on
+`SameConditions` under `compare_conditions` (RV70).
+
+`git diff --name-only crates/sailgym-physics/` names only `src/recording.rs`
+for the whole of section 12, and gate step 4 is unaffected: the conformance
+bundle's key covers the declared `model_version` and every fixture's data
+digest and deliberately not a source tree id (F16.9 §3), so a comparison method
+with no physics in it does not stale the bundle.
+
+
+
 Extend the existing versioned Episode codec with the diagnostic/identity data needed for truthful display. Decode schema-1 files with unavailable fields explicit. Replay selects one recorded source for every consumer and does not recompute missing forces using current physics. Canonical identity contains model/source, parameters, initial state/controls, integrator/dt, wind/seed and applicable task/action/observation contracts. Unknown is not equal to known. Sampled inspection is not action resimulation.
 
 ### F18.4 Guided tasks — section 11
@@ -979,6 +1213,59 @@ moved, `STATE_LEN` is still 13, `parameters.rs` is byte identical and
    during an attempt ends it as `conditions_changed`, and a reset or a
    scenario change ends it as `cancelled`; neither produces a comparable
    result.
+
+#### F18.4b — course challenges, and a miss is not the end (section 12, D3)
+
+A course challenge succeeds when the **last** waypoint is passed. A cut emits a
+`waypoint_missed` event and the attempt **continues**: the player must come back
+behind the gate line and cross through it, which F15.3's directed crossing
+already requires — there is no "re-arm" flag anywhere, because the tracker never
+advanced. Capsize fails the attempt (`FailureReason::Capsized`, as in
+section 11) and the time limit times it out.
+
+**`sailgym-env` is unchanged in this respect.** F19.2's
+`Terminated(MarkMissed)` still ends a *research* episode. The practice
+evaluator and the episode runner are allowed to disagree about what a miss
+**costs**; they are not allowed to disagree about what a miss **is**, which is
+why F15.6 §3 gives a cut one definition.
+
+What section 12 implemented:
+
+1. **`TaskSpec::WaypointCourse { course: CourseId, time_limit_s }`**, with task
+   ids `course_reach`, `course_triangle` and `course_windward_leeward`.
+   `TASK_IDS` still names the three skills and a new `COURSE_TASK_IDS` names the
+   courses, so `practice_tasks_json` was unchanged until task 12.7 listed them
+   and the gate stayed green between groups.
+
+2. **Events `waypoint_passed` and `waypoint_missed`**, with `value` the 1-based
+   waypoint number, and the metric is elapsed seconds (`course_time`).
+
+3. **`TaskSpec::thresholds()` carries the course geometry under `course.*`
+   keys** — `half_width`, `waypoint_count`, `start_x`/`start_y`,
+   `waypoint_<n>_x`/`_y`, `schema_version` and the guidance `lookahead_m`. The
+   `TaskIdentity` is therefore **self-describing**: two attempts on different
+   geometry are refused by `compare`, and a replay rebuilds the recorded course
+   from those thresholds rather than from today's catalogue. **No schema
+   change**, as in section 11: the thresholds map was already
+   `BTreeMap<String, f64>`.
+
+4. **`TASK_VERSION` is unchanged**, at 1. The courses are new tasks with new
+   ids and their own thresholds; no existing rule changed meaning, so a skill
+   attempt recorded before this section and one recorded after it are still the
+   same experiment.
+
+5. **The time limits are measured**, by the rule
+   [`baseline-validation.md`](baseline-validation.md) §2 records: three times
+   the rule sailor's time under the browser's own conditions, rounded up to the
+   next five seconds — 130 s, 320 s and 280 s against measured baselines of
+   42.50 s, 105.50 s and 91.80 s. A threshold was not chosen to make a
+   challenge passable (RV61).
+
+6. **`TaskId` gained a variant carrying data**, so its `PartialOrd`, `Ord`,
+   `Serialize` and `Deserialize` are written out rather than derived: deriving
+   them would have demanded `CourseId: Ord` and a serde shape nothing asked
+   for. All four go through `as_str`/`parse`, so there is one spelling of a task
+   id, and the three skills' serialised form is byte for byte section 11's.
 
 ---
 

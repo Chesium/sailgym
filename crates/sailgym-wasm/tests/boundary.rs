@@ -118,3 +118,135 @@ fn diagnostics_serialise_and_round_trip_through_json_parse() {
     let entries: js_sys::Array = js_sys::JSON::parse(&meta).expect("parses").unchecked_into();
     assert!(entries.length() >= 55, "{} entries", entries.length());
 }
+
+// ---------------------------------------------------------------------------
+// v2 section 12: the course surface (task 12.7, D5)
+// ---------------------------------------------------------------------------
+//
+// These run under `wasm-pack test --headless --chrome crates/sailgym-wasm` and
+// **not** in the gate — the gate proves the browser behaviour through
+// `web/tests/e2e/course.spec.ts` (step 9), which drives the real page. They are
+// here because this file is where the boundary's own contract is written down,
+// and because `run_baseline`'s refusals are easier to read as four assertions
+// than as four browser steps.
+
+/// Parse a `JsValue` JSON string.
+#[cfg(target_arch = "wasm32")]
+fn parse(v: JsValue) -> serde_json::Value {
+    serde_json::from_str(&v.as_string().expect("a JSON string")).expect("valid JSON")
+}
+
+#[wasm_bindgen_test]
+fn practice_tasks_lists_the_skills_then_the_courses() {
+    let sim = Sim::new("{}").expect("a Sim");
+    let rows = parse(sim.practice_tasks_json().expect("tasks"));
+    let rows = rows.as_array().expect("an array");
+    assert_eq!(rows.len(), 6, "three skills and three courses");
+    let kinds: Vec<&str> = rows.iter().map(|r| r["kind"].as_str().unwrap()).collect();
+    assert_eq!(
+        kinds,
+        ["skill", "skill", "skill", "course", "course", "course"]
+    );
+    let courses: Vec<&str> = rows
+        .iter()
+        .filter(|r| r["kind"] == "course")
+        .map(|r| r["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        courses,
+        ["course_reach", "course_triangle", "course_windward_leeward"]
+    );
+    for row in rows.iter().filter(|r| r["kind"] == "course") {
+        assert!(row["waypoints"].as_u64().unwrap() >= 2);
+        assert!(!row["title"].as_str().unwrap().is_empty());
+        assert!(row["thresholds"]["course.half_width"].as_f64().unwrap() > 0.0);
+    }
+}
+
+#[wasm_bindgen_test]
+fn a_course_attempt_publishes_a_course_block() {
+    let mut sim = Sim::new("{}").expect("a Sim");
+    sim.start_practice("course_reach", 20.0).expect("start");
+    let state = parse(sim.practice_state_json().expect("state"));
+    let course = &state["course"];
+    assert_eq!(course["waypoints"].as_array().unwrap().len(), 3);
+    assert_eq!(course["next"], 1);
+    assert_eq!(course["waypoints"][0]["state"], "next");
+    assert_eq!(course["waypoints"][1]["state"], "pending");
+    assert_eq!(course["start"]["x"], 0.0);
+    assert!(course["distance_to_next"].as_f64().unwrap() > 0.0);
+    // Both posts, from `Rounding::Gate`, and the mark's radius beside them.
+    assert_eq!(course["waypoints"][0]["posts"].as_array().unwrap().len(), 2);
+    assert_eq!(course["waypoints"][0]["radius"], 5.0);
+
+    // A skill attempt carries no block.
+    sim.start_practice("get_moving", 20.0).expect("start");
+    let state = parse(sim.practice_state_json().expect("state"));
+    assert!(state["course"].is_null());
+}
+
+#[wasm_bindgen_test]
+fn run_baseline_refuses_what_it_cannot_honour() {
+    let mut sim = Sim::new("{}").expect("a Sim");
+    // No attempt at all.
+    let why = sim.run_baseline(20.0).expect_err("no attempt");
+    let why = why.as_string().unwrap();
+    assert!(why.contains("no practice attempt"), "{why}");
+
+    // A skill is not a course.
+    sim.start_practice("get_moving", 20.0).expect("start");
+    let why = sim.run_baseline(20.0).expect_err("a skill has no baseline");
+    let why = why.as_string().unwrap();
+    assert!(why.contains("not a course"), "{why}");
+}
+
+#[wasm_bindgen_test]
+fn run_baseline_sails_the_course_and_says_the_conditions_are_the_same() {
+    for id in ["course_reach", "course_triangle", "course_windward_leeward"] {
+        let mut sim = Sim::new("{}").expect("a Sim");
+        sim.start_practice(id, 20.0).expect("start");
+        let first = sim
+            .run_baseline(20.0)
+            .expect("a baseline")
+            .as_string()
+            .unwrap();
+        let run: serde_json::Value = serde_json::from_str(&first).expect("valid JSON");
+        // D4: "same conditions, different controller" is the verdict that
+        // licenses the ghost and the splits (RV70).
+        assert_eq!(run["conditions"]["verdict"], "same_conditions", "{id}");
+        assert_eq!(run["outcome"], "finished", "{id}");
+        assert!(run["time_s"].as_f64().unwrap() > 10.0, "{id}");
+        assert!(!run["narration"].as_array().unwrap().is_empty(), "{id}");
+        assert!(!run["episode"]["frames"].as_array().unwrap().is_empty());
+        // Two calls, one answer.
+        let second = sim
+            .run_baseline(20.0)
+            .expect("a baseline")
+            .as_string()
+            .unwrap();
+        assert_eq!(first, second, "{id}: two calls disagreed");
+
+        // …and the recorded course comes back from the episode's own identity.
+        let episode = serde_json::to_string(&run["episode"]).unwrap();
+        let course = parse(sim.episode_course_json(&episode).expect("a course"));
+        assert_eq!(
+            course["waypoints"].as_array().unwrap().len(),
+            run["splits"].as_array().unwrap().len(),
+            "{id}: one waypoint per split on a clean run"
+        );
+    }
+}
+
+#[wasm_bindgen_test]
+fn episode_course_json_is_null_for_an_episode_with_no_course() {
+    let mut sim = Sim::new("{}").expect("a Sim");
+    sim.start_recording(20.0);
+    sim.advance(10);
+    let episode = sim
+        .stop_recording()
+        .expect("an episode")
+        .as_string()
+        .unwrap();
+    let course = parse(sim.episode_course_json(&episode).expect("no course"));
+    assert!(course.is_null(), "a free sail has no course");
+}

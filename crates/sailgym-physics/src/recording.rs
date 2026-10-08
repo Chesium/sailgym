@@ -382,6 +382,20 @@ impl Comparability {
     }
 }
 
+/// Whether [`ExperimentIdentity::compare_fields`] compares the two controller
+/// fields — `action` and `observation` — or skips them.
+///
+/// The flag exists so that [`ExperimentIdentity::compare`] and
+/// [`ExperimentIdentity::compare_conditions`] can share **one** field list and
+/// one comparison order instead of keeping two copies of it in step.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Controller {
+    /// [`ExperimentIdentity::compare`]: every field, the controller included.
+    Compared,
+    /// [`ExperimentIdentity::compare_conditions`]: the conditions only.
+    Excluded,
+}
+
 impl ExperimentIdentity {
     /// The canonical text form: `serde_json` over a record whose maps are
     /// ordered and whose fields are declared in one order, so equal records
@@ -397,6 +411,46 @@ impl ExperimentIdentity {
     /// reasons come back in, so two runs of this function on the same pair
     /// produce identical text (F9.3, F9.4).
     pub fn compare(&self, other: &Self) -> Comparability {
+        self.compare_fields(other, Controller::Compared)
+    }
+
+    /// [`Self::compare`] with `action` and `observation` excluded: "same
+    /// conditions, different controller". **Never a substitute for
+    /// [`Self::compare`]**.
+    ///
+    /// `compare` refuses a hand-flown attempt against an agent run, because
+    /// `action` and `observation` are [`Recorded::NotApplicable`] on one side
+    /// and values on the other. That is the right answer for two attempts at
+    /// the same challenge and it does not change. A **baseline**, though,
+    /// exists precisely to be compared *across* controllers, so that question
+    /// gets its own named verdict: were these two runs produced under the same
+    /// conditions, whatever drove the boat?
+    ///
+    /// Exactly two fields are skipped, and nothing else is. Everything that
+    /// decides what the boat could do — `model`, `parameters`, `integrator`,
+    /// `dt`, `initial_state`, `initial_controls`, `scenario`, `wind`, `seed`
+    /// and `task` — is still compared, F18.1d's model clause included: a dirty
+    /// or unknown source tree names no baseline and still yields
+    /// [`Comparability::Indeterminate`].
+    ///
+    /// A `SameConditions` from here licenses the sentence "the same
+    /// conditions, a different controller" and no more. It says nothing about
+    /// the two runs having seen the same observation columns or driven the same
+    /// action adapter, so it may not stand in for `compare` where that is the
+    /// question — two attempts at one practice challenge, a conformance claim,
+    /// or a replay asserting it reproduces a recorded run.
+    pub fn compare_conditions(&self, other: &Self) -> Comparability {
+        self.compare_fields(other, Controller::Excluded)
+    }
+
+    /// The one comparison, and the one list of compared fields.
+    ///
+    /// Both public entry points land here, so there is exactly one field list
+    /// and one fixed comparison order — the order the reasons come back in
+    /// (F9.3, F9.4). A second copy of the list is how the two verdicts would
+    /// come to disagree about a field neither of them means to treat
+    /// specially.
+    fn compare_fields(&self, other: &Self, controller: Controller) -> Comparability {
         let mut different: Vec<String> = Vec::new();
         let mut indeterminate: Vec<String> = Vec::new();
 
@@ -438,8 +492,14 @@ impl ExperimentIdentity {
         note("wind", self.wind.compare(&other.wind));
         note("seed", self.seed.compare(&other.seed));
         note("task", self.task.compare(&other.task));
-        note("action", self.action.compare(&other.action));
-        note("observation", self.observation.compare(&other.observation));
+
+        // The two controller fields, and the **only** difference between the
+        // two entry points. They come last so that excluding them cannot
+        // reorder any other reason.
+        if controller == Controller::Compared {
+            note("action", self.action.compare(&other.action));
+            note("observation", self.observation.compare(&other.observation));
+        }
 
         if !different.is_empty() {
             Comparability::Different(different)
@@ -2129,6 +2189,324 @@ mod tests {
         assert_eq!(
             known.compare(&agent),
             Comparability::Different(vec!["action".to_string()])
+        );
+    }
+
+    /// A clean, known model id pinned onto a fresh manual identity.
+    ///
+    /// The compiled source is `dirty` in any working tree with an uncommitted
+    /// edit, which makes **every** verdict `Indeterminate(["model"])` (F18.1d)
+    /// and would tell us nothing about the field list. So the two comparison
+    /// tests below pin a clean id, exactly as
+    /// `same_conditions_needs_every_field_and_a_clean_source` does.
+    fn identity_with_a_clean_source(tree: char) -> ExperimentIdentity {
+        let (_, rec) = fixture(20.0);
+        let mut id = rec.header().identity();
+        id.model = Recorded::Value(ModelIdentity {
+            model_version: crate::identity::MODEL_VERSION,
+            source: crate::identity::SourceId {
+                tree: tree.to_string().repeat(40),
+                state: crate::identity::SourceState::Clean,
+            },
+        });
+        id
+    }
+
+    fn an_action() -> ActionIdentity {
+        ActionIdentity {
+            adapter: "rates".to_string(),
+            version: 1,
+            period_steps: 10,
+        }
+    }
+
+    fn an_observation() -> ObservationIdentity {
+        ObservationIdentity {
+            layout_version: 1,
+            fields: vec![ObservationField {
+                name: "awa".to_string(),
+                unit: "rad".to_string(),
+                normalisation: "none".to_string(),
+                noise: 0.0,
+                privileged: false,
+            }],
+        }
+    }
+
+    #[test]
+    fn compare_conditions_skips_the_controller_and_nothing_else() {
+        let base = identity_with_a_clean_source('e');
+        assert_eq!(base.compare(&base), Comparability::SameConditions);
+        assert_eq!(
+            base.compare_conditions(&base),
+            Comparability::SameConditions
+        );
+
+        // One table, one edit per compared field, in the compare order. The
+        // third column is the whole assertion: `compare_conditions` must still
+        // refuse every edit but the two controller ones.
+        type Edit = Box<dyn Fn(&mut ExperimentIdentity)>;
+        let cases: Vec<(&str, Edit, bool)> = vec![
+            (
+                "model",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    id.model = Recorded::Value(ModelIdentity {
+                        model_version: crate::identity::MODEL_VERSION,
+                        source: crate::identity::SourceId {
+                            tree: "f".repeat(40),
+                            state: crate::identity::SourceState::Clean,
+                        },
+                    });
+                }),
+                true,
+            ),
+            (
+                "parameters",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let mut p = *id.parameters.value().expect("known");
+                    p.stability.gm += 0.01;
+                    id.parameters = Recorded::Value(p);
+                }),
+                true,
+            ),
+            (
+                "integrator",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let now = *id.integrator.value().expect("known");
+                    id.integrator = Recorded::Value(if now == Integrator::Rk4 {
+                        Integrator::Rk2Midpoint
+                    } else {
+                        Integrator::Rk4
+                    });
+                }),
+                true,
+            ),
+            (
+                "dt",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let now = *id.dt.value().expect("known");
+                    id.dt = Recorded::Value(now * 2.0);
+                }),
+                true,
+            ),
+            (
+                "initial_state",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let mut st = *id.initial_state.value().expect("known");
+                    st.u += 1.0;
+                    id.initial_state = Recorded::Value(st);
+                }),
+                true,
+            ),
+            (
+                "initial_controls",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let mut c = *id.initial_controls.value().expect("known");
+                    c.rudder_rate_cmd += 0.5;
+                    c.sheet_release = !c.sheet_release;
+                    id.initial_controls = Recorded::Value(c);
+                }),
+                true,
+            ),
+            (
+                "scenario",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let now = id.scenario.value().expect("known").clone();
+                    id.scenario = Recorded::Value(format!("not_{now}"));
+                }),
+                true,
+            ),
+            (
+                "wind",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let mut w = *id.wind.value().expect("known");
+                    w.speed += 1.0;
+                    id.wind = Recorded::Value(w);
+                }),
+                true,
+            ),
+            (
+                "seed",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let now = *id.seed.value().expect("known");
+                    id.seed = Recorded::Value(now.wrapping_add(1));
+                }),
+                true,
+            ),
+            (
+                "task",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    let mut thresholds = BTreeMap::new();
+                    thresholds.insert("heel_deg".to_string(), 25.0);
+                    id.task = Recorded::Value(TaskIdentity {
+                        id: "hold_a_course".to_string(),
+                        version: 1,
+                        thresholds,
+                    });
+                }),
+                true,
+            ),
+            (
+                "action",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    id.action = Recorded::Value(an_action());
+                }),
+                false,
+            ),
+            (
+                "observation",
+                Box::new(|id: &mut ExperimentIdentity| {
+                    id.observation = Recorded::Value(an_observation());
+                }),
+                false,
+            ),
+        ];
+
+        // Non-vacuity. Apply every edit at once: `compare` must name all
+        // twelve fields, in the compare order, and `compare_conditions` must
+        // name exactly the ten that are not the controller. A compared field
+        // this table forgot shows up here as an extra name, and a field
+        // `compare_conditions` silently skipped shows up as a missing one.
+        let all_names: Vec<String> = cases.iter().map(|(n, _, _)| n.to_string()).collect();
+        let condition_names: Vec<String> = cases
+            .iter()
+            .filter(|(_, _, refused)| *refused)
+            .map(|(n, _, _)| n.to_string())
+            .collect();
+        assert_eq!(all_names.len(), 12);
+        assert_eq!(condition_names.len(), 10);
+        let mut all = base.clone();
+        for (_, edit, _) in &cases {
+            edit(&mut all);
+        }
+        assert_eq!(
+            base.compare(&all),
+            Comparability::Different(all_names.clone())
+        );
+        assert_eq!(
+            base.compare_conditions(&all),
+            Comparability::Different(condition_names.clone())
+        );
+
+        // And each field in isolation, which is what "each in isolation"
+        // means: a differing seed, parameter, wind, initial state, scenario,
+        // task, model or `dt` is still refused on its own.
+        for (name, edit, refused_by_conditions) in &cases {
+            let mut changed = base.clone();
+            edit(&mut changed);
+
+            let strict = base.compare(&changed);
+            assert_eq!(
+                strict,
+                Comparability::Different(vec![name.to_string()]),
+                "changing {name} must make a strict comparison incompatible"
+            );
+
+            let conditions = base.compare_conditions(&changed);
+            if *refused_by_conditions {
+                assert_eq!(
+                    conditions,
+                    Comparability::Different(vec![name.to_string()]),
+                    "compare_conditions must still refuse a differing {name}"
+                );
+                assert!(!conditions.is_same_conditions());
+                assert!(conditions.describe().contains(name));
+            } else {
+                assert_eq!(
+                    conditions,
+                    Comparability::SameConditions,
+                    "compare_conditions must ignore {name}"
+                );
+            }
+            // The verdict does not depend on which side is asked.
+            assert_eq!(changed.compare_conditions(&base), conditions);
+        }
+
+        // F18.1d's model clause is **not** one of the skipped fields: a dirty
+        // or unknown source tree names no baseline under either entry point,
+        // and neither does a schema-1 document's `Unknown`.
+        for state in [
+            crate::identity::SourceState::Dirty,
+            crate::identity::SourceState::Unknown,
+        ] {
+            let mut doubtful = base.clone();
+            doubtful.model = Recorded::Value(ModelIdentity {
+                model_version: crate::identity::MODEL_VERSION,
+                source: crate::identity::SourceId {
+                    tree: "e".repeat(40),
+                    state,
+                },
+            });
+            let verdict = doubtful.compare_conditions(&base);
+            assert!(
+                matches!(verdict, Comparability::Indeterminate(ref r) if r.as_slice() == ["model"]),
+                "{state:?}: {verdict:?}"
+            );
+        }
+        let mut legacy = base.clone();
+        legacy.model = Recorded::Unknown;
+        let verdict = legacy.compare_conditions(&base);
+        assert!(
+            matches!(verdict, Comparability::Indeterminate(ref r) if r.as_slice() == ["model"]),
+            "{verdict:?}"
+        );
+
+        // Two identities differing only in their source tree are a different
+        // *model*, so `compare_conditions` is no back door around F18.1d.
+        let other_tree = identity_with_a_clean_source('f');
+        assert_eq!(
+            base.compare_conditions(&other_tree),
+            Comparability::Different(vec!["model".to_string()])
+        );
+    }
+
+    #[test]
+    fn a_hand_flown_attempt_and_an_agent_run_share_conditions() {
+        // D4's motivating case, and the one the browser shows a split for.
+        // The hand-flown side is what `EpisodeHeader::manual` writes: no action
+        // adapter and no observation layout, said as `NotApplicable` rather
+        // than left unknown.
+        let hand = identity_with_a_clean_source('e');
+        assert!(hand.action.is_not_applicable());
+        assert!(hand.observation.is_not_applicable());
+
+        let mut agent = hand.clone();
+        agent.action = Recorded::Value(an_action());
+        agent.observation = Recorded::Value(an_observation());
+
+        // `compare` refuses it, naming both controller fields in the fixed
+        // order — section 11's two-attempt comparison, unchanged.
+        let strict = hand.compare(&agent);
+        assert_eq!(
+            strict,
+            Comparability::Different(vec!["action".to_string(), "observation".to_string()])
+        );
+        assert_eq!(strict.reasons().first().map(String::as_str), Some("action"));
+        assert!(!strict.is_same_conditions());
+
+        // `compare_conditions` accepts it, which is the whole point: same
+        // conditions, different controller.
+        assert_eq!(
+            hand.compare_conditions(&agent),
+            Comparability::SameConditions
+        );
+        assert_eq!(
+            agent.compare_conditions(&hand),
+            Comparability::SameConditions
+        );
+        assert!(hand.compare_conditions(&agent).is_same_conditions());
+        assert_eq!(
+            hand.compare_conditions(&agent).describe(),
+            "same conditions"
+        );
+
+        // …and it is not a blanket pass: the same two runs under one changed
+        // condition are refused again, by name.
+        let mut elsewhere = agent.clone();
+        elsewhere.seed = Recorded::Value(hand.seed.value().expect("known").wrapping_add(1));
+        assert_eq!(
+            hand.compare_conditions(&elsewhere),
+            Comparability::Different(vec!["seed".to_string()])
         );
     }
 

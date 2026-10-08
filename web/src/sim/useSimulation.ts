@@ -31,10 +31,14 @@ import { loadWasm, type SimHandle } from './loadWasm'
 import {
   DEFAULT_SCENARIO,
   readCurrentScenario,
+  readEpisodeCourse,
   readPracticeChallenges,
   readPracticeState,
   readScenarios,
+  runBaseline,
   summarise,
+  type BaselineRun,
+  type CourseBlock,
   type PracticeChallenge,
   type PracticeState,
   type Scenario,
@@ -229,6 +233,27 @@ export interface SimulationHandle {
   retryPractice(): void
   /** Abandon practice, discard the in-progress recording, back to free sail. */
   cancelPractice(): void
+  /**
+   * Run the rule sailor over the active course attempt's own course, under the
+   * attempt's frozen conditions (v2 section 12, D5).
+   *
+   * **One call, not one per decision** (brief §24): the controller, the
+   * sensors and the course evaluator all run inside Rust and nothing crosses
+   * the boundary until the episode is over. The core caches the answer on the
+   * attempt, so calling twice returns the identical episode.
+   *
+   * Returns `null` when the module is not ready, and the core's refusal as an
+   * `Error` message otherwise — there is no attempt, it is a skill rather than
+   * a course, or the frozen conditions cannot be reproduced (RV70).
+   */
+  runBaseline(logHz: number): { ok: BaselineRun } | { error: string } | null
+  /**
+   * The course an episode was **recorded** on, or `null`.
+   *
+   * Rebuilt in Rust from the episode's own identity, so a replay draws the
+   * course that episode was flown on and never today's catalogue (F18.3).
+   */
+  episodeCourse(episode: Episode): CourseBlock | null
   /**
    * Stop the recording and return the episode document, or `null` when none
    * is in progress.
@@ -893,6 +918,29 @@ export function useSimulation(
     pushPractice(sim)
   }, [clearInput, pushPractice])
 
+  /**
+   * The baseline, with the core's refusal carried rather than thrown.
+   *
+   * `Sim::run_baseline` fails with a sentence naming what is wrong — no
+   * attempt, a skill rather than a course, or conditions that cannot be
+   * reproduced (RV70). The page shows that sentence, so it has to arrive as a
+   * value and not as an exception nobody catches.
+   */
+  const runBaselineHere = useCallback(
+    (logHz: number): { ok: BaselineRun } | { error: string } | null => {
+      const sim = simRef.current
+      if (sim === null) {
+        return null
+      }
+      try {
+        return { ok: runBaseline(sim, logHz) }
+      } catch (cause: unknown) {
+        return { error: cause instanceof Error ? cause.message : String(cause) }
+      }
+    },
+    [],
+  )
+
   return {
     ready,
     error,
@@ -910,6 +958,11 @@ export function useSimulation(
     startPractice,
     retryPractice,
     cancelPractice,
+    runBaseline: runBaselineHere,
+    episodeCourse: useCallback((episode: Episode): CourseBlock | null => {
+      const sim = simRef.current
+      return sim === null ? null : readEpisodeCourse(sim, episode)
+    }, []),
     stopRecording: useCallback((): Episode | null => {
       const sim = simRef.current
       if (sim === null || !sim.is_recording()) {

@@ -19,6 +19,7 @@
 //! | [`observation`] | the ordered concatenation, the layout, `obs_digest` | 5.4 |
 //! | [`actuation`] | the `[−1, 1]^k` funnel and the `rate` adapter | 5.5 |
 //! | [`manual`] | the external action source | 5.7 |
+//! | [`pilot`] | the shipped controllers: the rule sailor | 12.3 |
 //!
 //! ## The one structural fact
 //!
@@ -33,9 +34,10 @@
 //! * **No physics.** No equation in this crate is an equation of motion and no
 //!   number in it is a physical coefficient (v1 brief §43, v2 F14.9).
 //!   `parameters.rs` is read for geometry and limits and is never written.
-//! * **No autopilot.** [`manual`] and a test stub exercise the shared
-//!   actuation path; the rule sailor, the polar racer and the polar tables are
-//!   later sections.
+//! * **No autopilot on the player's boat.** "Autopilot takes the helm" needs
+//!   the engaged/released contract F14.10 §2 says does not exist.
+//!   [`pilot::RuleSailor`] (v2 section 12) is a **baseline** that sails its
+//!   own episode; the polar racer and the polar tables are later sections.
 //! * **No episode, no `Outcome`, no `VecEnv`** — section 06. This crate says
 //!   what an agent sees and what it emits, not when an episode ends.
 //! * **No `Helm` and no `Setpoint` action.** Task 5.6 is deferred until an
@@ -71,6 +73,7 @@
 pub mod actuation;
 pub mod manual;
 pub mod observation;
+pub mod pilot;
 pub mod sensor;
 pub mod spec;
 pub mod worldview;
@@ -78,6 +81,7 @@ pub mod worldview;
 pub use actuation::{rate::Rate, ActionError, Actuation};
 pub use manual::Manual;
 pub use observation::{obs_digest, observe, ObsColumn, ObsLayout};
+pub use pilot::{Mode, RuleSailor, Tunables};
 pub use sensor::{Sensor, SensorRegistry};
 pub use spec::{Action, ActionSpace, ActionVec, Agent, AgentDebug, AgentSpec, Cadence};
 pub use worldview::WorldView;

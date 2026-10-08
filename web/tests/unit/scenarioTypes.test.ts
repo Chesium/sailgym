@@ -9,6 +9,11 @@ import {
   SCENARIO_SCHEMA_VERSION,
   SUPPORTED_SCHEMA_VERSIONS,
   summarise,
+  type BaselineRun,
+  type CourseBlock,
+  type EpisodeComparison,
+  type PracticeChallenge,
+  type PracticeState,
   type Scenario,
 } from '../../src/sim/scenarioTypes'
 
@@ -228,5 +233,181 @@ describe('the six shipped scenarios', () => {
     const rows = summarise(NAMES.map(load))
     expect(rows.map((r) => r.id)).toEqual([...NAMES])
     expect(rows.every((r) => r.description.length > 0)).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The section 12 shapes (task 12.7, D5)
+// ---------------------------------------------------------------------------
+
+/**
+ * The extended JSON shapes, parsed.
+ *
+ * These are **not** recording-document types, so the field-parity sweep above
+ * does not cover them: they are assembled in `crates/sailgym-wasm/src/lib.rs`
+ * from the task, course and env crates' public accessors. What this asserts is
+ * that the TypeScript declarations parse the shapes the Rust actually emits —
+ * the fixtures below are copied from the `serde_json::json!` literals in that
+ * file, so a field renamed on one side and not the other fails here.
+ *
+ * The **values** in them are Rust's and are asserted in the browser, by
+ * `tests/e2e/course.spec.ts` against a real `Sim` (task 12.9). This file is
+ * about shape.
+ */
+describe('the section 12 JSON shapes', () => {
+  const COURSE_BLOCK: CourseBlock = {
+    waypoints: [
+      {
+        n: 1,
+        x: 30,
+        y: 0,
+        radius: 5,
+        posts: [
+          [30, -5],
+          [30, 5],
+        ],
+        state: 'next',
+      },
+      {
+        n: 2,
+        x: 60,
+        y: -10,
+        radius: 5,
+        posts: [
+          [58.41886116991581, -14.743416490252569],
+          [61.58113883008419, -5.256583509747431],
+        ],
+        state: 'pending',
+      },
+    ],
+    start: { x: 0, y: 0 },
+    next: 1,
+    distance_to_next: 29.5,
+    splits: [],
+  }
+
+  it('parses a course challenge row, skill and course alike', () => {
+    const rows = JSON.parse(
+      JSON.stringify([
+        {
+          id: 'get_moving',
+          kind: 'skill',
+          version: 1,
+          scenario: 'free_sail',
+          time_limit_s: 45,
+          highlight_event: 'speed_reached',
+          metric: { id: 'top_speed', unit: 'm/s' },
+          thresholds: { target_speed_mps: 1.2 },
+        },
+        {
+          id: 'course_reach',
+          kind: 'course',
+          version: 1,
+          scenario: 'free_sail',
+          time_limit_s: 130,
+          highlight_event: 'waypoint_missed',
+          metric: { id: 'course_time', unit: 's' },
+          thresholds: { 'course.half_width': 5, 'course.waypoint_count': 3 },
+          title: 'Reach',
+          description: 'Steering and trim only.',
+          waypoints: 3,
+        },
+      ]),
+    ) as PracticeChallenge[]
+    expect(rows).toHaveLength(2)
+    expect(rows[0].kind).toBe('skill')
+    expect(rows[0].waypoints).toBeUndefined()
+    expect(rows[1].kind).toBe('course')
+    expect(rows[1].waypoints).toBe(3)
+    // The geometry travels in the thresholds, which is what makes the recorded
+    // identity self-describing (D5, F18.3).
+    expect(rows[1].thresholds['course.half_width']).toBe(5)
+    // The courses are listed after the skills.
+    expect(rows.map((r) => r.kind)).toEqual(['skill', 'course'])
+  })
+
+  it('parses the practice state with a course block', () => {
+    const state = JSON.parse(
+      JSON.stringify({
+        active: true,
+        status: 'active',
+        report: {
+          task: { id: 'course_reach', version: 1, thresholds: {} },
+          outcome: { kind: 'running' },
+          scenario: 'free_sail',
+          elapsed_s: 1.5,
+          elapsed_steps: 300,
+          metric: { id: 'course_time', unit: 's', value: 0 },
+          progress: { phase: 'sailing', value: 0, target: 3, hold_s: 0, hold_target_s: 0 },
+          events: [],
+          highlight: null,
+        },
+        course: COURSE_BLOCK,
+      }),
+    ) as PracticeState
+    expect(state.active).toBe(true)
+    if (!state.active) {
+      throw new Error('unreachable')
+    }
+    expect(state.course?.waypoints).toHaveLength(2)
+    expect(state.course?.waypoints[0].state).toBe('next')
+    expect(state.course?.waypoints[0].posts[0]).toEqual([30, -5])
+    expect(state.course?.start).toEqual({ x: 0, y: 0 })
+    expect(state.course?.next).toBe(1)
+    // A skill attempt carries no block, and that is a `null` rather than a
+    // missing key.
+    const skill = JSON.parse(
+      JSON.stringify({ active: true, status: 'active', report: state.report, course: null }),
+    ) as PracticeState
+    if (!skill.active) {
+      throw new Error('unreachable')
+    }
+    expect(skill.course).toBeNull()
+  })
+
+  it('parses a baseline run', () => {
+    const run = JSON.parse(
+      JSON.stringify({
+        episode: { header: {}, frames: [] },
+        narration: [
+          { t: 0.05, mode: 'fetching', side: -1, waypoint: 1 },
+          { t: 15.05, mode: 'tacking', side: -1, waypoint: 1 },
+        ],
+        conditions: { verdict: 'same_conditions', reasons: [], describe: 'same conditions' },
+        outcome: 'finished',
+        task_outcome: 'succeeded',
+        time_s: 42.5,
+        splits: [14.85, 27.35, 42.5],
+      }),
+    ) as BaselineRun
+    expect(run.narration.map((n) => n.mode)).toEqual(['fetching', 'tacking'])
+    expect(run.conditions.verdict).toBe('same_conditions')
+    expect(run.time_s).toBe(42.5)
+    expect(run.splits).toHaveLength(3)
+    // The one word that licenses showing the ghost and the splits (RV70).
+    expect(run.conditions.verdict === 'same_conditions').toBe(true)
+  })
+
+  it('parses a comparability answer with both verdicts', () => {
+    const answer = JSON.parse(
+      JSON.stringify({
+        verdict: 'different',
+        reasons: ['action', 'observation'],
+        describe: 'different conditions: action, observation',
+        conditions: { verdict: 'same_conditions', reasons: [], describe: 'same conditions' },
+      }),
+    ) as EpisodeComparison
+    // The motivating case, exactly (D4): `compare` refuses a hand-flown
+    // attempt against an agent run, and `compare_conditions` does not.
+    expect(answer.verdict).toBe('different')
+    expect(answer.reasons).toEqual(['action', 'observation'])
+    expect(answer.conditions.verdict).toBe('same_conditions')
+  })
+
+  it('parses a recorded course, and a `null` for an episode that has none', () => {
+    const recorded = JSON.parse(JSON.stringify(COURSE_BLOCK)) as CourseBlock | null
+    expect(recorded?.waypoints).toHaveLength(2)
+    const none = JSON.parse('null') as CourseBlock | null
+    expect(none).toBeNull()
   })
 })

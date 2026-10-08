@@ -21,7 +21,10 @@
  * multi-line helper would look like one of its fields.
  */
 
+import type { CourseBlock } from '../render/CourseOverlay'
 import type { SimHandle } from './loadWasm'
+
+export type { CourseBlock, CourseWaypoint, WaypointState } from '../render/CourseOverlay'
 
 /**
  * The scenario the application loads when the URL asks for nothing.
@@ -172,8 +175,15 @@ export interface PracticeEnvelope { envelope_version: number; task: TaskIdentity
 
 /** One shipped challenge, as `Sim.practice_tasks_json` lists it. */
 export interface PracticeChallenge {
-  /** `get_moving`, `complete_tack` or `recover_from_heel`. */
+  /** A skill id, or `course_reach` / `course_triangle` / `course_windward_leeward`. */
   id: string
+  /**
+   * Which group the chooser puts it in (v2 section 12).
+   *
+   * Decided in Rust from `TaskId::course()`, so the page groups by a word it
+   * was handed rather than by parsing an id prefix.
+   */
+  kind: 'skill' | 'course'
   /** `TASK_VERSION`; bumped when a threshold or an outcome rule changes. */
   version: number
   /** The shipped scenario (brief §32) the challenge is set on. */
@@ -184,8 +194,15 @@ export interface PracticeChallenge {
   highlight_event: string
   /** The headline metric's stable id and its F1 unit. */
   metric: { id: string; unit: string }
-  /** Every threshold, by name, in the task's own (SI) units. */
+  /** Every threshold, by name, in the task's own (SI) units. A course's
+   * geometry travels here under `course.*` keys. */
   thresholds: Record<string, number>
+  /** A course's title, from its `courses/*.json` document. Absent for a skill. */
+  title?: string
+  /** A course's one-line description, from the same document. */
+  description?: string
+  /** How many waypoints a course has. Absent for a skill. */
+  waypoints?: number
 }
 
 /** `sailgym_task::Outcome`. `reason` is present only on `failed`. */
@@ -227,10 +244,122 @@ export interface PracticeReport {
  */
 export type PracticeStatus = 'active' | 'finished' | 'cancelled' | 'conditions_changed'
 
-/** `Sim.practice_state_json`. */
+/**
+ * `Sim.practice_state_json`.
+ *
+ * `course` is v2 section 12's block: present for a course attempt, `null` for a
+ * skill. Its shape is `render/CourseOverlay.tsx`'s `CourseBlock` — the overlay's
+ * props **are** the Rust block, so there is no translation layer to drift
+ * (RV73).
+ */
 export type PracticeState =
   | { active: false }
-  | { active: true; status: PracticeStatus; report: PracticeReport }
+  | {
+      active: true
+      status: PracticeStatus
+      report: PracticeReport
+      course?: CourseBlock | null
+    }
+
+// ---------------------------------------------------------------------------
+// The baseline (v2 section 12, D5)
+// ---------------------------------------------------------------------------
+
+/**
+ * One verdict from `ExperimentIdentity`, as the core shapes it.
+ *
+ * The same three fields `sim/episodeIo.ts`'s `ComparabilityVerdict` has, and
+ * deliberately a **second declaration rather than a widening of that one**: no
+ * task in v2 section 12 owns `sim/episodeIo.ts` (F13.2), and the section's
+ * `conditions` verdict has to be read somewhere. The gap is recorded in
+ * `docs/v2/progress/12-handoff.md` rather than absorbed, and the repair — one
+ * optional field on `ComparabilityVerdict` — belongs to whoever owns that file
+ * next.
+ */
+export interface IdentityVerdict {
+  verdict: 'same_conditions' | 'different' | 'indeterminate'
+  /** The identity fields behind a negative verdict, in the core's order. */
+  reasons: string[]
+  /** The core's one-line form, for a badge or a log. */
+  describe: string
+}
+
+/**
+ * `Sim.episode_comparability_json`, with v2 section 12's second verdict.
+ *
+ * `conditions` is `ExperimentIdentity::compare_conditions` — `compare` with
+ * the action and observation contracts excluded, "same conditions, different
+ * controller" (D4). It is **never** a substitute for the first verdict: two
+ * *attempts* are still compared with `verdict`, and only a baseline is compared
+ * with this one.
+ */
+export interface EpisodeComparison extends IdentityVerdict {
+  conditions: IdentityVerdict
+}
+
+/** What the rule sailor did on one mode change (D5). */
+export interface NarrationStep {
+  /** s, simulated time of the change. */
+  t: number
+  /** `beating`, `fetching`, `tacking`, `settling`, `gybing`, `gybe_settling`, `recovering`. */
+  mode: string
+  /** `+1` starboard tack, `−1` port, `0` before it has committed. */
+  side: number
+  /** The 1-based waypoint it was sailing to, or `null` with no route. */
+  waypoint: number | null
+}
+
+/**
+ * `Sim.run_baseline`.
+ *
+ * The recorded episode, the controller's own mode changes, and the
+ * `compare_conditions` verdict against the attempt. **Presentation data for
+ * this run only**: `narration` is not part of the episode and is not exported
+ * with it — doing so would need an envelope change this section does not make
+ * (the section's second tracked debt).
+ */
+export interface BaselineRun {
+  episode: Episode
+  narration: NarrationStep[]
+  conditions: IdentityVerdict
+  /** `running`, `finished`, `terminated` or `truncated`, from `sailgym_env::Outcome`. */
+  outcome: string
+  /** The practice evaluator's verdict on the baseline's own attempt. */
+  task_outcome: string | null
+  /** s, the course time, or `null` when the baseline did not finish. */
+  time_s: number | null
+  /** s, the recorded time of each waypoint passage, in order. */
+  splits: number[]
+}
+
+/** The attempt's baseline, computed in Rust in one call (brief §24). */
+export function runBaseline(sim: SimHandle, logHz: number): BaselineRun {
+  return JSON.parse(sim.run_baseline(logHz) as string) as BaselineRun
+}
+
+/**
+ * The course an episode was **recorded** on, or `null`.
+ *
+ * Rebuilt in Rust from the episode's own `TaskIdentity` thresholds, so a replay
+ * draws the course that episode was flown on and never today's catalogue
+ * (F18.3). Every waypoint comes back `pending`; a replay colours them from the
+ * episode's own recorded events up to the playhead, which is reading decisions
+ * Rust already made rather than making new ones.
+ */
+export function readEpisodeCourse(sim: SimHandle, episode: Episode): CourseBlock | null {
+  return JSON.parse(sim.episode_course_json(JSON.stringify(episode)) as string) as CourseBlock | null
+}
+
+/** Both verdicts on one pair of episodes, in one boundary call. */
+export function compareEpisodesWithConditions(
+  sim: SimHandle,
+  a: Episode,
+  b: Episode,
+): EpisodeComparison {
+  return JSON.parse(
+    sim.episode_comparability_json(JSON.stringify(a), JSON.stringify(b)) as string,
+  ) as EpisodeComparison
+}
 
 /** The three challenges, straight from the core. One call (brief §24). */
 export function readPracticeChallenges(sim: SimHandle): PracticeChallenge[] {

@@ -65,6 +65,27 @@ export interface TimelineProps {
   events?: readonly PracticeEvent[]
 }
 
+/**
+ * The word on a jump button.
+ *
+ * A course's passage events carry the **waypoint number** in `value` (v2
+ * section 12, D3), so a course episode's markers read `passed 2` rather than
+ * three identical `waypoint_passed` buttons. Every other event keeps its id.
+ *
+ * This is formatting and nothing else: the id, the step, the time and the
+ * number are all the evaluator's, decided on a physics step, and none of them
+ * is recomputed here (F8, RV73).
+ */
+export function eventLabel(e: PracticeEvent): string {
+    if (e.id === 'waypoint_passed') {
+        return `passed ${e.value.toFixed(0)}`
+    }
+    if (e.id === 'waypoint_missed') {
+        return `missed ${e.value.toFixed(0)}`
+    }
+    return e.id
+}
+
 /** What the transport may do with a given episode, and where the playhead is. */
 export interface TimelineState {
   frames: number
@@ -303,13 +324,14 @@ export function Timeline({
               data-testid={`timeline-event-${e.id}`}
               data-step={e.step}
               data-t={e.t}
+              data-value={e.value}
               title={`${e.id} at step ${e.step}, t = ${e.t.toFixed(3)} s`}
               onClick={() => {
                 onPlaying(false)
                 onTime(e.t)
               }}
             >
-              {e.id}
+              {eventLabel(e)}
             </button>
           ))}
         </span>

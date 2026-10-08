@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   createCamera,
+  fitBounds,
   trackedCentre,
   PIXELS_PER_METRE,
   MIN_ZOOM,
@@ -10,6 +11,8 @@ import {
   type CameraMode,
   type Vec2,
 } from './render/Camera'
+import { CourseOverlay, type CourseBlock, type WaypointState } from './render/CourseOverlay'
+import { GhostBoat, ghostPoseAt, ghostTrack } from './render/GhostBoat'
 import { BoatProbe } from './render/BoatProbe'
 import { BoatSvg } from './render/BoatSvg'
 import { ForceOverlay, OverlayControls, OverlayLegend } from './render/ForceOverlay'
@@ -34,7 +37,7 @@ import {
   type PlaybackMode,
   type ReplayProbe,
 } from './sim/replay'
-import type { Episode } from './sim/scenarioTypes'
+import type { BaselineRun, Episode, PracticeEvent } from './sim/scenarioTypes'
 import {
   IDLE_SHEET_INPUT,
   ownsSheet,
@@ -55,7 +58,7 @@ import { Hud } from './ui/Hud'
 import { Layout } from './ui/Layout'
 import { ModeSwitch } from './ui/ModeSwitch'
 import { ParameterPanel } from './ui/ParameterPanel'
-import { PracticePanel } from './ui/PracticePanel'
+import { narrationLine, PracticePanel } from './ui/PracticePanel'
 import { RecordControls } from './ui/RecordControls'
 import { ScenarioPicker } from './ui/ScenarioPicker'
 import { Timeline, type PlaybackSpeed } from './ui/Timeline'
@@ -159,6 +162,17 @@ const PENDING_PARAMS: RenderParams = {
 const PRACTICE_LOG_HZ = 20
 
 /**
+ * World metres of water left round a course by **Show course** (v2 section 12).
+ *
+ * **Provenance.** Presentation only — a world length used by the camera and by
+ * nothing else; it reaches no physics, no task threshold and no course
+ * geometry. Twelve metres is a little under three hull lengths, enough that
+ * the outermost gate bars and their numbers are not against the edge of the
+ * view at the 344 × 202 world a 360 × 640 phone gets.
+ */
+const SHOW_COURSE_MARGIN_M = 12
+
+/**
  * `?scenario=` — one of the six shipped ids (brief §32), one of the legacy
  * browser fixtures, or absent for the default. Resolved in
  * `sim/useSimulation.ts`; nothing here decides what a name means.
@@ -206,6 +220,48 @@ declare global {
     /** Set by `tests/e2e/boat3d.spec.ts` before load; see above. */
     __sailgymProbes?: boolean
   }
+}
+
+/**
+ * A recorded course, coloured from the episode's **own recorded events** up to
+ * the playhead (v2 section 12, task 12.8).
+ *
+ * This is reading decisions Rust already made, not making new ones: a
+ * `waypoint_passed` event *is* `sailgym-task`'s verdict, decided on a physics
+ * step (F18.4), and it carries the waypoint number in `value` (D3). Nothing
+ * here asks whether the boat is past a line — RV73's whole point — and the
+ * geometry comes from `episode_course_json`, which rebuilds it from the
+ * episode's own identity and never from today's catalogue (F18.3).
+ *
+ * A waypoint is `passed` once its passage event has happened; the first one
+ * that has not is `next`, or `missed` when its last event before the playhead
+ * was a cut; the rest are `pending`.
+ */
+export function recordedCourseAt(
+  course: CourseBlock,
+  events: readonly PracticeEvent[],
+  t: number,
+): CourseBlock {
+  const upto = events.filter((e) => e.t <= t)
+  const passed = new Set(
+    upto.filter((e) => e.id === 'waypoint_passed').map((e) => Math.round(e.value)),
+  )
+  const next = course.waypoints.map((w) => w.n).find((n) => !passed.has(n)) ?? null
+  // The most recent thing that happened to the waypoint being sailed to.
+  const lastForNext = [...upto].reverse().find((e) => Math.round(e.value) === next)
+  const waypoints = course.waypoints.map((w) => {
+    let state: WaypointState = 'pending'
+    if (passed.has(w.n)) {
+      state = 'passed'
+    } else if (w.n === next) {
+      state = lastForNext?.id === 'waypoint_missed' ? 'missed' : 'next'
+    }
+    return { ...w, state }
+  })
+  const splits = upto
+    .filter((e) => e.id === 'waypoint_passed')
+    .map((e) => e.t)
+  return { ...course, waypoints, next, distance_to_next: null, splits }
 }
 
 /**
@@ -424,7 +480,63 @@ export default function App() {
   // outcome, and the only arithmetic is the two subtractions the comparison
   // shows as deltas.
   const { practice, stopRecording, startPractice, retryPractice, cancelPractice } = sim
+  const { runBaseline, episodeCourse } = sim
   const { attempts, rememberAttempt, forgetAttempts } = ui
+
+  // ---------------------------------------------------------------------
+  // The baseline (v2 section 12, D5)
+  // ---------------------------------------------------------------------
+  //
+  // One call per attempt, computed in Rust (`Sim::run_baseline`). It is
+  // deliberately **not** done inside the click handler: the call runs a whole
+  // episode and is not always instant, so the panel is given a "computing"
+  // state first and the call is scheduled after the browser has painted it.
+  const [baseline, setBaseline] = useState<BaselineRun | null>(null)
+  const [baselineError, setBaselineError] = useState<string | null>(null)
+  const [baselineComputing, setBaselineComputing] = useState(false)
+  /** The attempt the baseline is wanted for, bumped by Start and by Retry. */
+  const [baselineFor, setBaselineFor] = useState<{ id: string; run: number } | null>(null)
+  const baselineRun = useRef(0)
+
+  useEffect(() => {
+    if (baselineFor === null) {
+      return
+    }
+    setBaseline(null)
+    setBaselineError(null)
+    setBaselineComputing(true)
+    // After a paint, so the "computing" line is on screen before the episode
+    // runs. A `setTimeout(0)` rather than a microtask for exactly that reason.
+    let cancelled = false
+    const id = window.setTimeout(() => {
+      const result = runBaseline(PRACTICE_LOG_HZ)
+      if (cancelled) {
+        return
+      }
+      setBaselineComputing(false)
+      if (result === null) {
+        return
+      }
+      if ('error' in result) {
+        setBaselineError(result.error)
+        return
+      }
+      setBaseline(result.ok)
+    }, 0)
+    return () => {
+      cancelled = true
+      window.clearTimeout(id)
+    }
+  }, [baselineFor, runBaseline])
+
+  /** The baseline's episode as a replay source, for the ghost. */
+  const ghostSource = useMemo(
+    () => (baseline === null ? null : createReplaySource(baseline.episode)),
+    [baseline],
+  )
+  /** The ghost is shown only on a same-conditions verdict (RV70). */
+  const ghostVisible =
+    ghostSource !== null && baseline?.conditions.verdict === 'same_conditions'
   const practiceActive = practice.active && practice.status === 'active'
   /** The status the previous render saw, so a capture happens exactly once. */
   const lastAttemptStatus = useRef<string>('none')
@@ -642,21 +754,51 @@ export default function App() {
         forgetAttempts()
       }
       startPractice(id, PRACTICE_LOG_HZ)
+      // A course gets a baseline; a skill does not, and asking for one would
+      // be asking the core to refuse (RV70).
+      baselineRun.current += 1
+      const isCourse = sim.challenges.find((c) => c.id === id)?.kind === 'course'
+      setBaselineFor(isCourse ? { id, run: baselineRun.current } : null)
+      if (!isCourse) {
+        setBaseline(null)
+        setBaselineError(null)
+        setBaselineComputing(false)
+      }
       showTheBoat()
     },
-    [attempts, exitReplay, forgetAttempts, showTheBoat, startPractice],
+    [attempts, exitReplay, forgetAttempts, showTheBoat, startPractice, sim.challenges],
   )
 
   const onRetryPractice = useCallback(() => {
     exitReplay()
     retryPractice()
+    // A retry freezes the conditions again, so the core recomputes and this
+    // asks it to: the previous attempt's cached baseline belongs to the
+    // previous attempt.
+    baselineRun.current += 1
+    setBaselineFor((previous) =>
+      previous === null ? null : { id: previous.id, run: baselineRun.current },
+    )
     showTheBoat()
   }, [exitReplay, retryPractice, showTheBoat])
 
   const onCancelPractice = useCallback(() => {
     exitReplay()
     cancelPractice()
+    setBaselineFor(null)
+    setBaseline(null)
+    setBaselineError(null)
+    setBaselineComputing(false)
   }, [cancelPractice, exitReplay])
+
+  /** **Watch baseline**: the rule sailor's own episode, in the replay viewer. */
+  const onWatchBaseline = useCallback(() => {
+    if (baseline === null) {
+      return
+    }
+    setEpisode(baseline.episode)
+    enterReplay(baseline.episode)
+  }, [baseline, enterReplay])
 
   /**
    * **Inspect**: open this attempt's own episode at its highlight event.
@@ -778,6 +920,48 @@ export default function App() {
     [playback, replayTime],
   )
   const charts = replayCharts ?? liveCharts
+  // ---------------------------------------------------------------------
+  // The course overlay (v2 section 12, task 12.8)
+  // ---------------------------------------------------------------------
+  //
+  // Live: `practice_state_json`'s own `course` block, states and all.
+  // Replay: the course the **episode** was flown on, coloured from its own
+  // recorded events up to the playhead. Both are Rust's decisions; this picks
+  // which set to draw (RV73).
+  const recordedCourse = useMemo(
+    () => (episode === null || !sim.ready ? null : episodeCourse(episode)),
+    [episode, sim.ready, episodeCourse],
+  )
+  const liveCourse = practice.active ? (practice.course ?? null) : null
+  const courseBlock: CourseBlock | null = replaying
+    ? recordedCourse === null
+      ? null
+      : recordedCourseAt(
+          recordedCourse,
+          playback.kind === 'replay' ? (playback.source.header.practice?.events ?? []) : [],
+          view.t,
+        )
+    : liveCourse
+
+  /**
+   * The replay on screen is the baseline's own episode, and what it was doing
+   * at the playhead (D5's narration, captioned).
+   *
+   * The narration is **presentation data for this run only** and is not part
+   * of the episode — exporting it would need an envelope change this section
+   * does not make. So the caption exists while the baseline is held and goes
+   * when it does, which is the honest shape.
+   */
+  const watchingBaseline =
+    replaying && baseline !== null && episode === baseline.episode
+  const narrationAt =
+    watchingBaseline && baseline !== null
+      ? (() => {
+          const at = [...baseline.narration].reverse().find((n) => n.t <= view.t)
+          return at === undefined ? null : narrationLine(at)
+        })()
+      : null
+
   const scale = PIXELS_PER_METRE * zoom
   baseCentre.current = trackedCentre(
     baseCentre.current,
@@ -794,6 +978,33 @@ export default function App() {
     viewport,
   })
   cameraRef.current = camera
+
+  /**
+   * **Show course**: fit the camera to the whole course.
+   *
+   * `fitBounds` is pure and axis-aligned, so it is a `northUp` operation: the
+   * camera is switched to that mode first rather than given a conservative fit
+   * in `follow`. The centre is written through `pan`, because `App.tsx`
+   * composes its centre as `baseCentre + pan` and the boat keeps moving
+   * `baseCentre` underneath it.
+   */
+  const onShowCourse = useCallback(() => {
+    if (courseBlock === null) {
+      return
+    }
+    const points: Vec2[] = courseBlock.waypoints.flatMap((w) => [
+      { x: w.x, y: w.y },
+      { x: w.posts[0][0], y: w.posts[0][1] },
+      { x: w.posts[1][0], y: w.posts[1][1] },
+    ])
+    if (courseBlock.start !== null) {
+      points.push(courseBlock.start)
+    }
+    const fit = fitBounds(points, viewport, SHOW_COURSE_MARGIN_M)
+    setMode('northUp')
+    setZoom(fit.zoom)
+    setPan({ x: fit.centre.x - baseCentre.current.x, y: fit.centre.y - baseCentre.current.y })
+  }, [courseBlock, viewport])
 
   const params = sim.params ?? PENDING_PARAMS
   // Memoised on the *values*, not rebuilt per frame. A fresh object here
@@ -981,6 +1192,45 @@ export default function App() {
           }}
         />
       </div>
+      {/* The course, over the boat and under the force overlay. Pointer
+          events are off so the mainsheet drag and the camera pan still reach
+          the SVG beneath it. */}
+      {courseBlock !== null && (
+        <div
+          data-testid="course-layer"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            pointerEvents: 'none',
+          }}
+        >
+          <svg
+            width={viewport.width}
+            height={viewport.height}
+            style={{ display: 'block' }}
+            aria-hidden="true"
+          >
+            <CourseOverlay camera={camera} course={courseBlock} />
+            {/* The ghost is a **recording** and only ever a recording: no
+                shared clock, no collision, no wind shadow (`brief.md` §3, S5
+                not selected). It is drawn at the pose the baseline's own
+                episode had at this run's time, and only when the core says the
+                two runs share conditions (RV70). */}
+            {ghostVisible && !replaying && ghostSource !== null && (() => {
+              const pose = ghostPoseAt(ghostSource, s.t)
+              return pose === null ? null : (
+                <GhostBoat
+                  camera={camera}
+                  pose={pose}
+                  hull={hull}
+                  track={ghostTrack(ghostSource, s.t)}
+                />
+              )
+            })()}
+          </svg>
+        </div>
+      )}
       {replaying && (
         <div
           data-testid="replay-notice"
@@ -1003,7 +1253,13 @@ export default function App() {
             pointerEvents: 'none',
           }}
         >
-          <strong>Replay</strong> · every number below is this episode's ·{' '}
+          <strong>Replay</strong>
+          {watchingBaseline && (
+            <span data-testid="replay-baseline-caption">
+              {' '}· the rule sailor{narrationAt === null ? '' : `: ${narrationAt}`}
+            </span>
+          )}{' '}
+          · every number below is this episode's ·{' '}
           {view.emptyEpisode
             ? 'this episode has no samples'
             : `pose at t = ${view.t.toFixed(2)} s${
@@ -1090,6 +1346,11 @@ export default function App() {
           onCancel={onCancelPractice}
           onInspect={onInspectAttempt}
           replaying={playback.kind === 'replay'}
+          baseline={baseline}
+          baselineComputing={baselineComputing}
+          baselineError={baselineError}
+          onWatchBaseline={onWatchBaseline}
+          onShowCourse={onShowCourse}
         />
         {/* Hidden while an attempt is running, and only then. The attempt owns
             the recorder — pressing Record would start a second episode over the

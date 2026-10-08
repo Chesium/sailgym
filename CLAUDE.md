@@ -85,9 +85,9 @@ why; and anything the next section must know.
 
 ```
 crates/sailgym-physics/   pure Rust core; all physics tests live here
-crates/sailgym-task/      pure practice-task evaluation; depends on physics, never the reverse
+crates/sailgym-task/      pure practice-task evaluation; depends on course and physics (v2 F14.11), never the reverse
 crates/sailgym-course/    routes, marks, guidance, ordered passage; depends on physics, never the reverse
-crates/sailgym-agent/     sensors, observation, actions, cadence; depends on course and physics, never the reverse
+crates/sailgym-agent/     sensors, observation, actions, cadence, and src/pilot/ (the rule sailor); depends on course and physics, never the reverse
 crates/sailgym-env/       episode runner, Outcome, autoreset, decision log, VecEnv; depends on agent, course, task and physics, never the reverse
 crates/sailgym-py/        pyo3 binding over sailgym-env; binds the env and never sailgym-wasm (F17.2)
 crates/sailgym-wasm/      thin wasm_bindgen wrapper
@@ -98,6 +98,7 @@ python/sailgym_conformance/  stack-neutral conformance-bundle loader; no equatio
 python/sailgym_jax/       the JAX verification implementation; the one F17.1 exception
 python/tests/             pytest: the loader, the two arms, the constants audit, the binding
 scenarios/                scenario JSON
+courses/                  waypoint-course JSON (v2 section 12); embedded with include_str!
 scripts/                  build-wasm.(ps1|sh), check.(ps1|sh)
 docs/v1/                     brief, foundations, section PRDs, progress notes
 ```

@@ -19,7 +19,7 @@ Updated 2026-09-20. This is the scope parking lot, not a second committed roadma
 | Shoreline/terrain | Deferred | A selected navigation task needs geometry; no scenery requirement |
 | Obstacle avoidance | Deferred | S6 selected with task geometry and sensing semantics; 4.5–4.6 are not default scope |
 | Collisions between boats | Deferred | Explicit interaction model and fair task rules exist; ghosts never collide |
-| Multiple boats | Later, non-interacting only proposed | Recorded ghost first; live fleet only with a concrete race/evaluation need |
+| Multiple boats | Later, non-interacting only proposed. **The recorded ghost shipped in section 12**; a live fleet did not and S5 was not selected | Recorded ghost first; live fleet only with a concrete race/evaluation need |
 | RL training | Deferred | 04–07 contracts, baselines and held-out evaluation work; environment plumbing is not training |
 | Multiplayer | Deferred | Single-player learning loop is useful and networking cost is justified |
 | Mobile controls | **Basic rate controls promoted to 09** | Advanced gestures remain below; no implicit promotion of crew or hand-force physics |
@@ -40,8 +40,8 @@ Updated 2026-09-20. This is the scope parking lot, not a second committed roadma
 | Tilt input | Later, and never presented as hiking before crew dynamics exist |
 | Full 3-D world / photorealism | Outside product direction; retain current SVG rendering |
 | Planing / high-speed hull model | Separate model extension if chosen tasks exceed the current model's useful range |
-| Recorded ghost | First racing follow-on; visual trajectory, not an interacting fleet. **Proposed in [section 12](../prds/12-waypoint-course.md)** (2026-10-02) as the rule sailor's recorded episode; not implemented |
-| Rule sailor → polar racer → planner | Deliver in that order; planner only after profiling and a measurable gain. **Rule sailor proposed in [section 12](../prds/12-waypoint-course.md)** (2026-10-02); polar racer and planner remain deferred |
+| Recorded ghost | First racing follow-on; visual trajectory, not an interacting fleet. **Shipped by [section 12](../prds/12-waypoint-course.md)** (2026-10-08): the rule sailor's own recorded episode, replayed at the live run's time by `render/GhostBoat.tsx`, shown only on a `compare_conditions` verdict of `SameConditions` (F18.3a, RV70). It is a recording and nothing more — no shared clock, no collision, no right-of-way, no wind shadow (`brief.md` §3; S5 was **not** selected). A live fleet remains deferred |
+| Rule sailor → polar racer → planner | Deliver in that order; planner only after profiling and a measurable gain. **Rule sailor shipped by [section 12](../prds/12-waypoint-course.md)** (2026-10-08) in `crates/sailgym-agent/src/pilot/`, five layers, measured in [`baseline-validation.md`](../baseline-validation.md); it finishes all three shipped courses under browser conditions and its uniform-wind finish rate is reported there, RV68 included. Polar racer and planner remain deferred, and so does exposing the rule sailor to Python as a baseline policy |
 | Runtime sensor registry and sensor/action ablations | Research 05, sized to an actual study; one versioned layout first, no competing fixed and dynamic authorities |
 | Conformance and JAX wind | Follow-on 02–03 after corrected baseline; useful verification, not prerequisite for learning UI |
 | Full JAX/Warp physics and GPU training | After native/environment benchmarks and wind pilot; new PRD for full-step state, tolerances and invariants |

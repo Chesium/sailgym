@@ -13,7 +13,35 @@
 //! inspection methods `recording_capacity`, `recording_full`,
 //! `episode_identity_json` and `episode_comparability_json`, plus the v2
 //! section 11 practice methods `practice_tasks_json`, `start_practice`,
-//! `retry_practice`, `cancel_practice` and `practice_state_json`.
+//! `retry_practice`, `cancel_practice` and `practice_state_json`, plus the v2
+//! section 12 course methods `run_baseline` and `episode_course_json`.
+//!
+//! ## Section 12 grows the surface, coarse-grained, and the agent runs in Rust
+//!
+//! D5. `run_baseline` is **one call per attempt, never one per decision**
+//! (brief §24): it builds a `sailgym_env::Episode` from the attempt's frozen
+//! initial contract, attaches the same course challenge, runs
+//! `sailgym_agent::pilot::RuleSailor` through it to the end, and hands back the
+//! recorded episode, the controller's own mode changes as a narration, and the
+//! `compare_conditions` verdict against the attempt. The decision loop is
+//! entirely inside Rust; no action crosses this boundary.
+//!
+//! **It refuses rather than approximating** (RV70). If the frozen contract —
+//! the resolved catalogue, the complete F3 state, the controls, the wind
+//! configuration and the seed — cannot be reproduced by an `Episode`, the call
+//! fails with a reason naming what differed. A baseline sailed under other
+//! conditions is a number nobody can interpret, which is the whole reason the
+//! verdict is reported beside it.
+//!
+//! The result is **cached on the attempt**, so two calls return the identical
+//! episode: `created_utc` is read from `Date.now()` and would otherwise differ
+//! between them, and the page may ask twice (once at attempt start, once at
+//! retry).
+//!
+//! `episode_course_json` reads the course out of a recorded episode's
+//! `TaskIdentity` **thresholds** and rebuilds its geometry from them, so a
+//! replay draws the course the episode was flown on and never today's
+//! catalogue (F18.3).
 //!
 //! ## Section 11 keeps the scoring in Rust, and outside the physics crate
 //!
@@ -56,6 +84,14 @@
 
 use std::collections::BTreeMap;
 
+use sailgym_agent::pilot::{Mode, RuleSailor};
+use sailgym_agent::spec::Agent;
+use sailgym_course::guidance::CourseParams;
+use sailgym_course::route::position;
+use sailgym_course::{CourseId, Rounding, Route, Vec2};
+use sailgym_env::episode::{EpisodeConfig, Source};
+use sailgym_env::outcome::AutoresetMode;
+use sailgym_env::Episode as EnvEpisode;
 use sailgym_physics::environment::wind::WindConfig;
 use sailgym_physics::environment::{wind_to_bearing, WindField};
 use sailgym_physics::parameters::BoatParameters;
@@ -68,7 +104,7 @@ use sailgym_physics::scenario::{
 };
 use sailgym_physics::simulation::Simulation;
 use sailgym_physics::state::{BoatState, Controls};
-use sailgym_task::{StepObservation, TaskId, TaskRun, TaskSpec, TASK_IDS};
+use sailgym_task::{StepObservation, TaskId, TaskRun, TaskSpec, COURSE_TASK_IDS, TASK_IDS};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -129,6 +165,125 @@ fn ad_hoc_scenario(inner: &Simulation) -> Scenario {
     }
 }
 
+// ---------------------------------------------------------------------------
+// The course block (v2 section 12, D5)
+// ---------------------------------------------------------------------------
+
+/// What a waypoint's drawn state is, in the four words D5 fixes.
+///
+/// Decided **here**, from the evaluator's own leg index and its own outstanding
+/// cut, and never in TypeScript: a waypoint state is a passage state, and
+/// RV73 is the risk that course logic grows on the other side of the boundary.
+fn waypoint_state(n: u32, passed: u32, cut_pending: bool) -> &'static str {
+    if n <= passed {
+        "passed"
+    } else if n == passed + 1 {
+        if cut_pending {
+            "missed"
+        } else {
+            "next"
+        }
+    } else {
+        "pending"
+    }
+}
+
+/// The stable name of a [`Comparability`], as the page reads it.
+///
+/// Written once: two call sites emit it now (`episode_comparability_json`'s two
+/// verdicts) and `run_baseline` a third.
+fn verdict_name(v: &Comparability) -> &'static str {
+    match v {
+        Comparability::SameConditions => "same_conditions",
+        Comparability::Different(_) => "different",
+        Comparability::Indeterminate(_) => "indeterminate",
+    }
+}
+
+fn vec2_json(v: Vec2) -> serde_json::Value {
+    serde_json::json!({ "x": v.x, "y": v.y })
+}
+
+/// The `course` block: the geometry a page draws, with every decision in it
+/// already made.
+///
+/// `passed`, `cut_pending`, `boat` and `splits` are the live attempt's; a
+/// recorded course passes `0`, `false`, `None` and `&[]` and lets the page
+/// colour the waypoints from the episode's own recorded events up to the
+/// playhead (which is reading Rust's decisions, not making new ones).
+fn course_block(
+    route: &Route,
+    passed: u32,
+    cut_pending: bool,
+    boat: Option<Vec2>,
+    splits: &[f64],
+) -> serde_json::Value {
+    let waypoints: Vec<serde_json::Value> = route
+        .marks
+        .iter()
+        .enumerate()
+        .map(|(i, mark)| {
+            let n = i as u32 + 1;
+            let posts = match mark.rounding {
+                // Every waypoint of a course is a gate, square to its leg and
+                // centred on its mark (D2, RV65). The posts are the course
+                // crate's own; nothing here recomputes them.
+                Rounding::Gate(a, b) => vec![vec![a.x, a.y], vec![b.x, b.y]],
+                _ => Vec::new(),
+            };
+            serde_json::json!({
+                "n": n,
+                "x": mark.position.x,
+                "y": mark.position.y,
+                "radius": mark.radius,
+                "posts": posts,
+                "state": waypoint_state(n, passed, cut_pending),
+            })
+        })
+        .collect();
+    let next = if route.is_finished(passed) {
+        None
+    } else {
+        Some(passed + 1)
+    };
+    // The straight-line distance from the boat to the waypoint it is sailing
+    // to — the same quantity `sailgym_course::Progress::distance_to_next`
+    // reports, and `None` once the course is finished or when no boat is given.
+    let distance_to_next = match (boat, route.mark_at(passed)) {
+        (Some(p), Some(mark)) => Some((mark.position - p).length()),
+        _ => None,
+    };
+    serde_json::json!({
+        "waypoints": waypoints,
+        "start": route.start.map(vec2_json),
+        "half_width": route.marks.first().map(|m| m.radius).unwrap_or(0.0),
+        "next": next,
+        "distance_to_next": distance_to_next,
+        "splits": splits,
+    })
+}
+
+/// Rebuild a course's route from the `course.*` thresholds a recorded
+/// `TaskIdentity` carries.
+///
+/// **The recorded geometry, never today's catalogue** (F18.3). A replay of an
+/// episode flown before a course file was edited draws the course that episode
+/// was flown on; the alternative — looking the id up in `courses/` — would
+/// redraw a course nobody sailed.
+fn route_from_thresholds(t: &BTreeMap<String, f64>) -> Option<Route> {
+    let half_width = *t.get("course.half_width")?;
+    let count = *t.get("course.waypoint_count")? as usize;
+    let start = Vec2::new(*t.get("course.start_x")?, *t.get("course.start_y")?);
+    let mut points = Vec::with_capacity(count);
+    for i in 1..=count {
+        points.push(Vec2::new(
+            *t.get(&format!("course.waypoint_{i}_x"))?,
+            *t.get(&format!("course.waypoint_{i}_y"))?,
+        ));
+    }
+    Route::waypoints(start, &points, half_width).ok()
+}
+
 /// Where a practice attempt stands (v2 section 11).
 ///
 /// `Finished` is the evaluator's verdict — succeeded, failed or timed out,
@@ -185,6 +340,15 @@ struct Attempt {
     run: TaskRun,
     conditions: Conditions,
     status: AttemptStatus,
+    /// The baseline run for **this** attempt, as the JSON `run_baseline`
+    /// returns, computed at most once.
+    ///
+    /// Cached because the page may ask twice and because the answer has to be
+    /// the same both times: `created_utc` comes from `Date.now()` and would
+    /// otherwise differ. A retry builds a fresh `Attempt`, so a retried
+    /// attempt recomputes — which is right, because its conditions are frozen
+    /// again (v2 section 12, D5).
+    baseline: Option<String>,
 }
 
 /// The simulation handle JavaScript holds.
@@ -476,16 +640,24 @@ impl Sim {
     ) -> Result<JsValue, JsValue> {
         let a = Episode::from_json(a_json).map_err(|e| js_err("episode a", e))?;
         let b = Episode::from_json(b_json).map_err(|e| js_err("episode b", e))?;
-        let verdict = a.header.identity().compare(&b.header.identity());
-        let kind = match verdict {
-            Comparability::SameConditions => "same_conditions",
-            Comparability::Different(_) => "different",
-            Comparability::Indeterminate(_) => "indeterminate",
-        };
+        let (ia, ib) = (a.header.identity(), b.header.identity());
+        let verdict = ia.compare(&ib);
+        // **Beside** the verdict, never instead of it (D4). `compare_conditions`
+        // is `compare` with the action and observation contracts excluded —
+        // "same conditions, different controller" — which is what licenses a
+        // hand-flown attempt being compared with an agent's baseline. It is
+        // never a substitute: section 11's two-attempt comparison still reads
+        // `verdict`.
+        let conditions = ia.compare_conditions(&ib);
         let json = serde_json::to_string(&serde_json::json!({
-            "verdict": kind,
+            "verdict": verdict_name(&verdict),
             "reasons": verdict.reasons(),
             "describe": verdict.describe(),
+            "conditions": {
+                "verdict": verdict_name(&conditions),
+                "reasons": conditions.reasons(),
+                "describe": conditions.describe(),
+            },
         }))
         .map_err(|e| js_err("episode_comparability_json", e))?;
         Ok(JsValue::from_str(&json))
@@ -546,21 +718,38 @@ impl Sim {
     /// them. A challenge is a shipped scenario plus a task; `scenario` names
     /// the one it is set on, and section 11 ships no new scenario.
     pub fn practice_tasks_json(&self) -> Result<JsValue, JsValue> {
+        let row = |id: TaskId| -> serde_json::Value {
+            let spec = TaskSpec::shipped(id);
+            let (metric, unit) = spec.metric();
+            let mut value = serde_json::json!({
+                "id": id.as_str(),
+                "kind": if id.course().is_some() { "course" } else { "skill" },
+                "version": spec.version(),
+                "scenario": id.scenario(),
+                "time_limit_s": spec.time_limit_s(),
+                "highlight_event": id.highlight_event(),
+                "metric": { "id": metric, "unit": unit },
+                "thresholds": spec.thresholds(),
+            });
+            // A course row carries the three things the chooser shows — its
+            // title, its one-line goal and its waypoint count — and all three
+            // are the **course document's**, so the page restates none of them
+            // (v2 section 12, *The experience*).
+            if let (Some(course), Some(map)) = (id.course(), value.as_object_mut()) {
+                if let Ok(doc) = course.load() {
+                    map.insert("title".to_string(), doc.title.clone().into());
+                    map.insert("description".to_string(), doc.description.clone().into());
+                    map.insert("waypoints".to_string(), doc.waypoints.len().into());
+                }
+            }
+            value
+        };
+        // **The skills, then the courses.** Two lists in the core, one array
+        // across the boundary, in the order the page offers them.
         let rows: Vec<serde_json::Value> = TASK_IDS
             .iter()
-            .map(|id| {
-                let spec = TaskSpec::shipped(*id);
-                let (metric, unit) = spec.metric();
-                serde_json::json!({
-                    "id": id.as_str(),
-                    "version": spec.version(),
-                    "scenario": id.scenario(),
-                    "time_limit_s": spec.time_limit_s(),
-                    "highlight_event": id.highlight_event(),
-                    "metric": { "id": metric, "unit": unit },
-                    "thresholds": spec.thresholds(),
-                })
-            })
+            .chain(COURSE_TASK_IDS.iter())
+            .map(|id| row(*id))
             .collect();
         let json = serde_json::to_string(&rows).map_err(|e| js_err("practice_tasks_json", e))?;
         Ok(JsValue::from_str(&json))
@@ -612,6 +801,7 @@ impl Sim {
             run,
             conditions,
             status: AttemptStatus::Active,
+            baseline: None,
         });
         self.begin_recording(log_hz);
         Ok(())
@@ -661,6 +851,7 @@ impl Sim {
             run,
             conditions,
             status: AttemptStatus::Active,
+            baseline: None,
         });
         self.begin_recording(log_hz);
         Ok(())
@@ -689,13 +880,247 @@ impl Sim {
     pub fn practice_state_json(&self) -> Result<JsValue, JsValue> {
         let value = match self.attempt.as_ref() {
             None => serde_json::json!({ "active": false }),
-            Some(a) => serde_json::json!({
-                "active": true,
-                "status": a.status.as_str(),
-                "report": a.run.report(),
-            }),
+            Some(a) => {
+                // The `course` block (v2 section 12, D5), present only for a
+                // course challenge. Every state, the next waypoint, the
+                // distance to it and the splits are the evaluator's; the page
+                // projects and formats (RV73).
+                let course = a.run.course_state().map(|c| {
+                    course_block(
+                        c.route(),
+                        c.passed(),
+                        c.cut_pending(),
+                        Some(position(self.inner.state())),
+                        a.run.splits(),
+                    )
+                });
+                serde_json::json!({
+                    "active": true,
+                    "status": a.status.as_str(),
+                    "report": a.run.report(),
+                    "course": course,
+                })
+            }
         };
         let json = serde_json::to_string(&value).map_err(|e| js_err("practice_state_json", e))?;
+        Ok(JsValue::from_str(&json))
+    }
+
+    // --- the baseline and the recorded course (v2 section 12, D5) ---------
+
+    /// Run the rule sailor over the active course attempt's own course, under
+    /// the attempt's **frozen initial contract**.
+    ///
+    /// ```json
+    /// { "episode": { … the recorded episode … },
+    ///   "narration": [{ "t": 6.0, "mode": "tacking", "side": -1, "waypoint": 1 }],
+    ///   "conditions": { "verdict": "same_conditions", "reasons": [], "describe": "…" },
+    ///   "outcome": "finished", "time_s": 42.5, "splits": [14.85, 27.35, 42.50] }
+    /// ```
+    ///
+    /// **One call per attempt, never one per decision** (brief §24). The
+    /// controller, the sensors, the actuation funnel and the course evaluator
+    /// all run inside `sailgym-env`; nothing crosses this boundary until the
+    /// episode is over.
+    ///
+    /// It refuses, naming the reason, when there is no active course attempt,
+    /// and when the frozen contract cannot be reproduced by an `Episode`
+    /// (RV70). The answer is cached on the attempt, so a second call returns
+    /// the identical episode.
+    pub fn run_baseline(&mut self, log_hz: f64) -> Result<JsValue, JsValue> {
+        let Some(attempt) = self.attempt.as_ref() else {
+            return Err(JsValue::from_str(
+                "run_baseline: no practice attempt is active; a baseline is a run of the \
+                 attempt's own course under the attempt's own conditions",
+            ));
+        };
+        if let Some(cached) = attempt.baseline.as_ref() {
+            return Ok(JsValue::from_str(cached));
+        }
+        let spec = attempt.spec;
+        let Some(course) = spec.id().course() else {
+            return Err(JsValue::from_str(
+                "run_baseline: the active attempt is a skill, not a course; only a course has \
+                 a baseline to compare against",
+            ));
+        };
+        let conditions = attempt.conditions.clone();
+        // The attempt's own recorded header is the authority on what it was
+        // flown under; it exists for the whole of an attempt, because
+        // `start_practice` begins the recording.
+        let attempt_identity =
+            match self.recorder.as_ref() {
+                Some(rec) => rec.header().identity(),
+                None => return Err(JsValue::from_str(
+                    "run_baseline: the attempt is not recording, so there is nothing to compare a \
+                 baseline with",
+                )),
+            };
+
+        let json = self.baseline_json(course, spec, &conditions, &attempt_identity, log_hz)?;
+        if let Some(a) = self.attempt.as_mut() {
+            a.baseline = Some(json.clone());
+        }
+        Ok(JsValue::from_str(&json))
+    }
+
+    /// The body of [`Sim::run_baseline`], with the attempt already read.
+    ///
+    /// Separate so the borrow of `self.attempt` ends before the episode is
+    /// built: an `Episode` owns its own `Simulation` and touches nothing here.
+    fn baseline_json(
+        &self,
+        course: CourseId,
+        spec: TaskSpec,
+        conditions: &Conditions,
+        attempt_identity: &sailgym_physics::recording::ExperimentIdentity,
+        log_hz: f64,
+    ) -> Result<String, JsValue> {
+        let route = course
+            .load()
+            .map_err(|e| js_err("run_baseline: course", e))?
+            .route()
+            .map_err(|e| js_err("run_baseline: course route", e))?;
+
+        let dt = conditions.params.sim.dt;
+        let mut cfg = EpisodeConfig::new(conditions.scenario.clone());
+        cfg.route = Some(route);
+        cfg.course = CourseParams::default();
+        cfg.task = Some(spec);
+        cfg.log_hz = Some(log_hz);
+        // The same clock the player is given, in steps.
+        cfg.max_steps = Some((spec.time_limit_s() / dt).ceil() as u64);
+        cfg.autoreset = AutoresetMode::Disabled;
+        cfg.log_decisions = false;
+        cfg.created_utc = iso8601_utc(date_now_ms());
+
+        let agent = RuleSailor::new();
+        let period = agent.spec().cadence.period_steps.max(1);
+        let mut ep = EnvEpisode::new(cfg, Source::Policy(Box::new(agent)), conditions.seed)
+            .map_err(|e| js_err("run_baseline", e))?;
+
+        // **RV70, before a single step.** A baseline sailed under conditions
+        // that are not the attempt's is a number nobody can interpret, so the
+        // contract is checked field by field and the call fails naming what
+        // differed rather than running anyway.
+        let mut differs: Vec<&str> = Vec::new();
+        if *ep.params() != conditions.params {
+            differs.push("parameters");
+        }
+        if *ep.state() != conditions.state {
+            differs.push("initial_state");
+        }
+        if *ep.simulation().controls() != conditions.controls {
+            differs.push("initial_controls");
+        }
+        if *ep.simulation().wind().config() != conditions.wind {
+            differs.push("wind");
+        }
+        if ep.seed() != conditions.seed {
+            differs.push("seed");
+        }
+        if !differs.is_empty() {
+            return Err(JsValue::from_str(&format!(
+                "run_baseline: the attempt's frozen conditions cannot be reproduced by an \
+                 episode ({}); refusing rather than running the baseline under other \
+                 conditions",
+                differs.join(", ")
+            )));
+        }
+
+        // Run it, watching the controller's own mode for changes. `AgentDebug`
+        // is written for observers and read by no controller (F14, F6.10); this
+        // is an observer.
+        let mut narration: Vec<serde_json::Value> = Vec::new();
+        let mut last_mode: Option<Mode> = None;
+        while !ep.outcome().is_terminal() {
+            let taken = ep.advance(period).map_err(|e| js_err("run_baseline", e))?;
+            if taken == 0 {
+                break;
+            }
+            let notes = ep.agent_debug().notes;
+            let read = |key: &str| notes.iter().find(|(k, _)| k == key).map(|(_, v)| *v);
+            let Some(mode) = read("mode").and_then(Mode::from_code) else {
+                continue;
+            };
+            if last_mode == Some(mode) {
+                continue;
+            }
+            last_mode = Some(mode);
+            narration.push(serde_json::json!({
+                "t": ep.state().t,
+                "mode": mode.as_str(),
+                "side": read("side").unwrap_or(0.0),
+                // The waypoint being sailed to, one-based, or the count once
+                // the course is finished.
+                "waypoint": ep.progress().map(|p| p.leg_index + 1),
+            }));
+        }
+
+        let outcome = ep.outcome();
+        let time_s = match outcome {
+            sailgym_env::Outcome::Finished { time } => Some(time),
+            _ => None,
+        };
+        let splits: Vec<f64> = ep
+            .task_events()
+            .iter()
+            .filter(|e| e.id == "waypoint_passed")
+            .map(|e| e.t)
+            .collect();
+        let task_outcome = ep.task_outcome().map(|o| o.as_str().to_string());
+        let envelope = ep.take_envelope().ok_or_else(|| {
+            JsValue::from_str("run_baseline: the baseline episode produced no recording")
+        })?;
+        let identity = envelope.recording.header.identity();
+        // D4: "same conditions, different controller". `compare` refuses this
+        // pair by construction — the attempt is hand-flown and has no action
+        // adapter — and that refusal is correct and stays.
+        let conditions_verdict = attempt_identity.compare_conditions(&identity);
+        let episode_json = envelope
+            .recording
+            .to_json()
+            .map_err(|e| js_err("run_baseline: episode", e))?;
+        let episode: serde_json::Value =
+            serde_json::from_str(&episode_json).map_err(|e| js_err("run_baseline: episode", e))?;
+
+        serde_json::to_string(&serde_json::json!({
+            "episode": episode,
+            "narration": narration,
+            "conditions": {
+                "verdict": verdict_name(&conditions_verdict),
+                "reasons": conditions_verdict.reasons(),
+                "describe": conditions_verdict.describe(),
+            },
+            "outcome": outcome.as_str(),
+            "task_outcome": task_outcome,
+            "time_s": time_s,
+            "splits": splits,
+        }))
+        .map_err(|e| js_err("run_baseline", e))
+    }
+
+    /// The course an episode was **recorded** on, or `null`.
+    ///
+    /// Rebuilt from the `course.*` thresholds in the episode's own
+    /// `TaskIdentity`, so a replay draws the course that episode was flown on
+    /// and never today's catalogue (F18.3). A legacy episode, a free sail and
+    /// a skill attempt all return `null`.
+    ///
+    /// The block has the same shape `practice_state_json`'s `course` has, with
+    /// every waypoint `pending` and no boat: a replay colours them from the
+    /// episode's own recorded `waypoint_passed` and `waypoint_missed` events up
+    /// to the playhead, which is reading decisions Rust already made.
+    pub fn episode_course_json(&self, episode_json: &str) -> Result<JsValue, JsValue> {
+        let episode = Episode::from_json(episode_json).map_err(|e| js_err("episode", e))?;
+        let value = episode
+            .header
+            .practice
+            .as_ref()
+            .filter(|p| TaskId::parse(&p.task.id).and_then(TaskId::course).is_some())
+            .and_then(|p| route_from_thresholds(&p.task.thresholds))
+            .map(|route| course_block(&route, 0, false, None, &[]));
+        let json = serde_json::to_string(&value).map_err(|e| js_err("episode_course_json", e))?;
         Ok(JsValue::from_str(&json))
     }
 

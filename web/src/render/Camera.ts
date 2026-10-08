@@ -157,3 +157,90 @@ function clampTo(centre: number, target: number, margin: number): number {
   }
   return centre
 }
+
+/**
+ * The camera that shows a whole course — **Show course** (v2 section 12,
+ * task 12.5).
+ *
+ * Pure: no DOM, no state, no React. It takes world points and a viewport and
+ * returns the `centre`/`zoom` pair {@link createCamera} takes, which is also
+ * the pair `App.tsx` already holds in state — so applying a fit is two
+ * assignments and no new camera concept.
+ *
+ * `margin` is in **world metres**, not pixels: the points are world metres,
+ * so a world margin keeps the whole computation in one unit and lets the
+ * caller say "a hull length of water round the course" with a number it
+ * already has. A pixel inset would have to be divided by the very scale this
+ * function is solving for.
+ *
+ * ## What it guarantees, and the one case it cannot
+ *
+ * The returned camera contains every point's `margin` box **whenever the
+ * returned zoom is above `MIN_ZOOM`**. The fit zoom is the largest that fits,
+ * so clamping it *down* to `MAX_ZOOM` only shows more; clamping it *up* to
+ * `MIN_ZOOM` — a course too large for the supported zoom range — cannot fit,
+ * and the camera is then centred on the bounds and nothing is invented. That
+ * is reported honestly by the returned `zoom` being `MIN_ZOOM` rather than by
+ * a silent extra zoom step outside the range the rest of the camera accepts.
+ *
+ * ## Degenerate inputs, each handled rather than divided by
+ *
+ * - **No points** (or none finite): there are no bounds to fit. The result is
+ *   the world origin at zoom 1 — the application's own default zoom — and a
+ *   caller with nothing to show may equally ignore it.
+ * - **One point, or several coincident ones**: the bounds have zero extent,
+ *   so the extent is `2 · margin` and the fit is finite. With `margin` zero
+ *   as well the extent is zero, which would be a division by zero; the zoom
+ *   is `MAX_ZOOM` instead, because "fit a point" has no other answer.
+ * - **A non-finite point** is dropped, so one bad prop cannot turn the camera
+ *   into `NaN` and blank the page.
+ * - **A non-positive viewport** (a hidden element measured at zero) yields
+ *   `MIN_ZOOM`, not `NaN`.
+ *
+ * ## Why it is axis-aligned, and therefore a `northUp` operation
+ *
+ * The box fitted is the world axis-aligned bounding box, which is exact when
+ * the camera applies no rotation. In `follow` the world is rotated by
+ * `heading − π/2` (see {@link createCamera}), so the same box covers a
+ * different screen region and the fit is conservative rather than exact.
+ * **Show course** is a `northUp` action; this function does not take a
+ * heading, so it cannot pretend otherwise.
+ */
+export function fitBounds(
+  points: readonly Vec2[],
+  viewport: Viewport,
+  margin: number,
+): { centre: Vec2; zoom: number } {
+  const finite = points.filter(
+    (p) => Number.isFinite(p.x) && Number.isFinite(p.y),
+  )
+  if (finite.length === 0) {
+    return { centre: { x: 0, y: 0 }, zoom: 1 }
+  }
+
+  let minX = finite[0].x
+  let maxX = finite[0].x
+  let minY = finite[0].y
+  let maxY = finite[0].y
+  for (const p of finite) {
+    minX = Math.min(minX, p.x)
+    maxX = Math.max(maxX, p.x)
+    minY = Math.min(minY, p.y)
+    maxY = Math.max(maxY, p.y)
+  }
+
+  const centre = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+  const pad = Number.isFinite(margin) ? Math.max(0, margin) : 0
+  const spanX = maxX - minX + 2 * pad
+  const spanY = maxY - minY + 2 * pad
+
+  // `Infinity` for a zero span is the honest answer — any zoom fits a point —
+  // and `Math.min` then takes the other axis, or the clamp takes `MAX_ZOOM`.
+  const zoomX = spanX > 0 ? viewport.width / (PIXELS_PER_METRE * spanX) : Infinity
+  const zoomY = spanY > 0 ? viewport.height / (PIXELS_PER_METRE * spanY) : Infinity
+  const wanted = Math.min(zoomX, zoomY)
+  const zoom = Number.isNaN(wanted)
+    ? MIN_ZOOM
+    : Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, wanted))
+  return { centre, zoom }
+}
