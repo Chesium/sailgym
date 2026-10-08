@@ -37,6 +37,26 @@
 //! Crossing the gate's *line* outside the posts is not a passage, and
 //! [`tests::a_gate_crossed_outside_its_posts_is_not_passed`] says so.
 //!
+//! # A cut, defined once
+//!
+//! "Cut the mark" is three of the four clauses holding while the side clause
+//! does not: the boat crossed the mark's plane, in the leg's direction, and
+//! not where the rounding asked. v2 F19.4 detects it with a **probe**: the
+//! same mark with its rounding replaced by [`Rounding::Either`], this crate's
+//! own spelling of "directed plane crossing, no side". [`cut_between`] is that
+//! probe, moved here from `sailgym-env` by v2 section 12 so the episode runner
+//! and the practice evaluator ask **one** function and cannot disagree about
+//! what a miss is (RV66). The probe is built per call from the leg the real
+//! route already computed, so it carries the route's start and laps by
+//! construction rather than by a copy that might drop them.
+//!
+//! For a gate the probe is the plane through the **mark's own position**,
+//! perpendicular to the leg. A gate square to its leg and centred on its mark
+//! — every gate `Route::waypoints` builds — lies exactly on that plane, so
+//! crossing its line outside the posts is a cut and nothing else is. For an
+//! oblique gate the two lines differ and a cut can be reported a step early or
+//! late; that is F19.4's documented approximation, unchanged.
+//!
 //! # Purity
 //!
 //! Every decision here is a pure function of
@@ -70,14 +90,42 @@ pub fn passed_between(route: &Route, leg_index: u32, prev: Vec2, cur: Vec2) -> b
     let Some(leg) = route.leg(leg_index) else {
         return false;
     };
+    crossed(&leg, &route.marks[leg.mark_index], prev, cur)
+}
+
+/// Whether the boat **cut** leg `leg_index`'s mark during the step from
+/// `prev` to `cur`: crossed its plane in the leg's direction, and did not pass
+/// it. See the module documentation; this is v2 F19.4's probe, defined once.
+///
+/// `false` when `leg_index` is past the end of the route, for a mark with no
+/// side (`Either` is its own probe), and for F15.1's lookahead point (its
+/// probe is its own disc).
+pub fn cut(route: &Route, leg_index: u32, prev: &BoatState, cur: &BoatState) -> bool {
+    cut_between(route, leg_index, position(prev), position(cur))
+}
+
+/// [`cut`] on bare positions.
+pub fn cut_between(route: &Route, leg_index: u32, prev: Vec2, cur: Vec2) -> bool {
+    let Some(leg) = route.leg(leg_index) else {
+        return false;
+    };
     let mark = &route.marks[leg.mark_index];
+    let probe = Mark {
+        rounding: Rounding::Either,
+        ..*mark
+    };
+    crossed(&leg, &probe, prev, cur) && !crossed(&leg, mark, prev, cur)
+}
+
+/// All four clauses, for one leg and the mark it ends at.
+fn crossed(leg: &Leg, mark: &Mark, prev: Vec2, cur: Vec2) -> bool {
     match (mark.rounding, leg.direction()) {
         (Rounding::Gate(a, b), Some(d)) => gate_crossed(d, a, b, prev, cur),
         // A gate needs a leg to give it a direction. `Route::validate`
         // refuses one on a route that has none; an unvalidated route gets a
         // `false` rather than an invented direction.
         (Rounding::Gate(_, _), None) => false,
-        (_, Some(d)) => plane_crossed(&leg, mark, d, prev, cur),
+        (_, Some(d)) => plane_crossed(leg, mark, d, prev, cur),
         // The single-mark route of F15.1 — the dragged lookahead point. It
         // has no incoming leg, so it has no plane and no side, and arrival is
         // the only thing that can be meant. `Route::validate` refuses a sided
@@ -453,6 +501,232 @@ mod tests {
             at(0.0, outside),
             at(20.0, outside)
         ));
+    }
+
+    // -----------------------------------------------------------------
+    // Cuts: F19.4's probe, defined once (v2 section 12)
+    // -----------------------------------------------------------------
+
+    /// An open, single-gate route: start at `(−30, 0)`, a 6 m gate square to
+    /// the eastbound leg and centred on the origin — the shape
+    /// `Route::waypoints` builds.
+    fn open_gate_route() -> Route {
+        Route::new(
+            vec![Mark {
+                position: at(0.0, 0.0),
+                radius: 3.0,
+                rounding: Rounding::Gate(at(0.0, -3.0), at(0.0, 3.0)),
+            }],
+            1,
+        )
+        .with_start(at(-30.0, 0.0))
+    }
+
+    #[test]
+    fn a_gate_square_to_its_leg_is_passed_inside_its_posts_and_cut_outside_them() {
+        let route = open_gate_route();
+        route.validate().expect("valid");
+        let beyond = 3.0 + 3.0 * f64::EPSILON;
+        // (case, prev, cur, passed, cut)
+        let table = [
+            ("through the gate", at(-1.0, 1.0), at(1.0, 1.0), true, false),
+            ("outside, north", at(-1.0, 10.0), at(1.0, 10.0), false, true),
+            (
+                "outside, south",
+                at(-1.0, -10.0),
+                at(1.0, -10.0),
+                false,
+                true,
+            ),
+            (
+                "exactly through a post",
+                at(-1.0, 3.0),
+                at(1.0, 3.0),
+                true,
+                false,
+            ),
+            (
+                "a hair beyond a post",
+                at(-1.0, beyond),
+                at(1.0, beyond),
+                false,
+                true,
+            ),
+            (
+                "backwards, inside",
+                at(1.0, 1.0),
+                at(-1.0, 1.0),
+                false,
+                false,
+            ),
+            (
+                "backwards, outside",
+                at(1.0, 10.0),
+                at(-1.0, 10.0),
+                false,
+                false,
+            ),
+            (
+                "short of the line",
+                at(-5.0, 10.0),
+                at(-1.0, 10.0),
+                false,
+                false,
+            ),
+            (
+                "ending exactly on the line",
+                at(-1.0, 10.0),
+                at(0.0, 10.0),
+                false,
+                false,
+            ),
+        ];
+        for (case, prev, cur, passed, cut) in table {
+            assert_eq!(
+                passed_between(&route, 0, prev, cur),
+                passed,
+                "{case}: passed"
+            );
+            assert_eq!(cut_between(&route, 0, prev, cur), cut, "{case}: cut");
+        }
+    }
+
+    #[test]
+    fn a_sided_mark_is_cut_on_the_wrong_side_and_over_the_top() {
+        let route = two_mark_route(Rounding::Port);
+        // (case, prev, cur, passed, cut)
+        let table = [
+            ("the corner cut", at(-1.0, 1.5), at(1.0, 1.5), false, true),
+            (
+                "over the top of the buoy",
+                at(-1.0, -1.9),
+                at(1.0, -1.9),
+                false,
+                true,
+            ),
+            (
+                "the required side",
+                at(-1.0, -5.0),
+                at(1.0, -5.0),
+                true,
+                false,
+            ),
+            (
+                "the wrong direction",
+                at(1.0, -5.0),
+                at(-1.0, -5.0),
+                false,
+                false,
+            ),
+        ];
+        for (case, prev, cur, passed, cut) in table {
+            assert_eq!(
+                passed_between(&route, 0, prev, cur),
+                passed,
+                "{case}: passed"
+            );
+            assert_eq!(cut_between(&route, 0, prev, cur), cut, "{case}: cut");
+        }
+    }
+
+    #[test]
+    fn a_mark_with_no_side_and_a_lookahead_point_can_never_be_cut() {
+        // `Either` is its own probe.
+        let route = two_mark_route(Rounding::Either);
+        assert!(passed_between(&route, 0, at(-1.0, 50.0), at(1.0, 50.0)));
+        assert!(!cut_between(&route, 0, at(-1.0, 50.0), at(1.0, 50.0)));
+        // F15.1's disc: its probe is the same disc.
+        let point = Route::lookahead_point(at(10.0, 0.0), 3.0);
+        for (prev, cur) in [(at(0.0, 0.0), at(20.0, 0.0)), (at(0.0, 9.0), at(20.0, 9.0))] {
+            assert!(!cut_between(&point, 0, prev, cur));
+        }
+        // Past the end of a route there is nothing to cut.
+        assert!(!cut_between(&route, 2, at(-1.0, 50.0), at(1.0, 50.0)));
+    }
+
+    /// F19.4's construction, written out here in the test and nowhere in the
+    /// shipped code: the same route with every rounding replaced by `Either`
+    /// — **keeping the start**, which `sailgym-env`'s private copy predates.
+    fn probe_route_of(route: &Route) -> Route {
+        Route {
+            marks: route
+                .marks
+                .iter()
+                .map(|m| Mark {
+                    rounding: Rounding::Either,
+                    ..*m
+                })
+                .collect(),
+            laps: route.laps,
+            start: route.start,
+        }
+    }
+
+    #[test]
+    fn cut_between_is_exactly_f19_4s_probe_construction() {
+        let routes = [
+            two_mark_route(Rounding::Port),
+            two_mark_route(Rounding::Starboard),
+            two_mark_route(Rounding::Gate(at(0.0, -3.0), at(0.0, 3.0))),
+            open_gate_route(),
+            Route::new(
+                vec![Mark {
+                    position: at(0.0, 0.0),
+                    radius: 2.0,
+                    rounding: Rounding::Port,
+                }],
+                1,
+            )
+            .with_start(at(-30.0, 0.0)),
+            Route::lookahead_point(at(0.0, 0.0), 3.0),
+        ];
+        let mut cuts = 0usize;
+        for route in &routes {
+            route.validate().expect("valid");
+            let probe = probe_route_of(route);
+            for leg in 0..route.legs() {
+                for i in -4..=4 {
+                    for j in -4..=4 {
+                        let prev = at(f64::from(i) * 3.0, f64::from(j) * 3.0);
+                        for (dx, dy) in [(2.5, 0.5), (-2.5, 0.5), (0.5, 2.5), (0.5, -2.5)] {
+                            let cur = at(prev.x + dx, prev.y + dy);
+                            let expected = passed_between(&probe, leg, prev, cur)
+                                && !passed_between(route, leg, prev, cur);
+                            assert_eq!(
+                                cut_between(route, leg, prev, cur),
+                                expected,
+                                "leg {leg}, {prev:?} → {cur:?}"
+                            );
+                            cuts += usize::from(expected);
+                        }
+                    }
+                }
+            }
+        }
+        assert!(
+            cuts > 0,
+            "the sweep must contain cuts, or it proves nothing"
+        );
+    }
+
+    #[test]
+    fn with_a_start_leg_zero_is_oriented_by_the_start_not_by_the_last_mark() {
+        // As a circuit, leg 0 into the origin runs west, from the second mark
+        // at (30, 0); with a start at (−30, 0) it runs east. The same
+        // eastbound step passes one and not the other.
+        let marks = vec![
+            Mark {
+                position: at(0.0, 0.0),
+                radius: 2.0,
+                rounding: Rounding::Port,
+            },
+            Mark::either(at(30.0, 0.0), 2.0),
+        ];
+        let circuit = Route::new(marks.clone(), 1);
+        let open = Route::new(marks, 1).with_start(at(-30.0, 0.0));
+        let (prev, cur) = (at(-1.0, -5.0), at(1.0, -5.0));
+        assert!(!passed_between(&circuit, 0, prev, cur));
+        assert!(passed_between(&open, 0, prev, cur));
     }
 
     #[test]

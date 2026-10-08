@@ -34,3 +34,9 @@ rayon = "1"
 # has to build it — so the one-line dependency is recorded as an
 # `Owns:`-list gap in `docs/v2/progress/06-handoff.md` rather than absorbed.
 sailgym-env = { workspace = true }
+# v2 section 12: `trim_sweep` (task 12.3) measures the rule sailor's trim
+# table and `course_bench` (task 12.6) runs it over the shipped courses, so
+# both name the agent and the course catalogue directly. Task 12.1 owns this
+# manifest so that neither later task has an `Owns:` gap to record.
+sailgym-agent = { workspace = true }
+sailgym-course = { workspace = true }

@@ -10,14 +10,22 @@
 //! has no incoming leg, which [`Leg::from`] states as `None` rather than
 //! inventing one.
 //!
-//! ## The route is a circuit
+//! ## The route is a circuit, unless it says where it starts
 //!
 //! Leg `i` ends at mark `i mod n` and starts at mark `(i − 1) mod n`, so the
 //! leg into mark 0 comes from the **last** mark. With `laps > 1` that is
 //! literally where the boat has just been. With `laps == 1` it is a stated
 //! convention rather than an observation, and a course that wants a distinct
-//! start makes the start a mark — which is also how a start line is spelled,
-//! as a [`Rounding::Gate`].
+//! start can make the start a mark — which is also how a start line is
+//! spelled, as a [`Rounding::Gate`].
+//!
+//! Or it can say where it starts. [`Route::start`] (v2 section 12, D1) is the
+//! point **leg 0 alone** runs from; every later leg, including the first leg
+//! of lap 2, still runs from the previous mark. A numbered waypoint course is
+//! the reason: its leg 0 runs from where the boat begins, and the last
+//! waypoint has nothing to do with it. `start: None` is exactly the circuit
+//! above, and it is not written to JSON, so every route document that existed
+//! before the field reads and writes byte for byte as it did.
 //!
 //! ## `laps` repeats the mark list; it does not duplicate it (RV24)
 //!
@@ -53,23 +61,69 @@ use serde::{Deserialize, Serialize};
 /// acceptance 3). This shim is the same arrangement `parameters.rs` uses for
 /// `Vec3`, and it emits the identical JSON, so a document written by either
 /// side reads on the other.
-mod vec2_serde {
+///
+/// `pub(crate)`, with an [`option`](vec2_serde::option) and a
+/// [`seq`](vec2_serde::seq) form, so [`Route::start`] and the course
+/// catalogue spell a point the same way a mark does.
+pub(crate) mod vec2_serde {
     use super::Vec2;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Clone, Copy, Serialize, Deserialize)]
     struct Components {
         x: f64,
         y: f64,
     }
 
+    impl From<Vec2> for Components {
+        fn from(v: Vec2) -> Self {
+            Self { x: v.x, y: v.y }
+        }
+    }
+
+    impl From<Components> for Vec2 {
+        fn from(c: Components) -> Self {
+            Vec2::new(c.x, c.y)
+        }
+    }
+
     pub fn serialize<S: Serializer>(v: &Vec2, s: S) -> Result<S::Ok, S::Error> {
-        Components { x: v.x, y: v.y }.serialize(s)
+        Components::from(*v).serialize(s)
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec2, D::Error> {
-        let c = Components::deserialize(d)?;
-        Ok(Vec2::new(c.x, c.y))
+        Components::deserialize(d).map(Vec2::from)
+    }
+
+    /// `Option<Vec2>`: `null` or `{x, y}`.
+    pub mod option {
+        use super::{Components, Vec2};
+        use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+        pub fn serialize<S: Serializer>(v: &Option<Vec2>, s: S) -> Result<S::Ok, S::Error> {
+            v.map(Components::from).serialize(s)
+        }
+
+        pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Vec2>, D::Error> {
+            Ok(Option::<Components>::deserialize(d)?.map(Vec2::from))
+        }
+    }
+
+    /// `Vec<Vec2>`: an ordered array of `{x, y}`.
+    pub mod seq {
+        use super::{Components, Vec2};
+        use serde::{Deserialize, Deserializer, Serializer};
+
+        pub fn serialize<S: Serializer>(v: &[Vec2], s: S) -> Result<S::Ok, S::Error> {
+            s.collect_seq(v.iter().map(|p| Components::from(*p)))
+        }
+
+        pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Vec2>, D::Error> {
+            Ok(Vec::<Components>::deserialize(d)?
+                .into_iter()
+                .map(Vec2::from)
+                .collect())
+        }
     }
 }
 
@@ -178,6 +232,18 @@ pub struct Route {
     /// How many times the mark list is sailed. `laps` repeats the list; it
     /// does not duplicate it (RV24).
     pub laps: u32,
+    /// Where **leg 0** runs from, or `None` for a circuit, whose leg 0 runs
+    /// from the last mark (v2 section 12, D1). Every later leg runs from the
+    /// previous mark either way.
+    ///
+    /// Not written when `None`, so a route without a start serialises exactly
+    /// as it did before the field existed.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "vec2_serde::option"
+    )]
+    pub start: Option<Vec2>,
 }
 
 /// Why a [`Route`] is not sailable.
@@ -209,6 +275,9 @@ pub enum RouteError {
     /// More than one lap of a single-mark route: every leg after the first
     /// would run from the mark to itself.
     LapsNeedTwoMarks,
+    /// A [`Route::start`] that is not finite. A start equal to mark 0 is a
+    /// [`RouteError::ZeroLengthLeg`] into mark 0, like any other.
+    StartNotFinite,
 }
 
 impl std::fmt::Display for RouteError {
@@ -239,6 +308,7 @@ impl std::fmt::Display for RouteError {
                           the first runs from a mark to itself"
                 )
             }
+            Self::StartNotFinite => write!(f, "the route's start is not finite"),
         }
     }
 }
@@ -248,9 +318,10 @@ impl std::error::Error for RouteError {}
 /// One leg of a sailed route: which mark it ends at, and the directed line
 /// that leads to it.
 ///
-/// `from` is `None` **only** for the single-mark route of F15.1, which has no
-/// incoming leg at all. Every other leg has one, because
-/// [`Route::validate`] refuses a route whose consecutive marks coincide.
+/// `from` is `None` **only** for the single-mark route of F15.1 with no
+/// [`Route::start`], which has no incoming leg at all. Every other leg has
+/// one, because [`Route::validate`] refuses a route whose consecutive marks
+/// coincide, or whose start is on its first mark.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Leg {
     /// The global leg index, `0 .. Route::legs()`.
@@ -299,9 +370,19 @@ impl Leg {
 }
 
 impl Route {
-    /// A route from marks and a lap count.
+    /// A route from marks and a lap count: a circuit, with no start.
     pub fn new(marks: Vec<Mark>, laps: u32) -> Self {
-        Self { marks, laps }
+        Self {
+            marks,
+            laps,
+            start: None,
+        }
+    }
+
+    /// The same route, with leg 0 running from `start` (D1).
+    pub fn with_start(mut self, start: Vec2) -> Self {
+        self.start = Some(start);
+        self
     }
 
     /// F15.1's lookahead point: one mark, no side, a large radius.
@@ -324,19 +405,20 @@ impl Route {
 
     /// Leg `index`, or `None` past the end of the course.
     ///
-    /// The route is a circuit: leg 0 comes from the **last** mark. See the
-    /// module documentation for why, and for the one case — a single-mark
-    /// route — where `from` is `None` instead.
+    /// Leg 0 comes from [`Route::start`] when there is one, and otherwise —
+    /// the route is a circuit — from the **last** mark. See the module
+    /// documentation for why, and for the one case — a single-mark route with
+    /// no start — where `from` is `None` instead.
     pub fn leg(&self, index: u32) -> Option<Leg> {
         let n = self.marks.len();
         if n == 0 || index >= self.legs() {
             return None;
         }
         let mark_index = (index as usize) % n;
-        let from = if n == 1 {
-            None
-        } else {
-            Some(self.marks[(mark_index + n - 1) % n].position)
+        let from = match self.start {
+            Some(start) if index == 0 => Some(start),
+            _ if n == 1 => None,
+            _ => Some(self.marks[(mark_index + n - 1) % n].position),
         };
         Some(Leg {
             index,
@@ -365,6 +447,7 @@ impl Route {
         Self {
             marks: self.marks.iter().map(Mark::mirrored).collect(),
             laps: self.laps,
+            start: self.start.map(|s| Vec2::new(s.x, -s.y)),
         }
     }
 
@@ -379,6 +462,11 @@ impl Route {
         }
         if n == 1 && self.laps > 1 {
             return Err(RouteError::LapsNeedTwoMarks);
+        }
+        if let Some(start) = self.start {
+            if !start.x.is_finite() || !start.y.is_finite() {
+                return Err(RouteError::StartNotFinite);
+            }
         }
 
         for (i, mark) in self.marks.iter().enumerate() {
@@ -408,15 +496,28 @@ impl Route {
                     return Err(RouteError::GatePostsCoincide { mark: i });
                 }
             }
-            // A single-mark route has no incoming leg, so it has no direction
-            // to measure a side against and no plane to cross. Only
-            // `Rounding::Either` is meaningful there (F15.1).
-            if n == 1 && mark.rounding != Rounding::Either {
+            // A single-mark route with no start has no incoming leg, so it has
+            // no direction to measure a side against and no plane to cross.
+            // Only `Rounding::Either` is meaningful there (F15.1). With a
+            // start it has a leg, and any rounding is.
+            if n == 1 && self.start.is_none() && mark.rounding != Rounding::Either {
                 return Err(RouteError::SidedRoundingWithoutALeg { mark: i });
             }
-            // Every leg must have a direction. Leg `i` runs from mark
-            // `i − 1 mod n`, so the check is cyclic and covers leg 0.
-            if n > 1 {
+            // Every leg that is sailed must have a direction. Leg 0 runs from
+            // the start when there is one.
+            if i == 0 {
+                if let Some(start) = self.start {
+                    if (mark.position - start).length_squared() <= 0.0 {
+                        return Err(RouteError::ZeroLengthLeg { mark: 0 });
+                    }
+                }
+            }
+            // Otherwise leg `i` runs from mark `i − 1 mod n`, so the check is
+            // cyclic. The cyclic leg into mark 0 is sailed only when it **is**
+            // leg 0 — no start — or on a later lap; an open route sailed once
+            // never sails it, so it may end where it began.
+            let cyclic_leg_is_sailed = i > 0 || self.start.is_none() || self.laps > 1;
+            if n > 1 && cyclic_leg_is_sailed {
                 let prev = self.marks[(i + n - 1) % n].position;
                 if (mark.position - prev).length_squared() <= 0.0 {
                     return Err(RouteError::ZeroLengthLeg { mark: i });
@@ -526,6 +627,114 @@ mod tests {
 
         let leg1 = route.leg(1).unwrap();
         assert_eq!(leg1.direction(), Some(Vec2::new(0.0, 1.0)));
+    }
+
+    // -----------------------------------------------------------------
+    // D1: an explicit start (v2 section 12)
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn with_a_start_leg_zero_runs_from_it_and_later_laps_run_from_the_last_mark() {
+        let mut route = rectangle().with_start(Vec2::new(-10.0, 0.0));
+        route.laps = 2;
+        route.validate().expect("an open rectangle is sailable");
+
+        let leg0 = route.leg(0).unwrap();
+        assert_eq!(leg0.from, Some(Vec2::new(-10.0, 0.0)));
+        assert_eq!(leg0.to, Vec2::new(0.0, 0.0));
+        assert_eq!(leg0.direction(), Some(Vec2::new(1.0, 0.0)));
+
+        // Leg 1 is unchanged by the start…
+        assert_eq!(route.leg(1).unwrap().from, Some(Vec2::new(0.0, 0.0)));
+        // …and the first leg of lap 2 is the circuit's, from the last mark.
+        let leg4 = route.leg(4).unwrap();
+        assert_eq!(leg4.mark_index, 0);
+        assert_eq!(leg4.from, Some(Vec2::new(25.0, 0.0)));
+        assert_eq!(leg4.direction(), Some(Vec2::new(-1.0, 0.0)));
+    }
+
+    #[test]
+    fn a_start_gives_a_single_mark_route_a_leg_and_so_a_side() {
+        // Without a start this is `SidedRoundingWithoutALeg`; with one, the
+        // leg exists and a side can be measured against it.
+        let route = Route::new(
+            vec![Mark {
+                position: Vec2::new(0.0, 20.0),
+                radius: 2.0,
+                rounding: Rounding::Port,
+            }],
+            1,
+        )
+        .with_start(Vec2::ZERO);
+        route.validate().expect("a sided single mark with a start");
+        assert_eq!(route.leg(0).unwrap().direction(), Some(Vec2::new(0.0, 1.0)));
+
+        // The lookahead point of F15.1 keeps no start, and so no leg.
+        assert_eq!(Route::lookahead_point(Vec2::new(1.0, 1.0), 5.0).start, None);
+    }
+
+    #[test]
+    fn validate_refuses_each_start_problem_in_isolation() {
+        let r = rectangle().with_start(Vec2::new(f64::NAN, 0.0));
+        assert_eq!(r.validate(), Err(RouteError::StartNotFinite));
+        let r = rectangle().with_start(Vec2::new(0.0, f64::INFINITY));
+        assert_eq!(r.validate(), Err(RouteError::StartNotFinite));
+
+        // On mark 0: leg 0 would have no direction.
+        let r = rectangle().with_start(Vec2::new(0.0, 0.0));
+        assert_eq!(r.validate(), Err(RouteError::ZeroLengthLeg { mark: 0 }));
+
+        // A start does not make a one-mark route lappable.
+        let mut r = Route::lookahead_point(Vec2::new(1.0, 2.0), 10.0).with_start(Vec2::ZERO);
+        r.laps = 2;
+        assert_eq!(r.validate(), Err(RouteError::LapsNeedTwoMarks));
+    }
+
+    #[test]
+    fn an_open_route_sailed_once_may_end_where_it_began() {
+        // A, B, A: the cyclic leg from the last mark into mark 0 has zero
+        // length, and an open route sailed once never sails it.
+        let a = Mark::either(Vec2::new(0.0, 40.0), 2.0);
+        let b = Mark::either(Vec2::new(0.0, 0.0), 2.0);
+        let open = Route::new(vec![a, b, a], 1).with_start(Vec2::new(5.0, -5.0));
+        open.validate().expect("A, B, A from a start");
+
+        // As a circuit, leg 0 *is* that leg, and it is refused.
+        let circuit = Route::new(vec![a, b, a], 1);
+        assert_eq!(
+            circuit.validate(),
+            Err(RouteError::ZeroLengthLeg { mark: 0 })
+        );
+        // And so it is on a second lap of the open route.
+        let mut twice = open.clone();
+        twice.laps = 2;
+        assert_eq!(twice.validate(), Err(RouteError::ZeroLengthLeg { mark: 0 }));
+    }
+
+    #[test]
+    fn a_route_without_a_start_writes_no_start_and_one_with_a_start_round_trips() {
+        // Byte identical to the shape that existed before the field: the
+        // key is simply absent.
+        let text = serde_json::to_string(&rectangle()).expect("serialise");
+        assert!(!text.contains("start"), "{text}");
+        let back: Route = serde_json::from_str(&text).expect("deserialise");
+        assert_eq!(back.start, None);
+
+        let open = rectangle().with_start(Vec2::new(-10.0, 2.5));
+        let once = serde_json::to_string(&open).expect("serialise");
+        assert!(once.contains(r#""start":{"x":-10.0,"y":2.5}"#), "{once}");
+        let back: Route = serde_json::from_str(&once).expect("deserialise");
+        assert_eq!(back, open);
+        assert_eq!(serde_json::to_string(&back).expect("again"), once);
+    }
+
+    #[test]
+    fn mirroring_mirrors_the_start() {
+        let open = rectangle().with_start(Vec2::new(-10.0, 3.0));
+        let m = open.mirrored();
+        assert_eq!(m.start, Some(Vec2::new(-10.0, -3.0)));
+        assert_eq!(m.leg(0).unwrap().from, Some(Vec2::new(-10.0, -3.0)));
+        assert_eq!(m.mirrored(), open);
     }
 
     #[test]

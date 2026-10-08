@@ -12,10 +12,12 @@
 //!
 //! | module | what it owns | task |
 //! |---|---|---|
-//! | [`route`] | `Route`, `Mark`, `Rounding`, `Leg`, and validation | 4.1 |
-//! | [`passage`] | the four-clause passage rule, and gates | 4.2 |
+//! | [`route`] | `Route`, `Mark`, `Rounding`, `Leg`, validation, and an optional start | 4.1, 12.1 |
+//! | [`passage`] | the four-clause passage rule, gates, and the **one** definition of a cut | 4.2, 12.1 |
 //! | [`guidance`] | `Guidance`, and the **one** definition of cross-track error | 4.3 |
 //! | [`progress`] | `Progress`, and the tracker that walks a route | 4.4 |
+//! | [`waypoints`] | `Route::waypoints`: an open course, one gate per waypoint | 12.1 |
+//! | [`catalogue`] | the shipped courses, embedded from `courses/` | 12.1 |
 //!
 //! ## What is deliberately not here
 //!
@@ -43,18 +45,27 @@
 //! **A radius check is not sufficient and is forbidden** (F15.3). It permits
 //! cutting the corner, and a policy will learn to; [`passage`] carries the
 //! named regression that says so.
+//!
+//! A mark is **cut** when the first, second and fourth clauses hold and the
+//! side clause does not: [`passage::cut_between`], v2 F19.4's probe, defined
+//! here once so the episode runner and the practice evaluator cannot disagree
+//! about what a miss is (v2 section 12, RV66).
 
 // One `pub mod` line per module, added by the task that owns the file: this
 // file is task 4.1's and Rust has no way for a later task to declare its own
 // module without touching it. Recorded in `docs/v2/progress/04-handoff.md`
-// rather than quietly absorbed (F13.2).
+// rather than quietly absorbed (F13.2). Section 12's task 12.1 owns this file
+// and adds its own two.
+pub mod catalogue;
 pub mod guidance;
 pub mod passage;
 pub mod progress;
 pub mod route;
+pub mod waypoints;
 
+pub use catalogue::{Course, CourseError, CourseId};
 pub use guidance::{CourseParams, Guidance};
-pub use passage::passed;
+pub use passage::{cut, passed};
 pub use progress::{Progress, Tracker};
 pub use route::{Leg, Mark, Rounding, Route, RouteError};
 

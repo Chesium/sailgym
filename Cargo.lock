@@ -456,6 +456,8 @@ name = "sailgym-bench"
 version = "0.1.0"
 dependencies = [
  "rayon",
+ "sailgym-agent",
+ "sailgym-course",
  "sailgym-env",
  "sailgym-physics",
  "serde",
@@ -511,6 +513,7 @@ dependencies = [
 name = "sailgym-task"
 version = "0.1.0"
 dependencies = [
+ "sailgym-course",
  "sailgym-physics",
  "serde",
  "serde_json",
@@ -522,6 +525,9 @@ version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
+ "sailgym-agent",
+ "sailgym-course",
+ "sailgym-env",
  "sailgym-physics",
  "sailgym-task",
  "serde_json",

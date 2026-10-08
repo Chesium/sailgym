@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "reach",
+  "title": "Reach",
+  "description": "Three waypoints to the east across a northerly breeze. Every leg is on port tack, so there is no tack and no gybe: get moving, steer and trim. Provisional geometry (v2 section 12).",
+  "scenario": "free_sail",
+  "start": { "x": 0.0, "y": 0.0 },
+  "half_width": 5.0,
+  "waypoints": [
+    { "x": 30.0, "y": 0.0 },
+    { "x": 60.0, "y": -10.0 },
+    { "x": 90.0, "y": 0.0 }
+  ]
+}

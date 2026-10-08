@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "windward_leeward",
+  "title": "Windward–leeward",
+  "description": "Beat to a mark dead upwind, then run straight back downwind through the start. Provisional geometry (v2 section 12).",
+  "scenario": "free_sail",
+  "start": { "x": 0.0, "y": 0.0 },
+  "half_width": 5.0,
+  "waypoints": [
+    { "x": 0.0, "y": 40.0 },
+    { "x": 0.0, "y": 0.0 }
+  ]
+}

@@ -40,8 +40,8 @@ Updated 2026-09-20. This is the scope parking lot, not a second committed roadma
 | Tilt input | Later, and never presented as hiking before crew dynamics exist |
 | Full 3-D world / photorealism | Outside product direction; retain current SVG rendering |
 | Planing / high-speed hull model | Separate model extension if chosen tasks exceed the current model's useful range |
-| Recorded ghost | First racing follow-on; visual trajectory, not an interacting fleet |
-| Rule sailor → polar racer → planner | Deliver in that order; planner only after profiling and a measurable gain |
+| Recorded ghost | First racing follow-on; visual trajectory, not an interacting fleet. **Proposed in [section 12](../prds/12-waypoint-course.md)** (2026-10-02) as the rule sailor's recorded episode; not implemented |
+| Rule sailor → polar racer → planner | Deliver in that order; planner only after profiling and a measurable gain. **Rule sailor proposed in [section 12](../prds/12-waypoint-course.md)** (2026-10-02); polar racer and planner remain deferred |
 | Runtime sensor registry and sensor/action ablations | Research 05, sized to an actual study; one versioned layout first, no competing fixed and dynamic authorities |
 | Conformance and JAX wind | Follow-on 02–03 after corrected baseline; useful verification, not prerequisite for learning UI |
 | Full JAX/Warp physics and GPU training | After native/environment benchmarks and wind pilot; new PRD for full-step state, tolerances and invariants |

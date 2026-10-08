@@ -12,5 +12,11 @@ publish.workspace = true
 # asserts by running that command.
 [dependencies]
 sailgym-physics = { workspace = true }
+# v2 section 12, D7: the course challenges score passage and cuts with the
+# course crate's own rule (`passage::passed_between`, `passage::cut_between`)
+# rather than a copy of it (RV66). The arrows become `task -> {course,
+# physics}`; `course -> physics` only, so there is no cycle, and
+# `sailgym-physics` still depends on neither.
+sailgym-course = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
