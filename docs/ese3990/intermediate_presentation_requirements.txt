@@ -1,0 +1,7 @@
+Your 3-minute presentation should adhere (more or less) to the following timing breakdown:
+
+Minute 1 — Problem Statement & Motivation: What problem are you solving, and why is it cool?
+
+Minute 2 — Method Explanation: How are you approaching or solving the problem? Explain your methodology clearly.
+
+Minute 3 — Preliminary Results: What have you found or built so far? Highlight early findings or initial outcomes.

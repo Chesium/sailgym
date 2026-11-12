@@ -1,5 +1,7 @@
 # ESE3990 Final Project: Proposal Draft (v0)
 
+> Historical pendulum-first draft. The [SailGym project plan](ESE3990_SailGym_Project_Plan.md) defines the current PPO/SAC/CEM-MPC comparison, milestones, and tasks. Learned-model BPTT is retained there as the final stretch goal.
+
 **Working title:** *Pathwise vs. Likelihood-Ratio Policy Gradients: SuperMimic in Miniature*
 **Stretch:** the same method on a non-differentiable sailing simulator (sailgym)
 **Author:** Shimin Chen · **Date:** 2026-10-30 · **Status:** draft for my own planning, not yet submitted
