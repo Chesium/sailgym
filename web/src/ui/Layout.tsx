@@ -88,6 +88,12 @@ export interface LayoutProps {
    * row keeps its scroll position, everything in it stays reachable the moment
    * the drag ends, and nothing about the layout changes. It is set from
    * `App.tsx`, which is where a drag is already known to be in progress.
+   *
+   * "Nothing about the layout changes" holds only because the row draws **no
+   * scrollbar** (`scrollbar-width: none` below; it still scrolls by wheel and
+   * touch). With a classic scrollbar, hiding the overflow removed it, widened
+   * the row, resized the world view, and put it back on release — a visible
+   * flicker on every press.
    */
   dragging: boolean
   /** Always shown: the status line, the clock, the camera and mode controls. */
@@ -183,12 +189,14 @@ body { overscroll-behavior: none; }
   overflow: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  scrollbar-width: none;
   display: flex;
   gap: 12px;
   align-items: flex-start;
   flex-wrap: wrap;
   align-content: flex-start;
 }
+.sg-main::-webkit-scrollbar { display: none; }
 .sg-world { flex: 1 1 260px; min-width: 0; }
 .sg-debug {
   display: grid;

@@ -45,25 +45,76 @@ test.describe('render', () => {
     expect(await grid.getAttribute('transform')).toContain('rotate')
   })
 
-  test('the wheel zooms and reset camera restores it', async ({ page }) => {
+  test('the zoom buttons zoom and reset camera restores it', async ({ page }) => {
     await gotoApp(page)
-    const view = page.getByTestId('world-view')
     const grid = page.getByTestId('world-grid')
 
     const scaleOf = (transform: string | null) => {
       const m = /scale\((-?[\d.]+)/.exec(transform ?? '')
       return m === null ? NaN : Number(m[1])
     }
+    const scale = async () => scaleOf(await grid.getAttribute('transform'))
 
-    const before = scaleOf(await grid.getAttribute('transform'))
-    await view.hover()
-    await page.mouse.wheel(0, -600)
-    await page.waitForTimeout(200)
-    const zoomed = scaleOf(await grid.getAttribute('transform'))
-    expect(zoomed).toBeGreaterThan(before)
+    const before = await scale()
+    await page.getByTestId('zoom-in-coarse').click()
+    await expect.poll(scale).toBeCloseTo(before * 2, 6)
+    await page.getByTestId('zoom-in-fine').click()
+    await expect.poll(scale).toBeCloseTo(before * 2 * 1.1, 6)
+    await page.getByTestId('zoom-out-fine').click()
+    await expect.poll(scale).toBeCloseTo(before * 2, 6)
+    await page.getByTestId('zoom-out-coarse').click()
+    await expect.poll(scale).toBeCloseTo(before, 6)
 
+    await page.getByTestId('zoom-in-coarse').click()
     await page.getByTestId('camera-reset').click()
+    await expect.poll(scale).toBeCloseTo(before, 6)
+  })
+
+  test('the wheel scrolls the main row and does not zoom', async ({ page }) => {
+    await gotoApp(page)
+    const grid = page.getByTestId('world-grid')
+    const main = page.getByTestId('layout-main')
+    const before = await grid.getAttribute('transform')
+
+    await page.getByTestId('world-view').hover()
+    await page.mouse.wheel(0, 600)
     await page.waitForTimeout(200)
-    expect(scaleOf(await grid.getAttribute('transform'))).toBeCloseTo(before, 6)
+
+    const scaleOf = (transform: string | null) =>
+      Number(/scale\((-?[\d.]+)/.exec(transform ?? '')?.[1])
+    expect(scaleOf(await grid.getAttribute('transform'))).toBeCloseTo(scaleOf(before), 6)
+    // Only scrollable when the rows below the world overflow it, which they do
+    // at the default test viewport.
+    const { scrollTop, overflowing } = await main.evaluate((e) => ({
+      scrollTop: e.scrollTop,
+      overflowing: e.scrollHeight > e.clientHeight,
+    }))
+    if (overflowing) {
+      expect(scrollTop).toBeGreaterThan(0)
+    }
+  })
+
+  test('the main row draws no scrollbar, so a press does not resize the world', async ({
+    page,
+  }) => {
+    await gotoApp(page)
+    const main = page.getByTestId('layout-main')
+    // Headless browsers hide scrollbars whatever the page asks for, so a
+    // measured gutter is zero either way; the declared style is what a real
+    // window honours.
+    expect(await main.evaluate((e) => getComputedStyle(e).scrollbarWidth)).toBe('none')
+    const gutter = () =>
+      main.evaluate((e) => (e as HTMLElement).offsetWidth - e.clientWidth)
+    expect(await gutter()).toBe(0)
+
+    const view = page.getByTestId('world-view')
+    const width = await view.getAttribute('width')
+    const box = await view.boundingBox()
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+    await page.mouse.down()
+    await expect(page.getByTestId('app-layout')).toHaveAttribute('data-dragging', 'true')
+    expect(await gutter()).toBe(0)
+    expect(await view.getAttribute('width')).toBe(width)
+    await page.mouse.up()
   })
 })

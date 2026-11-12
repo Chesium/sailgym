@@ -52,8 +52,6 @@ export interface BoatSvgProps {
   onPan: (dxPixels: number, dyPixels: number) => void
   /** Raw pointer events for the mainsheet reducer (section 06, task 6.3). */
   onSheet: (ev: SheetEvent) => void
-  /** Wheel zoom; `factor` multiplies the current zoom. */
-  onZoom: (factor: number) => void
 }
 
 /** World-space grid spacing, metres. */
@@ -134,7 +132,6 @@ export function BoatSvg({
   trajectory,
   onPan,
   onSheet,
-  onZoom,
 }: BoatSvgProps) {
   const dragging = useRef<{ x: number; y: number } | null>(null)
   const { width, height } = camera.viewport
@@ -238,8 +235,14 @@ export function BoatSvg({
         onSheet({ type: 'cancel', y: e.clientY, pointerType: e.pointerType })
         dragging.current = null
       }}
-      onWheel={(e) => {
-        onZoom(Math.exp(-e.deltaY / 500))
+      // The wheel is left to the browser, which scrolls the layout's main
+      // row; zoom is the floating buttons of `ui/ZoomControls.tsx`.
+      onMouseDown={(e) => {
+        // A middle press is a pan. Without this the browser also starts its
+        // own autoscroll on the main row, which drags the page under the pan.
+        if (e.button === 1) {
+          e.preventDefault()
+        }
       }}
     >
       <g

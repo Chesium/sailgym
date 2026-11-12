@@ -65,6 +65,7 @@ import { Timeline, type PlaybackSpeed } from './ui/Timeline'
 import { TouchControls } from './ui/TouchControls'
 import { useUiStore, type PracticeAttempt } from './ui/store'
 import { WindReadout } from './ui/WindReadout'
+import { ZoomControls } from './ui/ZoomControls'
 import { ArrowProbe, buildArrows, type ArrowField } from './wind/ArrowOverlay'
 import { DeckOverlay } from './wind/DeckOverlay'
 import { DEBUG_MODE_WIND, SAIL_MODE_WIND, visibleCount } from './wind/particles'
@@ -1187,11 +1188,13 @@ export default function App() {
             const b = camera.screenToWorld({ x: dxPixels, y: dyPixels })
             setPan((p) => ({ x: p.x - (b.x - a.x), y: p.y - (b.y - a.y) }))
           }}
-          onZoom={(factor) => {
-            setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)))
-          }}
         />
       </div>
+      <ZoomControls
+        onZoom={(factor) => {
+          setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)))
+        }}
+      />
       {/* The course, over the boat and under the force overlay. Pointer
           events are off so the mainsheet drag and the camera pan still reach
           the SVG beneath it. */}
@@ -1511,7 +1514,7 @@ export default function App() {
         Drag the pads below to steer and trim, or: A / ← and D / → steer ·{' '}
         <strong>drag down on the boat to haul the mainsheet in, drag up to ease</strong> ·
         Space releases the sheet · P pauses · . single-steps · R resets · M switches mode ·
-        wheel zooms · middle-drag or Shift+drag pans
+        the wheel scrolls the page · the + and − buttons zoom · middle-drag or Shift+drag pans
       </div>
     </>
   )
