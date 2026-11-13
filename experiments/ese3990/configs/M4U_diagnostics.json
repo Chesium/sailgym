@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "status": "FROZEN 2026-11-14 by the coordinator, unchanged from the u_diagnostics.py proposal, before any M4U held-out (test/shift) result was opened. Its hash is recorded in the held-out freeze; no U outcome may change it.",
+  "evidence": "Exact replays of 21 RuleSailor U episodes (M4U/eval nominal + validation, contract 2; identical diagnostics on viz_demo/store_U, contract 1) and 21 smooth-random U episodes, plus the synthetic cases in tests/test_u_diagnostics.py. Tracks and time series with marked events: runs/ese3990/M4U/diag_dev/. Sensitivity on those 42 episodes: tack and failed-tack counts are unchanged for head_to_wind_deg 20-40, way_mps 0.05-0.2 and settle_s 1-4; only smooth-random gybe counts (wobbles dead downwind) move with settle_s. Checked again, before any held-out result, on the 50-episode demonstration store (runs/ese3990/M4U/demos/store, training conditions): tracks of train-s1000-000005/15/24/39 match the counted tacks, failed tacks, gybes (which coincide with RuleSailor's own gybing mode) and irons.",
+  "conventions": "TWA is sailgym-task's true_wind_angle: the FROM direction of the true wind off the bow, positive to starboard, 0 = head to wind (F2). u is body-frame surge, positive forward.",
+  "thresholds": {
+    "head_to_wind_deg": {
+      "value": 30.0,
+      "reason": "Well inside the no-go zone: RuleSailor beats at |TWA| 45-47 deg on U, while its two failed tacks (validation-004/007) peaked at +5 and +12 deg on the new side before falling back."
+    },
+    "way_mps": {
+      "value": 0.1,
+      "reason": "Forward surge below this is no steerage way. In the 19 RuleSailor U episodes without a failed tack, u never drops below 0.14 m/s while |TWA| < 30 deg, so irons time is 0 s; its failed tacks stop and make sternway to -1.5 m/s (26 and 42 s in irons). Surge, not speed, so sternway counts as no way."
+    },
+    "settle_s": {
+      "value": 2.0,
+      "reason": "40 decisions, four smooth-random command holds: separates filling away on a new tack from a swing through 30 deg. Every RuleSailor first tack stays settled >= 14 s before its next tack, and a gate passage settles the final one."
+    }
+  }
+}

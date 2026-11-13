@@ -1,0 +1,181 @@
+{
+ "stores": [
+  "runs/ese3990/M4U/demos/store"
+ ],
+ "episodes": {
+  "test": [
+   "runs/ese3990/M4U/demos/store:ep0000018",
+   "runs/ese3990/M4U/demos/store:ep0000023",
+   "runs/ese3990/M4U/demos/store:ep0000036",
+   "runs/ese3990/M4U/demos/store:ep0000004",
+   "runs/ese3990/M4U/demos/store:ep0000002",
+   "runs/ese3990/M4U/demos/store:ep0000003",
+   "runs/ese3990/M4U/demos/store:ep0000034",
+   "runs/ese3990/M4U/demos/store:ep0000024",
+   "runs/ese3990/M4U/demos/store:ep0000020",
+   "runs/ese3990/M4U/demos/store:ep0000026",
+   "runs/ese3990/M4U/demos/store:ep0000001",
+   "runs/ese3990/M4U/demos/store:ep0000011",
+   "runs/ese3990/M4U/demos/store:ep0000047",
+   "runs/ese3990/M4U/demos/store:ep0000022",
+   "runs/ese3990/M4U/demos/store:ep0000010"
+  ],
+  "train": [
+   "runs/ese3990/M4U/demos/store:ep0000045",
+   "runs/ese3990/M4U/demos/store:ep0000030",
+   "runs/ese3990/M4U/demos/store:ep0000027",
+   "runs/ese3990/M4U/demos/store:ep0000006",
+   "runs/ese3990/M4U/demos/store:ep0000021",
+   "runs/ese3990/M4U/demos/store:ep0000038",
+   "runs/ese3990/M4U/demos/store:ep0000019",
+   "runs/ese3990/M4U/demos/store:ep0000043",
+   "runs/ese3990/M4U/demos/store:ep0000016",
+   "runs/ese3990/M4U/demos/store:ep0000037",
+   "runs/ese3990/M4U/demos/store:ep0000035",
+   "runs/ese3990/M4U/demos/store:ep0000028",
+   "runs/ese3990/M4U/demos/store:ep0000000",
+   "runs/ese3990/M4U/demos/store:ep0000008",
+   "runs/ese3990/M4U/demos/store:ep0000046",
+   "runs/ese3990/M4U/demos/store:ep0000048",
+   "runs/ese3990/M4U/demos/store:ep0000017",
+   "runs/ese3990/M4U/demos/store:ep0000032",
+   "runs/ese3990/M4U/demos/store:ep0000025",
+   "runs/ese3990/M4U/demos/store:ep0000044",
+   "runs/ese3990/M4U/demos/store:ep0000009",
+   "runs/ese3990/M4U/demos/store:ep0000040",
+   "runs/ese3990/M4U/demos/store:ep0000042",
+   "runs/ese3990/M4U/demos/store:ep0000013",
+   "runs/ese3990/M4U/demos/store:ep0000012",
+   "runs/ese3990/M4U/demos/store:ep0000007",
+   "runs/ese3990/M4U/demos/store:ep0000039",
+   "runs/ese3990/M4U/demos/store:ep0000049",
+   "runs/ese3990/M4U/demos/store:ep0000005",
+   "runs/ese3990/M4U/demos/store:ep0000014",
+   "runs/ese3990/M4U/demos/store:ep0000029",
+   "runs/ese3990/M4U/demos/store:ep0000041",
+   "runs/ese3990/M4U/demos/store:ep0000033",
+   "runs/ese3990/M4U/demos/store:ep0000015",
+   "runs/ese3990/M4U/demos/store:ep0000031"
+  ]
+ },
+ "decisions": {
+  "train": 56145,
+  "test": 27317
+ },
+ "features": [
+  "dx_target",
+  "dy_target",
+  "cos_psi",
+  "sin_psi",
+  "phi",
+  "u",
+  "v",
+  "r",
+  "p",
+  "cos_beta",
+  "sin_beta",
+  "beta_dot",
+  "delta_r",
+  "l_sheet",
+  "capsize_pending",
+  "wind_x",
+  "wind_y"
+ ],
+ "modes": [
+  "beating",
+  "fetching",
+  "gybe_settling",
+  "gybing",
+  "recovering",
+  "settling",
+  "tacking"
+ ],
+ "mode_share_test": {
+  "beating": 0.509133506607607,
+  "fetching": 0.1183878171102244,
+  "gybe_settling": 0.0014642896364900977,
+  "gybing": 0.0010982172273675734,
+  "recovering": 0.029285792729801956,
+  "settling": 0.08346450927993557,
+  "tacking": 0.2571658674085734
+ },
+ "scored_modes": [
+  "beating",
+  "fetching",
+  "gybe_settling",
+  "gybing",
+  "recovering",
+  "settling",
+  "tacking"
+ ],
+ "test_share_unseen_in_train": 0.0,
+ "majority": {
+  "accuracy": 0.509133506607607,
+  "balanced_accuracy": 0.14285714285714285,
+  "recall": {
+   "beating": 1.0,
+   "fetching": 0.0,
+   "gybe_settling": 0.0,
+   "gybing": 0.0,
+   "recovering": 0.0,
+   "settling": 0.0,
+   "tacking": 0.0
+  }
+ },
+ "linear": {
+  "train": {
+   "accuracy": 0.7776827856443138,
+   "balanced_accuracy": 0.5478071631985838,
+   "recall": {
+    "beating": 0.9359161876254294,
+    "fetching": 0.7269136475074911,
+    "gybe_settling": 0.0,
+    "gybing": 0.4484848484848485,
+    "recovering": 0.9291666666666667,
+    "settling": 0.11057797164667393,
+    "tacking": 0.683590820458977
+   }
+  },
+  "test": {
+   "accuracy": 0.7078376102793132,
+   "balanced_accuracy": 0.3810993101156872,
+   "recall": {
+    "beating": 0.8877624388840955,
+    "fetching": 0.5875077303648732,
+    "gybe_settling": 0.0,
+    "gybing": 0.0,
+    "recovering": 0.44625,
+    "settling": 0.1074561403508772,
+    "tacking": 0.6387188612099645
+   }
+  }
+ },
+ "mlp_2x64": {
+  "train": {
+   "accuracy": 0.9969899367708611,
+   "balanced_accuracy": 0.9961538372538621,
+   "recall": {
+    "beating": 0.9993197047518623,
+    "fetching": 0.9937346771996731,
+    "gybe_settling": 1.0,
+    "gybing": 0.9939393939393939,
+    "recovering": 0.995,
+    "settling": 0.9973827699018538,
+    "tacking": 0.9937003149842508
+   }
+  },
+  "test": {
+   "accuracy": 0.8462129809276275,
+   "balanced_accuracy": 0.8185902232506527,
+   "recall": {
+    "beating": 0.9090451538682772,
+    "fetching": 0.7983920841063699,
+    "gybe_settling": 0.95,
+    "gybing": 0.8666666666666667,
+    "recovering": 0.605,
+    "settling": 0.8228070175438597,
+    "tacking": 0.778220640569395
+   }
+  }
+ }
+}

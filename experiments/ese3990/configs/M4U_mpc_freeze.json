@@ -1,0 +1,172 @@
+{
+  "selection": "most validation finishes, then lower p50 latency, then setting name",
+  "setting": "H160_K32",
+  "config": {
+    "horizon": 160,
+    "candidates": 32,
+    "iterations": 3,
+    "block_s": 0.5,
+    "initial_std": 0.6,
+    "min_std": 0.1
+  },
+  "search_seeds": [
+    0,
+    1,
+    2
+  ],
+  "study": "runs/ese3990/M4U/mpc",
+  "privilege": "known-model planning with exact episode branches",
+  "tail_value": 0,
+  "validation_summary": {
+    "setting": "H160_K32",
+    "config": {
+      "horizon": 160,
+      "candidates": 32,
+      "iterations": 3,
+      "block_s": 0.5,
+      "initial_std": 0.6,
+      "min_std": 0.1
+    },
+    "episodes": 60,
+    "finished": 60,
+    "success_rate": 1.0,
+    "outcome_counts": {
+      "finished": 60
+    },
+    "finish_time_s_given_success": {
+      "mean": 48.29233333333959,
+      "min": 45.27500000000471,
+      "max": 51.855000000008076
+    },
+    "peak_heel_deg_max": 49.159819929578774,
+    "release_requests_overridden": 0,
+    "real_decisions": 57980,
+    "real_physics_steps": 579508,
+    "hypothetical_physics_steps": 8373053988,
+    "rollout_calls": 173940,
+    "candidate_rollouts": 5566080,
+    "wall_s": 11284.326224554097,
+    "latency_ms": {
+      "p50": 193.27368563972414,
+      "p95": 298.0214318609795,
+      "max": 530.4689928889275
+    },
+    "deadline_misses_50ms": 55877,
+    "deadline_miss_rate": 0.9637288720248361,
+    "per_search_seed": {
+      "0": {
+        "episodes": 20,
+        "finished": 20,
+        "success_rate": 1.0,
+        "outcome_counts": {
+          "finished": 20
+        },
+        "finish_time_s_given_success": {
+          "mean": 48.48150000000635,
+          "min": 46.54000000000536,
+          "max": 51.08000000000768
+        },
+        "peak_heel_deg_max": 45.61088766711148,
+        "release_requests_overridden": 0,
+        "real_decisions": 19401,
+        "real_physics_steps": 193926,
+        "hypothetical_physics_steps": 2802941194,
+        "rollout_calls": 58203,
+        "candidate_rollouts": 1862496,
+        "wall_s": 3803.355578402523,
+        "latency_ms": {
+          "p50": 194.83060808852315,
+          "p95": 298.3458370435983,
+          "max": 530.4689928889275
+        },
+        "deadline_misses_50ms": 18717,
+        "deadline_miss_rate": 0.964744085356425
+      },
+      "1": {
+        "episodes": 20,
+        "finished": 20,
+        "success_rate": 1.0,
+        "outcome_counts": {
+          "finished": 20
+        },
+        "finish_time_s_given_success": {
+          "mean": 48.29350000000626,
+          "min": 45.27500000000471,
+          "max": 51.855000000008076
+        },
+        "peak_heel_deg_max": 45.8261458959309,
+        "release_requests_overridden": 0,
+        "real_decisions": 19329,
+        "real_physics_steps": 193174,
+        "hypothetical_physics_steps": 2791558685,
+        "rollout_calls": 57987,
+        "candidate_rollouts": 1855584,
+        "wall_s": 3725.582000783179,
+        "latency_ms": {
+          "p50": 190.96000283025205,
+          "p95": 297.0562126953155,
+          "max": 528.6408099345863
+        },
+        "deadline_misses_50ms": 18619,
+        "deadline_miss_rate": 0.9632676289513167
+      },
+      "2": {
+        "episodes": 20,
+        "finished": 20,
+        "success_rate": 1.0,
+        "outcome_counts": {
+          "finished": 20
+        },
+        "finish_time_s_given_success": {
+          "mean": 48.10200000000616,
+          "min": 45.34000000000474,
+          "max": 51.5100000000079
+        },
+        "peak_heel_deg_max": 49.159819929578774,
+        "release_requests_overridden": 0,
+        "real_decisions": 19250,
+        "real_physics_steps": 192408,
+        "hypothetical_physics_steps": 2778554109,
+        "rollout_calls": 57750,
+        "candidate_rollouts": 1848000,
+        "wall_s": 3755.3886453683954,
+        "latency_ms": {
+          "p50": 194.12052049301565,
+          "p95": 298.34643807262177,
+          "max": 491.07138509862125
+        },
+        "deadline_misses_50ms": 18541,
+        "deadline_miss_rate": 0.9631688311688311
+      }
+    },
+    "mean_return": 9.902595200982548,
+    "failures": []
+  },
+  "task": "U",
+  "label": "offline, non-real-time",
+  "contract_version": 2,
+  "contract_amendment_sha256": {
+    "2": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac"
+  },
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "sources_sha256": {
+    "experiments/ese3990/mpc.py": "d988e65d1ca852596721c3a02d5538c5508f600b3697999972c9b4b26995f8ef",
+    "experiments/ese3990/mpc_study.py": "9f6cfc0979f7a0fbd8d3c665317db22208237c0214aa46df68d7231c9f287e34",
+    "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+    "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+    "crates/sailgym-py/src/env.rs": "748eed5c2a8125064c5605356aea4f8925d22520bec63a9526816db7aca98eb7",
+    "crates/sailgym-env/src/episode.rs": "bb1b80ade91af2c90ed8bc1644cea65351c369f81682f9f7a9f2ee41ac0c082d"
+  }
+}

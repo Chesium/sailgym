@@ -166,3 +166,10 @@ def test_select_checkpoint_prefers_finished_then_return_then_earliest():
     curve = [row(1, 0, 5.0), row(2, 20, 10.0), row(3, 20, 10.5), row(4, 20, 10.5)]
     assert select_checkpoint(curve)["decisions"] == 3
     assert select_checkpoint(curve[:2])["decisions"] == 2
+
+
+def test_training_refuses_a_last_rollout_shorter_than_a_minibatch(tmp_path):
+    cfg = {**TINY, "decisions": 600 + 600 + 199}  # last rollout: 199 < 200
+    with pytest.raises(ValueError, match="shorter than one minibatch"):
+        train.train(0, tmp_path / "run", cfg)
+    assert not (tmp_path / "run").exists()

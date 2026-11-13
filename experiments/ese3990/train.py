@@ -8,13 +8,17 @@ Usage::
         --decisions 100000 --checkpoints 10000,25000,50000,75000,100000 \
         --out runs/ese3990/ppo/R_pilot_s0 [--learner sac]
 
+M4U: ``--task U`` selects the U settings; ``--demos <store> --demos-sha256
+<hash>`` turns SAC into SAC + demonstrations and PPO into PPO + BC.
+
 A run directory holds ``config.json``, ``metrics.jsonl`` (one line per PPO
 update), ``curve.jsonl`` (one line per checkpoint: validation outcomes),
 ``ckpt/<decisions>.{npz,json}`` and ``store/`` — every real episode the run
 touched (calibration, training, checkpoint evaluations), replayable with
-``viz/show.py`` (plan §10).
+``viz/show.py`` (plan §10). PPO + BC adds ``bc.jsonl`` (one line per epoch).
 
-The budget counts **every real decision**, calibration included (plan §4.5).
+The budget counts **every real decision**, calibration included (plan §4.5),
+and any demonstrations (M4U).
 """
 
 from __future__ import annotations
@@ -26,6 +30,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import demos
 import jax
 import numpy as np
 import ppo
@@ -81,6 +86,24 @@ SAC_CONFIG: dict[str, Any] = {
     "alpha0": 0.2,
     "target_entropy": -2.0,  # H_min = −dim(a), on the squashed actions
     "log_every": 2048,  # decisions per metrics.jsonl row (PPO: one per rollout)
+}
+# M4U (plan §6): U changes only these M2-freeze settings; its γ = 0.99975 is
+# the task contract's (configs/tasks_v2.json). Checkpoint 0 is "initial": it
+# is saved as soon as calibration and any demonstrations/BC are charged, i.e.
+# at 10k decisions from scratch and 10k + D in an expert-data arm.
+U_SCHEDULE: dict[str, Any] = {
+    "task": "U",
+    "decisions": 4_000_000,
+    "checkpoints": [0, 400_000, 1_000_000, 2_000_000, 3_000_000, 4_000_000],
+}
+U_CONFIG = {**CONFIG, **U_SCHEDULE, "arm": "ppo"}
+U_SAC_CONFIG = {**SAC_CONFIG, **U_SCHEDULE, "replay": 400_000, "arm": "sac"}
+# What an expert-data arm adds to its from-scratch config (plan §6, M4U). The
+# SAC minibatch becomes half demonstrations, half online; BC uses PPO's Adam
+# lr and gradient clip with its own optimizer state.
+DEMO_ARMS: dict[str, dict[str, Any]] = {
+    "sac": {"arm": "sac_demo"},
+    "ppo": {"arm": "ppo_bc", "bc_epochs": 20, "bc_minibatch": 256},
 }
 PROBE_IDS = ("nominal", *[c.id for c in load_manifest("validation")[:5]])
 """The probe set (plan §10.2): nominal plus the first 5 validation documents."""
@@ -204,7 +227,15 @@ def checkpoint(out, task, writer, policy_cls, params, meta) -> None:
     )
 
 
-def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
+def train(
+    seed: int, out: Path, cfg: dict[str, Any], demo: dict[str, np.ndarray] | None = None
+) -> Path:
+    """PPO; with ``demo`` (``demos.load``), PPO + BC: the actor mean and critic
+    are first fitted to the demonstrations, which are charged to the budget."""
+    start = cfg["calibration_decisions"] + (0 if demo is None else len(demo["reward"]))
+    if 0 < (cfg["decisions"] - start) % cfg["rollout"] < cfg["minibatch"]:
+        # ppo.make_update needs one full minibatch; fail now, not after the run.
+        raise ValueError("the budget's last rollout is shorter than one minibatch")
     out.mkdir(parents=True, exist_ok=False)  # never mix or overwrite recorded runs
     task = Task.load(cfg["task"])
     gamma = TransitionReward(task).gamma  # the task's discount, not a PPO knob
@@ -230,6 +261,19 @@ def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
     opt, update = ppo.make_update(cfg)
     opt_state = opt.init(params)
     rng = np.random.default_rng([seed, 1])  # exploration noise and minibatch order
+    if demo is not None:
+        # opt_state is still Adam's zero state, so PPO starts fresh after BC.
+        params, history = ppo.behavior_clone(
+            params,
+            norm_obs(demo["rs"]),
+            demo["action"],
+            demo["return_to_go"],
+            cfg,
+            rng,
+        )
+        for epoch, row in enumerate(history, 1):
+            append_jsonl(out / "bc.jsonl", {"epoch": epoch, **row})
+        decisions += len(demo["reward"])
     actor_mean = jax.jit(lambda p, o: ppo.mlp(p["actor"], o))
     log_prob = jax.jit(ppo.log_prob)
     value = jax.jit(ppo.value)
@@ -332,13 +376,17 @@ def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
     return out
 
 
-def train_sac(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
+def train_sac(
+    seed: int, out: Path, cfg: dict[str, Any], demo: dict[str, np.ndarray] | None = None
+) -> Path:
     """SAC through the same contract as :func:`train`: identical calibration
     data and normalisation, collector, episode store and checkpoint evaluation.
 
     The loop is the outer loop of [A p.158] with one real decision per
     iteration: act with a ~ π_θ(·|s), store the transition, then ``utd``
-    gradient updates on minibatches from replay.
+    gradient updates on minibatches from replay. With ``demo``
+    (``demos.load``), SAC + demonstrations: every minibatch is half
+    demonstrations (``sac.symmetric_sample``), which are charged to the budget.
     """
     out.mkdir(parents=True, exist_ok=False)  # never mix or overwrite recorded runs
     task = Task.load(cfg["task"])
@@ -361,8 +409,8 @@ def train_sac(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
     norm_obs = lambda rs: ppo.normalize(rs, task.target, norm, cfg["norm_clip"])  # noqa: E731
     replay = sac.Replay(cfg["replay"], len(norm["mean"]))
 
-    def store(data):
-        replay.add(
+    def store(buf, data):
+        buf.add(
             obs=norm_obs(data["rs"]),
             act=data["action"][:, :2],  # the executed rates (release dropped)
             reward=data["reward"],
@@ -371,7 +419,11 @@ def train_sac(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
             cont=data["cont"],
         )
 
-    store(calib)  # calibration doubles as the exploration warmup (plan §4.5)
+    store(replay, calib)  # calibration doubles as the exploration warmup (plan §4.5)
+    if demo is not None:
+        demo_buf = sac.Replay(len(demo["reward"]), len(norm["mean"]))
+        store(demo_buf, demo)  # exactly full; never added to again
+        decisions += len(demo["reward"])
 
     key = jax.random.PRNGKey(seed)
     params = sac.init(key, len(norm["mean"]), 2, cfg["hidden"], cfg["alpha0"])
@@ -419,14 +471,18 @@ def train_sac(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
 
         ts = time.perf_counter()
         data, ended = col.run(1, choose)
-        store(data)
+        store(replay, data)
         decisions += 1
         ended_window += ended
         timing["collect_s"] += time.perf_counter() - ts
 
         ts = time.perf_counter()
         for _ in range(cfg["utd"]):
-            state, stats = update(state, replay.sample(rng, cfg["minibatch"]))
+            if demo is None:
+                batch = replay.sample(rng, cfg["minibatch"])
+            else:
+                batch = sac.symmetric_sample(rng, demo_buf, replay, cfg["minibatch"])
+            state, stats = update(state, batch)
             window.append(stats)
         timing["update_s"] += time.perf_counter() - ts
 
@@ -471,6 +527,9 @@ def train_sac(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--learner", choices=["ppo", "sac"], default="ppo")
+    ap.add_argument("--task", choices=["R", "U"], default="R")
+    ap.add_argument("--demos", type=Path, help="expert-data arm: a demos.py store")
+    ap.add_argument("--demos-sha256", help="that store's frozen hash, verified")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--decisions", type=int)
     ap.add_argument("--checkpoints", help="comma-separated decision counts")
@@ -483,7 +542,12 @@ def main(argv: list[str] | None = None) -> int:
         help="override a CONFIG entry, e.g. --set log_std=0.0 (pilots only)",
     )
     args = ap.parse_args(argv)
-    base = SAC_CONFIG if args.learner == "sac" else CONFIG
+    base = {
+        ("ppo", "R"): CONFIG,
+        ("sac", "R"): SAC_CONFIG,
+        ("ppo", "U"): U_CONFIG,
+        ("sac", "U"): U_SAC_CONFIG,
+    }[args.learner, args.task]
     cfg = {**base, "decisions": args.decisions or base["decisions"]}
     if args.checkpoints:
         cfg["checkpoints"] = [int(x) for x in args.checkpoints.split(",")]
@@ -492,7 +556,16 @@ def main(argv: list[str] | None = None) -> int:
         if k not in base:
             raise SystemExit(f"unknown config key {k!r}")
         cfg[k] = json.loads(v)
-    (train_sac if args.learner == "sac" else train)(args.seed, args.out, cfg)
+    demo = None
+    if args.demos:
+        demo = demos.load(args.demos, args.demos_sha256, Task.load(cfg["task"]))
+        cfg.update(DEMO_ARMS[args.learner])
+        cfg["demos"] = {
+            "store": str(args.demos),
+            "sha256": args.demos_sha256,
+            "decisions": len(demo["reward"]),
+        }
+    (train_sac if args.learner == "sac" else train)(args.seed, args.out, cfg, demo)
     return 0
 
 

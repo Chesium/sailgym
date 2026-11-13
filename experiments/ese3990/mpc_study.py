@@ -1,7 +1,10 @@
-"""The five-setting E2 validation sweep (never reads test/shift conditions).
+"""MPC validation sweeps (never read test/shift conditions).
 
-Resumes at completed episodes in --out. Run --probes after the sweep to freeze
-the default and record nominal + five validation probes with planned paths.
+R: the five-setting E2 sweep (M3). U: the M4U H=40/H=160 sweep under the U
+contract. Resumes at completed episodes in --out. ``--jobs N`` runs the
+(setting, search seed) groups as separate processes, each with its own store.
+Run --probes after the sweep to freeze the selected setting and record
+nominal + five validation probes with planned paths.
 """
 
 from __future__ import annotations
@@ -9,16 +12,27 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import multiprocessing
 import os
 import platform
 import time
-from dataclasses import asdict
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import numpy as np
 from evaluate import run_episode, summarize
 from mpc import CEMMPC, CEMConfig
-from sailing import NOMINAL, REPO, RS, Task, load_manifest, run_metadata
+from sailing import (
+    HERE,
+    NOMINAL,
+    REPO,
+    RS,
+    Task,
+    contract_identity,
+    load_manifest,
+    run_metadata,
+)
 from viz.episode_store import EpisodeStore, EpisodeWriter, build_identity
 from viz.replay import replay
 
@@ -31,6 +45,45 @@ SETTINGS = {
 }
 SEEDS = (0, 1, 2)
 SELECTION = "most validation finishes, then lower p50 latency, then setting name"
+# M4U: the frozen M3 default (K=32, I=3, four elites) at H=40 and H=160.
+M3_DEFAULT = CEMConfig(
+    **json.loads((HERE / "configs/M3_freeze.json").read_text())["config"]
+)
+STUDIES = {
+    "R": {"settings": SETTINGS, "freeze": "M3_freeze.json", "prefix": "M3"},
+    "U": {
+        "settings": {
+            "H40_K32": M3_DEFAULT,
+            "H160_K32": replace(M3_DEFAULT, horizon=160),
+        },
+        "freeze": "M4U_mpc_freeze.json",
+        "prefix": "M4U",
+        # Declared before any U outcome: H=160 is never presented as real-time.
+        "labels": {
+            "H40_K32": "real-time target (50 ms); see measured latency",
+            "H160_K32": "offline, non-real-time",
+        },
+    },
+}
+
+
+def select(rows):
+    # Predeclared selection: success, then lower p50 online cost, then name.
+    return min(
+        rows, key=lambda r: (-r["finished"], r["latency_ms"]["p50"], r["setting"])
+    )
+
+
+def load_episodes(out: Path) -> list[dict]:
+    """The serial sweep's episodes.jsonl plus every parallel group's."""
+    paths = [out / "episodes.jsonl", *sorted(out.glob("groups/*/episodes.jsonl"))]
+    return [
+        json.loads(s) for p in paths if p.exists() for s in p.read_text().splitlines()
+    ]
+
+
+def study_task(meta: dict) -> Task:
+    return Task.load(meta["task"], meta.get("contract_version", 1))
 
 
 def cost_summary(episodes):
@@ -60,11 +113,10 @@ def cost_summary(episodes):
 
 
 def report(out: Path):
-    episodes = [
-        json.loads(s) for s in (out / "episodes.jsonl").read_text().splitlines()
-    ]
+    episodes = load_episodes(out)
+    meta = json.loads((out / "study.json").read_text())
     rows = []
-    for name, config in SETTINGS.items():
+    for name, config in STUDIES[meta["task"]]["settings"].items():
         eps = [e for e in episodes if e["setting"] == name]
         if not eps:
             continue
@@ -95,7 +147,7 @@ def report(out: Path):
                 ],
             }
         )
-    result = {"meta": json.loads((out / "study.json").read_text()), "settings": rows}
+    result = {"meta": meta, "settings": rows}
     (out / "summary.json").write_text(json.dumps(result, indent=2))
     return result
 
@@ -103,12 +155,15 @@ def report(out: Path):
 def probes(out: Path):
     result = report(out)
     rows = result["settings"]
-    if len(rows) != 5 or any(r["episodes"] != 60 for r in rows):
-        raise ValueError("finish all 5 × 20 validation conditions × 3 seeds first")
-    # Predeclared selection: success, then lower p50 online cost, then name.
-    chosen = min(
-        rows, key=lambda r: (-r["finished"], r["latency_ms"]["p50"], r["setting"])
-    )
+    study = STUDIES[result["meta"]["task"]]
+    task = study_task(result["meta"])
+    per_setting = len(load_manifest("validation")) * len(SEEDS)
+    if len(rows) != len(study["settings"]) or any(
+        r["episodes"] != per_setting for r in rows
+    ):
+        raise ValueError("finish every setting × validation condition × seed first")
+    chosen = select(rows)
+    labels = study.get("labels", {})
     frozen = {
         "selection": SELECTION,
         "setting": chosen["setting"],
@@ -118,6 +173,8 @@ def probes(out: Path):
         "privilege": "known-model planning with exact episode branches",
         "tail_value": 0,
         "validation_summary": chosen,
+        **({"task": task.name, "label": labels[chosen["setting"]]} if labels else {}),
+        **contract_identity(task),
         "identity": build_identity(),
         "sources_sha256": {
             name: hashlib.sha256((REPO / name).read_bytes()).hexdigest()
@@ -131,8 +188,7 @@ def probes(out: Path):
             )
         },
     }
-    (out / "M3_freeze.json").write_text(json.dumps(frozen, indent=2))
-    task = Task.load("R")
+    (out / study["freeze"]).write_text(json.dumps(frozen, indent=2))
     probe_dir = out / "probes"
     done = (
         {e["condition"]["id"] for e in EpisodeStore(probe_dir).index}
@@ -147,7 +203,7 @@ def probes(out: Path):
             ep = run_episode(
                 task,
                 cond,
-                CEMMPC(0, SETTINGS[chosen["setting"]]),
+                CEMMPC(0, study["settings"][chosen["setting"]]),
                 writer=writer,
                 log_meta={
                     "kind": "probe",
@@ -182,9 +238,62 @@ def probes(out: Path):
     (out / "probe_summary.json").write_text(json.dumps(cost_summary(eps), indent=2))
 
 
+def run_group(out: Path, dest: Path, name: str, seed: int):
+    """One (setting, search seed) over the validation documents, resumably.
+
+    ``dest`` holds this group's episodes.jsonl and store: ``out`` itself when
+    serial, its own directory when it runs beside other processes.
+    """
+    meta = json.loads((out / "study.json").read_text())
+    task = study_task(meta)
+    config = STUDIES[meta["task"]]["settings"][name]
+    done = {
+        e["condition"]["id"]
+        for e in load_episodes(out)
+        if (e["setting"], e["search_seed"]) == (name, seed)
+    }
+    dest.mkdir(parents=True, exist_ok=True)
+    path = dest / "episodes.jsonl"
+    with EpisodeWriter(dest / "episodes", meta, shard_size=1) as writer:
+        for cond in load_manifest("validation"):
+            if cond.id in done:
+                continue
+            t0 = time.perf_counter()
+            ep = run_episode(
+                task,
+                cond,
+                CEMMPC(seed, config),
+                seed=0,
+                writer=writer,
+                log_meta={
+                    "setting": name,
+                    "search_seed": seed,
+                    "manifest": "validation",
+                    "kind": "evaluation",
+                },
+            )
+            ep.update(setting=name, search_seed=seed)
+            with path.open("a") as f:
+                f.write(json.dumps(ep) + "\n")
+            print(
+                json.dumps(
+                    {
+                        "setting": name,
+                        "search_seed": seed,
+                        "condition": cond.id,
+                        "outcome": ep["outcome"],
+                        "wall_s": time.perf_counter() - t0,
+                    }
+                ),
+                flush=True,
+            )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--task", choices=STUDIES, default="R")
+    parser.add_argument("--jobs", type=int, default=1, help="processes")
     parser.add_argument("--probes", action="store_true")
     args = parser.parse_args()
     out = args.out
@@ -192,10 +301,11 @@ def main():
         probes(out)
         return
     out.mkdir(parents=True, exist_ok=True)
-    task = Task.load("R")
+    task = Task.load(args.task)
+    settings = STUDIES[args.task]["settings"]
     meta = run_metadata(
         task,
-        settings={k: asdict(v) for k, v in SETTINGS.items()},
+        settings={k: asdict(v) for k, v in settings.items()},
         search_seeds=SEEDS,
         manifest="validation",
         conditions=[c.to_dict() for c in load_manifest("validation")],
@@ -203,6 +313,8 @@ def main():
         hardware=platform.processor(),
         platform=platform.platform(),
         rayon_threads=os.environ.get("RAYON_NUM_THREADS", "automatic"),
+        # Latency depends on concurrent load, so a resume must keep the split.
+        **({"processes": args.jobs} if args.jobs > 1 else {}),
     )
     header = out / "study.json"
     if header.exists():
@@ -210,52 +322,24 @@ def main():
             raise ValueError("study metadata changed; use a new directory")
     else:
         header.write_text(json.dumps(meta, indent=2))
-    path = out / "episodes.jsonl"
-    done = (
-        {
-            (e["setting"], e["search_seed"], e["condition"]["id"])
-            for e in map(json.loads, path.read_text().splitlines())
-        }
-        if path.exists()
-        else set()
-    )
-    with EpisodeWriter(out / "episodes", meta, shard_size=1) as writer:
-        for name, config in SETTINGS.items():
-            for seed in SEEDS:
-                for cond in load_manifest("validation"):
-                    key = (name, seed, cond.id)
-                    if key in done:
-                        continue
-                    t0 = time.perf_counter()
-                    ep = run_episode(
-                        task,
-                        cond,
-                        CEMMPC(seed, config),
-                        seed=0,
-                        writer=writer,
-                        log_meta={
-                            "setting": name,
-                            "search_seed": seed,
-                            "manifest": "validation",
-                            "kind": "evaluation",
-                        },
-                    )
-                    ep.update(setting=name, search_seed=seed)
-                    with path.open("a") as f:
-                        f.write(json.dumps(ep) + "\n")
-                    print(
-                        json.dumps(
-                            {
-                                "setting": name,
-                                "search_seed": seed,
-                                "condition": cond.id,
-                                "outcome": ep["outcome"],
-                                "wall_s": time.perf_counter() - t0,
-                            }
-                        ),
-                        flush=True,
-                    )
+    groups = [(name, seed) for name in settings for seed in SEEDS]
+    if args.jobs == 1:
+        for name, seed in groups:
+            run_group(out, out, name, seed)
             report(out)
+    else:
+        # Longest horizons first; K=32 caps each group's Rayon fan-out.
+        groups.sort(key=lambda g: -settings[g[0]].horizon)
+        spawn = multiprocessing.get_context("spawn")
+        with ProcessPoolExecutor(args.jobs, mp_context=spawn) as ex:
+            list(
+                ex.map(
+                    run_group,
+                    [out] * len(groups),
+                    [out / "groups" / f"{n}_s{s}" for n, s in groups],
+                    *zip(*groups, strict=True),
+                )
+            )
     report(out)
 
 

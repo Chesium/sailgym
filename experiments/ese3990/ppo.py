@@ -285,6 +285,60 @@ def make_update(cfg: dict[str, Any]):
 
 
 # ---------------------------------------------------------------------------
+# Behaviour-cloning initialisation: M4U's PPO + BC arm (plan §6, M4U)
+# ---------------------------------------------------------------------------
+
+
+def bc_loss(nets: dict[str, Any], batch: dict[str, jax.Array]):
+    """MSE of μ_θ(s) to the demonstrated pre-squash action, plus MSE of V_w(s)
+    to the demonstrated discounted return-to-go."""
+    l_pi = jnp.mean((mlp(nets["actor"], batch["obs"]) - batch["u"]) ** 2)
+    l_v = jnp.mean((mlp(nets["critic"], batch["obs"])[..., 0] - batch["ret"]) ** 2)
+    return l_pi + l_v, {"bc_loss": l_pi + l_v, "bc_actor": l_pi, "bc_value": l_v}
+
+
+def behavior_clone(
+    params: dict[str, Any],
+    obs: np.ndarray,
+    action: np.ndarray,
+    ret: np.ndarray,
+    cfg: dict[str, Any],
+    rng: np.random.Generator,
+) -> tuple[dict[str, Any], list[dict[str, float]]]:
+    """Fit the actor mean to atanh(clip(a, ±0.99)) and the critic to ``ret``.
+
+    ``bc_epochs`` epochs of ``bc_minibatch`` minibatches with a fresh Adam
+    (PPO's lr and gradient-norm clip). log σ is not part of the fitted tree,
+    so it keeps its initial value. Returns the parameters and the mean losses
+    of each epoch.
+    """
+    nets = {"actor": params["actor"], "critic": params["critic"]}
+    opt = make_optimizer(cfg)
+    opt_state = opt.init(nets)
+
+    @jax.jit
+    def step(nets, opt_state, batch):
+        (_, stats), grads = jax.value_and_grad(bc_loss, has_aux=True)(nets, batch)
+        updates, opt_state = opt.update(grads, opt_state, nets)
+        return optax.apply_updates(nets, updates), opt_state, stats
+
+    # ±0.99 keeps the target finite where RuleSailor saturates a rate.
+    u = np.arctanh(np.clip(action, -0.99, 0.99)).astype(np.float32)
+    data = {"obs": obs, "u": u, "ret": np.asarray(ret, np.float32)}
+    n, mb = len(obs), cfg["bc_minibatch"]
+    history = []
+    for _ in range(cfg["bc_epochs"]):
+        perm = rng.permutation(n)
+        rows = []
+        for i in range(0, n - mb + 1, mb):
+            batch = {k: v[perm[i : i + mb]] for k, v in data.items()}
+            nets, opt_state, stats = step(nets, opt_state, batch)
+            rows.append(stats)
+        history.append({k: float(np.mean([s[k] for s in rows])) for k in rows[0]})
+    return {**params, **nets}, history
+
+
+# ---------------------------------------------------------------------------
 # Checkpoints and the evaluation controller
 # ---------------------------------------------------------------------------
 

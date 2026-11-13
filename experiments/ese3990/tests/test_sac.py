@@ -181,12 +181,14 @@ TINY = {
 }
 
 
-@pytest.mark.parametrize("learner", [train.train, train.train_sac])
-def test_training_refuses_to_overwrite_an_existing_run(tmp_path, learner):
+@pytest.mark.parametrize(
+    ("learner", "cfg"), [(train.train, train.CONFIG), (train.train_sac, TINY)]
+)
+def test_training_refuses_to_overwrite_an_existing_run(tmp_path, learner, cfg):
     marker = tmp_path / "config.json"
     marker.write_text("existing run")
     with pytest.raises(FileExistsError):
-        learner(0, tmp_path, TINY)
+        learner(0, tmp_path, cfg)
     assert marker.read_text() == "existing run"
 
 

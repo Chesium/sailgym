@@ -1,0 +1,11 @@
+{
+  "contract_version": 2,
+  "amends": "tasks.json (contract_version 1). tasks.json stays byte-identical: its SHA-256 is replay identity for every existing store.",
+  "status": "frozen 2026-11-14 for M4U, before any U learning run (docs/ese3990/ESE3990_SailGym_Project_Plan.md, M4U)",
+  "tasks": {
+    "U": {
+      "reward": { "gamma": 0.99975 },
+      "reason": "Keeps R's ratio of effective horizon to budget: 1/(1-gamma) = 4,000 decisions = 200 s against U's 180 s budget (R: 1,000 decisions = 50 s against 45 s). At 0.999 a +10 finish at RuleSailor's typical 70-90 s is worth only 1.7-2.5 from the start; at 0.99975 it is worth 6.4-7.0."
+    }
+  }
+}

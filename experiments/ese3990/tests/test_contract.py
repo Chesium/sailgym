@@ -215,3 +215,60 @@ def test_termination_is_normalised_with_reason() -> None:
     assert rec.next_rs[RS["capsized"]] == 1.0
     assert rec.next_rs[RS["capsize_pending"]] > 0.0
     assert rec.reward < -9.0  # the failure penalty dominates
+
+
+# -- M4U contract version ------------------------------------------------------
+
+# The committed M0 file, as recorded in every M0–M4 store's run.json.
+TASKS_JSON_SHA256_V1 = (
+    "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0"
+)
+
+
+def test_contract_1_is_unchanged_and_r_stays_on_it(task_r: Task) -> None:
+    """tasks.json is replay identity for every existing store (M4U)."""
+    from sailing import TASKS_PATH, contract_identity, run_metadata, sha256_text
+
+    assert sha256_text(TASKS_PATH.read_text()) == TASKS_JSON_SHA256_V1
+    assert task_r.contract_version == 1
+    assert TransitionReward(task_r).gamma == 0.999
+    assert contract_identity(task_r) == {}
+    assert "contract_version" not in run_metadata(task_r)
+
+
+def test_u_contract_2_reward_hand_calculated() -> None:
+    """One U transition at γ = 0.99975; contract 1 U keeps 0.999."""
+    u = Task.load("U")
+    assert u.contract_version == 2
+    rf = TransitionReward(u)
+    assert rf.gamma == 0.99975
+    prev, nxt = rs_at(0.0, 0.0), rs_at(0.0, 1.0)  # d: 40 -> 39 from (0, 40)
+    expected = -0.05 / 30.0 + 0.99975 * (-39.0 / 30.0) + 40.0 / 30.0
+    assert rf(prev, nxt, RUNNING, 10) == pytest.approx(expected, abs=1e-12)
+    u1 = Task.load("U", 1)
+    assert TransitionReward(u1).gamma == 0.999
+    # Only the reward constant differs between the two U contracts.
+    assert {k: v for k, v in u1.reward.items() if k != "gamma"} == {
+        k: v for k, v in u.reward.items() if k != "gamma"
+    }
+    assert (u1.target, u1.max_steps, u1.bounds) == (u.target, u.max_steps, u.bounds)
+
+
+def test_u_episodes_record_and_replay_their_contract(tmp_path) -> None:
+    from baselines import SmoothRandom
+    from evaluate import run_episode
+    from viz.episode_store import EpisodeStore, EpisodeWriter
+    from viz.replay import replay
+
+    short = [Task.load("U", 1), Task.load("U", 2)]
+    with EpisodeWriter(tmp_path) as w:
+        for t in short:
+            run_episode(t, NOMINAL, SmoothRandom(3), writer=w)
+    store = EpisodeStore(tmp_path)
+    e1, e2 = store.index
+    assert "contract_version" not in e1 and e2["contract_version"] == 2
+    assert e1["return"] != e2["return"]  # same actions, different γ
+    for e, t in zip((e1, e2), short, strict=True):
+        # A task of the other contract is ignored: the episode's own one is used.
+        other = short[1] if t is short[0] else short[0]
+        assert replay(store.load(e), store.identity, other).exact

@@ -1,0 +1,215 @@
+{
+  "frozen_at_utc": "2026-11-13T16:42:56.563555+00:00",
+  "milestone": "M4U (docs/ese3990/ESE3990_SailGym_Project_Plan.md \u00a76): written before any of the 12 main U learner runs",
+  "task": "U",
+  "contract_version": 2,
+  "contract_amendment_sha256": {
+    "2": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac"
+  },
+  "gamma": 0.99975,
+  "training_seeds": [
+    0,
+    1,
+    2
+  ],
+  "arms": {
+    "ppo": "from scratch (primary comparison)",
+    "sac": "from scratch (primary comparison)",
+    "sac_demo": "expert-data arm: separate never-evicted demonstration buffer; every minibatch 128 demonstration + 128 online rows (RLPD symmetric sampling only)",
+    "ppo_bc": "expert-data arm: actor mean MSE to atanh(clip(a, \u00b10.99)) and value MSE to discounted returns-to-go, 20 epochs, minibatch 256, own Adam 3e-4 with PPO's 1.0 gradient clip, log_std fixed at -0.5; then frozen PPO with a fresh optimizer",
+    "bc_only": "ppo_bc's initial checkpoint; no extra run"
+  },
+  "configs": {
+    "ppo": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "rollout": 2048,
+      "minibatch": 256,
+      "epochs": 4,
+      "clip": 0.2,
+      "lam": 0.95,
+      "lr": 0.0003,
+      "max_grad_norm": 1.0,
+      "vf_coef": 0.5,
+      "ent_coef": 0.001,
+      "log_std": -0.5,
+      "hidden": 64,
+      "arm": "ppo"
+    },
+    "sac": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 400000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048,
+      "arm": "sac"
+    },
+    "sac_demo": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 400000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048,
+      "arm": "sac_demo",
+      "demos": {
+        "store": "runs/ese3990/M4U/demos/store",
+        "sha256": "69575c914fdee66e0abac8fc1e1fca0c5fbbe56f0465d2e554f8d2a47a26b85b",
+        "decisions": 83462
+      }
+    },
+    "ppo_bc": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "rollout": 2048,
+      "minibatch": 256,
+      "epochs": 4,
+      "clip": 0.2,
+      "lam": 0.95,
+      "lr": 0.0003,
+      "max_grad_norm": 1.0,
+      "vf_coef": 0.5,
+      "ent_coef": 0.001,
+      "log_std": -0.5,
+      "hidden": 64,
+      "arm": "ppo_bc",
+      "bc_epochs": 20,
+      "bc_minibatch": 256,
+      "demos": {
+        "store": "runs/ese3990/M4U/demos/store",
+        "sha256": "69575c914fdee66e0abac8fc1e1fca0c5fbbe56f0465d2e554f8d2a47a26b85b",
+        "decisions": 83462
+      }
+    }
+  },
+  "run_dirs": {
+    "ppo": [
+      "runs/ese3990/M4U/main/ppo_U_s0",
+      "runs/ese3990/M4U/main/ppo_U_s1",
+      "runs/ese3990/M4U/main/ppo_U_s2"
+    ],
+    "sac": [
+      "runs/ese3990/M4U/main/sac_U_s0",
+      "runs/ese3990/M4U/main/sac_U_s1",
+      "runs/ese3990/M4U/main/sac_U_s2"
+    ],
+    "sac_demo": [
+      "runs/ese3990/M4U/main/sac_demo_U_s0",
+      "runs/ese3990/M4U/main/sac_demo_U_s1",
+      "runs/ese3990/M4U/main/sac_demo_U_s2"
+    ],
+    "ppo_bc": [
+      "runs/ese3990/M4U/main/ppo_bc_U_s0",
+      "runs/ese3990/M4U/main/ppo_bc_U_s1",
+      "runs/ese3990/M4U/main/ppo_bc_U_s2"
+    ]
+  },
+  "demonstrations": {
+    "store": "runs/ese3990/M4U/demos/store",
+    "sha256": "69575c914fdee66e0abac8fc1e1fca0c5fbbe56f0465d2e554f8d2a47a26b85b",
+    "decisions": 83462,
+    "episodes": 50,
+    "outcomes": {
+      "mark_missed": 7,
+      "finished": 37,
+      "truncated": 6
+    },
+    "conditions": "TrainingSampler(1000): training distribution, excludes validation/test/shift documents",
+    "env_seeds": "episode index 0..49",
+    "controller": "RuleSailor, release forced off",
+    "note": "D = 83,462 decisions, below the plan's \u224891k estimate (10 episodes measured 18,253). Charged to each expert-data run's 4M budget. RuleSailor's tack recipe (1,344-script sweep, docs/v2/practice-validation.md) is uncounted human prior work."
+  },
+  "checkpoints": "0 = initial (after calibration and any demonstrations/BC: 10,000 from scratch, 93,462 in an expert-data arm), then 400k, 1M, 2M, 3M, 4M requested; PPO saves at the next 2,048-decision rollout boundary, SAC exactly",
+  "checkpoint_selection": "Most validation finishes, then greatest validation mean return, then earliest checkpoint. Report final checkpoint too.",
+  "unchanged_from_M2_freeze": "networks, optimizer, PPO/SAC hyperparameters, 10k smooth-random calibration and normalization, release off, condition manifests, checkpoint-selection rule",
+  "smoke_runs": "runs/ese3990/M4U/smoke/<arm>_s100 (pilot seed 100; plumbing and runtime only, not tuning, not results)",
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "source_sha256": {
+    "experiments/ese3990/train.py": "760c2ed64c8b067555e7c9a9ada9e4db72e6b6b708b507fc1fb1df05a300a503",
+    "experiments/ese3990/sac.py": "6d43b6a1157436dab2edcdc9b400e706d14ca3ae512182830b4219c5a35c21f6",
+    "experiments/ese3990/ppo.py": "b383dc76fd3c280e04d3588c9cb8fe27839ed1b7dbea0f0c7a723e9417a093f2",
+    "experiments/ese3990/demos.py": "670e611f7751189abf23a25668ed190929762504617669419c3d8d08b3f4e204",
+    "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+    "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+    "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+    "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab",
+    "experiments/ese3990/viz/episode_store.py": "f64bc6f29675f05bb521ad8e639a027ef4fc47c8867faf6ec64f9426426d87d8",
+    "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf",
+    "experiments/ese3990/configs/tasks.json": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "experiments/ese3990/configs/tasks_v2.json": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac",
+    "uv.lock": "0bdf29ce2a8c87806e4e5a1b85d5daa8c06e0454fd3e29942168bb6e87d17a5a"
+  }
+}

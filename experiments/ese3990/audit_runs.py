@@ -42,7 +42,9 @@ def audit(run: Path) -> dict:
     for episode in store.index:
         counts[episode["kind"]] += episode["decisions"]
     assert counts["calibration"] == cfg["calibration_decisions"]
-    assert counts["training"] + counts["calibration"] == cfg["decisions"]
+    # M4U expert-data arms charge their demonstrations to the budget too.
+    demos = cfg.get("demos", {}).get("decisions", 0)
+    assert counts["training"] + counts["calibration"] + demos == cfg["decisions"]
     assert counts.keys() <= {"calibration", "training", "probe", "validation"}
     validation_ids = {c.id for c in load_manifest("validation")}
     for row in curve:

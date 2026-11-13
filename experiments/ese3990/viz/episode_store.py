@@ -139,6 +139,12 @@ class EpisodeRecorder:
             "action_dtype": self.dtype_name,
             "pose_hz": POSE_HZ,
             "pose_every_decisions": self.pose_every,
+            # Only an amended contract is recorded; absent means contract 1.
+            **(
+                {"contract_version": env.task.contract_version}
+                if env.task.contract_version != 1
+                else {}
+            ),
             **meta,
         }
         plans = np.stack(self._plans) if self._plans else None

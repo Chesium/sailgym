@@ -60,7 +60,11 @@ def replay(
             "store identity differs from this build: " + "; ".join(probs)
         )
     m = log.meta
-    task = task or Task.load(m["task"])
+    version = m.get(
+        "contract_version", 1
+    )  # the contract the episode was recorded under
+    if task is None or task.contract_version != version:
+        task = Task.load(m["task"], version)
     env = TaskEnv(task, Condition.from_dict(m["condition"]), m["seed"])
     states = [env.reset()]
     ret = 0.0
@@ -93,7 +97,7 @@ def pose_only(log: EpisodeLog) -> Trajectory:
     for j, f in enumerate(POSE_FIELDS):
         s[:, RS[f]] = log.pose[:, j]
     m = log.meta
-    task = Task.load(m["task"])
+    task = Task.load(m["task"], m.get("contract_version", 1))
     t = np.arange(len(log.pose)) * m["pose_every_decisions"] * task.decision_dt
     # The last pose is the terminal state, which can fall between pose ticks.
     t[-1] = m["physics_steps"] * task.dt

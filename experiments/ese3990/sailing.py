@@ -27,6 +27,9 @@ import sailgym_core
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 TASKS_PATH = HERE / "configs" / "tasks.json"
+# Contract amendments, by version. tasks.json is contract 1 and never changes,
+# because its hash is replay identity for every existing store (M4U).
+AMENDMENT_PATHS = {2: HERE / "configs" / "tasks_v2.json"}
 CONDITIONS_DIR = HERE / "configs" / "conditions"
 
 FEATURE_VERSION = 1
@@ -46,8 +49,37 @@ RUNNING, FINISHED, TERMINATED, TRUNCATED = (
 # ---------------------------------------------------------------------------
 
 
-def load_tasks() -> dict[str, Any]:
-    return json.loads(TASKS_PATH.read_text())
+def load_tasks(version: int = 1) -> dict[str, Any]:
+    """``tasks.json`` with amendments 2..``version`` applied.
+
+    An amendment may only override a task's reward constants; each task's
+    ``reward`` is the global block merged with its own overrides.
+    """
+    cfg = json.loads(TASKS_PATH.read_text())
+    for t in cfg["tasks"].values():
+        t["reward"] = dict(cfg["reward"])
+    for v in range(2, version + 1):
+        amend = json.loads(AMENDMENT_PATHS[v].read_text())
+        assert amend["contract_version"] == v, AMENDMENT_PATHS[v]
+        for name, a in amend["tasks"].items():
+            cfg["tasks"][name]["reward"].update(a["reward"])
+    cfg["contract_version"] = version
+    return cfg
+
+
+def current_contract(task_name: str) -> int:
+    """The latest contract version that amends ``task_name`` (1 if none).
+
+    R stays at 1, so its stores, checkpoints and reports are unchanged.
+    """
+    return max(
+        [1]
+        + [
+            v
+            for v, p in AMENDMENT_PATHS.items()
+            if task_name in json.loads(p.read_text())["tasks"]
+        ]
+    )
 
 
 @dataclass(frozen=True)
@@ -123,10 +155,17 @@ class Task:
     route_json: str
     dt: float = field(default=0.0)
     max_steps: int = field(default=0)
+    contract_version: int = 1
+    reward: dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
-    def load(name: str) -> Task:
-        cfg = load_tasks()
+    def load(name: str, contract_version: int | None = None) -> Task:
+        """``contract_version`` defaults to the task's current contract; replay
+        passes the version an episode recorded."""
+        version = (
+            current_contract(name) if contract_version is None else contract_version
+        )
+        cfg = load_tasks(version)
         t = cfg["tasks"][name]
         b = cfg["bounds"]
         (target,) = (tuple(p) for p in t["waypoints"])
@@ -142,6 +181,8 @@ class Task:
             bounds=(b["min_x"], b["min_y"], b["max_x"], b["max_y"]),
             cadence=cfg["cadence_physics_steps"],
             route_json=route,
+            contract_version=version,
+            reward=t["reward"],
         )
         # dt from Rust, never typed here; the budget must be a whole number of
         # decisions.
@@ -284,7 +325,7 @@ class TransitionReward:
     """
 
     def __init__(self, task: Task, params: dict[str, Any] | None = None) -> None:
-        p = params if params is not None else load_tasks()["reward"]
+        p = params if params is not None else task.reward
         self.time_scale = float(p["time_scale_s"])
         self.dist_scale = float(p["distance_scale_m"])
         self.finish_bonus = float(p["finish_bonus"])
@@ -507,7 +548,22 @@ def run_metadata(task: Task, **extra: Any) -> dict[str, Any]:
         "max_steps": task.max_steps,
         "bounds": list(task.bounds),
         "route": json.loads(task.route_json),
+        **contract_identity(task),
         **extra,
+    }
+
+
+def contract_identity(task: Task) -> dict[str, Any]:
+    """Contract fields for records of an amended task; empty for contract 1,
+    so every R record keeps its exact M0–M4 form."""
+    if task.contract_version == 1:
+        return {}
+    return {
+        "contract_version": task.contract_version,
+        "contract_amendment_sha256": {
+            str(v): sha256_text(AMENDMENT_PATHS[v].read_text())
+            for v in range(2, task.contract_version + 1)
+        },
     }
 
 

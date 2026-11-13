@@ -93,6 +93,18 @@ class Replay:
         return {k: v[idx] for k, v in self.data.items()}
 
 
+def symmetric_sample(
+    rng: np.random.Generator, demo: Replay, online: Replay, n: int
+) -> dict[str, np.ndarray]:
+    """M4U's SAC + demonstrations: n/2 demonstration rows, then n/2 online rows.
+
+    RLPD's symmetric sampling (Ball et al. 2023) only. ``demo`` is filled once
+    to exactly its capacity and never added to, so nothing in it is evicted.
+    """
+    d, o = demo.sample(rng, n // 2), online.sample(rng, n - n // 2)
+    return {k: np.concatenate([d[k], o[k]]) for k in d}
+
+
 # ---------------------------------------------------------------------------
 # Networks (plan §4.5: 2 × 64 tanh, the same hidden widths as PPO)
 # ---------------------------------------------------------------------------

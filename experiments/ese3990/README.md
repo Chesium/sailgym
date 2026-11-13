@@ -22,6 +22,8 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | File | Role |
 |---|---|
 | `configs/tasks.json` | Tasks R and U, bounds, cadence, action restriction, reward constants |
+| `configs/tasks_v2.json` | M4U contract 2: U's γ = 0.99975. `tasks.json` stays contract 1 (its hash is replay identity); U v2 episodes record `contract_version` and replay under it |
+| `configs/M4U_*.json` | M4U training, MPC and diagnostics-threshold freezes |
 | `configs/conditions/*.json` | Generated condition manifests (validation 20, test 50, shift 20; training sampler spec) |
 | `make_conditions.py` | Deterministic manifest generator; `--check` verifies the committed files |
 | `sailing.py` | Shared contract: `Task`, `Condition`, `ActionAdapter`, `features`, `TransitionReward`, `masks`, `TaskEnv`, `run_metadata` |
@@ -34,6 +36,12 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `mpc_figures.py` | Cost/success and latency figure; predicted plan versus exactly replayed execution |
 | `compare.py` | M4 freeze and resumable nominal/test/shift evaluation of all predeclared checkpoints and frozen references |
 | `comparison_report.py` | Verify frozen inputs, outcome/cost summaries, test learning curves, representative selections and JSON video specs |
+| `demos.py` | M4U demonstrations: 50 RuleSailor U episodes on training conditions, store hash, exact-replay transition loader with returns-to-go |
+| `m4u_compare.py` | M4U held-out freeze and parallel, resumable nominal/test/shift evaluation of every arm's predeclared checkpoints, the selected U MPC and RuleSailor |
+| `m4u_report.py` | Verify M4U frozen inputs; outcome, diagnostics and cost tables; learning curves; video specs |
+| `u_diagnostics.py` | U behaviour from exact replay: tacks, failed tacks, irons, sternway, failure flags, timeout distance |
+| `mode_check.py` | Is RuleSailor's manoeuvre mode predictable from the 17 learner features? |
+| `replay_audit.py` | Replay every episode of one or more stores exactly, in parallel |
 | `viz/compose.py` | Batch static/GIF/MP4 overlays from exact stored-episode selectors; rejects mixed conditions |
 | `train.py` | Learner entry point (`--learner ppo|sac`): calibration and normalization (identical for both), collection (every episode stored), updates, checkpoints and probe/validation evaluation |
 | `plots.py` | Learning curve from runs' `curve.jsonl` |
@@ -45,6 +53,7 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `tests/` | Contract, branch, baseline and viz checks |
 
 M4's generated results and media commands are recorded in its report and specs.
+M4U's are in [`docs/ese3990/M4U_report.md`](../../docs/ese3990/M4U_report.md). PPO + BC runs add `bc.jsonl` (one line per BC epoch).
 
 ## Commands
 
@@ -96,6 +105,22 @@ env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python
 env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
     experiments/ese3990/viz/compose.py docs/ese3990/M4_videos.json \
     --out runs/ese3990/M4/videos
+
+# M4U (U, contract 2): demonstrations, 12 main runs, MPC study, held-out comparison.
+uv run --frozen --no-sync python experiments/ese3990/evaluate.py --task U --controller rule_sailor \
+    --manifest validation --store runs/ese3990/M4U/eval/store_rule_sailor_validation
+runs/ese3990/M4U/main/launch.sh   # the 12 runs frozen in configs/M4U_train_freeze.json
+env -u PYTHONPATH RAYON_NUM_THREADS=4 uv run --frozen --no-sync python \
+    experiments/ese3990/mpc_study.py --task U --jobs 3 --out runs/ese3990/M4U/mpc
+env -u PYTHONPATH RAYON_NUM_THREADS=8 uv run --frozen --no-sync python \
+    experiments/ese3990/mpc_study.py --out runs/ese3990/M4U/mpc --probes
+env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false RAYON_NUM_THREADS=6 \
+    uv run --frozen --no-sync python experiments/ese3990/m4u_compare.py --out runs/ese3990/M4U/heldout \
+    --jobs 6 --thresholds experiments/ese3990/configs/M4U_diagnostics.json
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_audit.py \
+    runs/ese3990/M4U/heldout/store/* --out runs/ese3990/M4U/heldout/replay_audit.json
+env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
+    experiments/ese3990/m4u_report.py runs/ese3990/M4U/heldout --out docs/ese3990
 
 # PPO: a 100k pilot, then evaluate a checkpoint and plot the curve
 uv run --frozen --no-sync python experiments/ese3990/train.py --seed 0 --decisions 100000 \
