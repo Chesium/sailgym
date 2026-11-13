@@ -32,6 +32,7 @@ from sailing import (
     load_manifest,
     run_metadata,
 )
+from viz.episode_store import EpisodeRecorder, EpisodeWriter
 
 
 def run_episode(
@@ -40,10 +41,18 @@ def run_episode(
     controller: Any,
     seed: int = 0,
     keep_trajectory: bool = False,
+    writer: EpisodeWriter | None = None,
+    log_meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """One episode. With ``writer`` it is also logged for replay (plan §10);
+    ``log_meta`` adds fields such as run, kind or checkpoint."""
     env = TaskEnv(task, cond, seed)
     rs0 = env.reset()
     controller.reset(env)
+    recorder = None
+    if writer is not None:
+        recorder = EpisodeRecorder(env, getattr(controller, "action_dtype", "float64"))
+        recorder.start(rs0)
     ret = 0.0
     decisions = 0
     steps = 0
@@ -56,6 +65,8 @@ def run_episode(
     while env.outcome == "running":
         a = controller.act(env)
         rec = env.step(a)
+        if recorder is not None:
+            recorder.step(rec)
         ret += rec.reward
         decisions += 1
         steps += rec.steps
@@ -84,6 +95,14 @@ def run_episode(
     }
     if hasattr(controller, "release_requests"):
         out["release_requests_overridden"] = controller.release_requests
+    if recorder is not None:
+        ident = controller.identity()
+        log = recorder.finish(
+            controller=ident["controller"],
+            controller_identity=ident,
+            **(log_meta or {}),
+        )
+        out["episode_id"] = writer.add(log)
     if keep_trajectory:
         out["trajectory"] = traj
         out["actions"] = actions
@@ -124,12 +143,26 @@ def make_controller(name: str, seed: int) -> Any:
 
 
 def evaluate(
-    task_name: str, controller_name: str, manifest: str, seed: int = 0
+    task_name: str,
+    controller_name: str,
+    manifest: str,
+    seed: int = 0,
+    store: Path | None = None,
 ) -> dict[str, Any]:
     task = Task.load(task_name)
     conds = [NOMINAL] if manifest == "nominal" else load_manifest(manifest)
     ctrl = make_controller(controller_name, seed)
-    eps = [run_episode(task, c, ctrl, seed) for c in conds]
+    writer = None
+    if store is not None:
+        writer = EpisodeWriter(
+            store, {"task": task_name, "controller": controller_name}
+        )
+    meta = {"kind": "evaluation", "manifest": manifest}
+    eps = [
+        run_episode(task, c, ctrl, seed, writer=writer, log_meta=meta) for c in conds
+    ]
+    if writer is not None:
+        writer.close()
     return {
         "meta": run_metadata(
             task, controller=ctrl.identity(), manifest=manifest, evaluation_seed=seed
@@ -148,8 +181,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--manifest", default="nominal")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", type=Path)
+    ap.add_argument("--store", type=Path, help="log episodes for replay (plan §10)")
     args = ap.parse_args(argv)
-    report = evaluate(args.task, args.controller, args.manifest, args.seed)
+    report = evaluate(args.task, args.controller, args.manifest, args.seed, args.store)
     print(json.dumps(report["summary"], indent=2))
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

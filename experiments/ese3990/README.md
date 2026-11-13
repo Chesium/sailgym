@@ -18,9 +18,13 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `sailing.py` | Shared contract: `Task`, `Condition`, `ActionAdapter`, `features`, `TransitionReward`, `masks`, `TaskEnv`, `run_metadata` |
 | `baselines.py` | `SmoothRandom` and `RuleSailorController` (bound Rust RuleSailor, release forced off) |
 | `evaluate.py` | One evaluator for every controller; writes an outcome report |
-| `tests/` | Contract, branch and baseline checks |
+| `viz/episode_store.py` | Episode logs (actions + condition + seed + build identity + checksum + 5 Hz pose) in compressed shards with an `index.jsonl` (plan §10) |
+| `viz/replay.py` | Exact re-simulation of a stored episode, verified against the log; pose-only fallback |
+| `viz/render.py` | Static track figure, time series, and a synced multi-episode gif/mp4 overlay |
+| `viz/show.py` | Command-line entry: select episodes from a store, replay them and render |
+| `tests/` | Contract, branch, baseline and viz checks |
 
-Not yet written (M1+): `ppo.py`, `sac.py`, `mpc.py`, `train.py`, `plots.py`.
+Not yet written (M1+): `ppo.py`, `sac.py`, `mpc.py`, `train.py`, `plots.py`, `viz/compose.py`.
 
 ## Commands
 
@@ -43,9 +47,19 @@ uv run python experiments/ese3990/make_conditions.py --check
 # an outcome report
 uv run python experiments/ese3990/evaluate.py --task R --controller rule_sailor \
     --manifest validation --out runs/ese3990/eval/R_rule_validation.json
+
+# log episodes for replay, then render them (plan §10)
+uv run python experiments/ese3990/evaluate.py --task U --controller rule_sailor \
+    --manifest validation --store runs/ese3990/stores/U_rule
+uv run python experiments/ese3990/viz/show.py runs/ese3990/stores/U_rule \
+    --manifest validation --limit 8 --out runs/ese3990/figs --name U_val \
+    --gif --mp4 --timeseries --speed 6
 ```
 
-`runs/` is gitignored; small summaries go under `docs/ese3990/`.
+`runs/` is gitignored; small summaries go under `docs/ese3990/`. A store
+refuses to mix builds, and replay refuses a different physics build or
+`tasks.json`, because exact replay is only valid on the build that recorded
+the episode. Set `MPLCONFIGDIR` if `~/.cache/matplotlib` is not writable.
 
 ## The contract, in one place
 

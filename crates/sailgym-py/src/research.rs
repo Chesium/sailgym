@@ -107,6 +107,16 @@ pub(crate) fn fill(ep: &Episode, out: &mut [f64]) {
     out[STATE_LEN..].copy_from_slice(&extra);
 }
 
+/// The physics build this extension implements, as JSON
+/// (`sailgym_physics::identity::ModelIdentity`): the model version and the
+/// git tree id of `crates/sailgym-physics/src`, with its `clean`/`dirty`/
+/// `unknown` state. An episode log records it so that a replay on a different
+/// build can be refused.
+#[pyfunction]
+pub fn model_identity() -> PyResult<String> {
+    serde_json::to_string(&sailgym_physics::identity::ModelIdentity::current()).map_err(value_error)
+}
+
 /// The serialized `Route` for an open course through `points` from `start`,
 /// one gate of `2·half_width` per point (`Route::waypoints`). Pass the result
 /// to `Spec(route_json=…)`.

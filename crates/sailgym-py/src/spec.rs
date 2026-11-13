@@ -370,6 +370,15 @@ impl Spec {
         }
     }
 
+    /// The scenario's full F7 parameter catalogue as JSON (`BoatParameters`).
+    /// Read by display code (hull outline, boom length) so no dimension is
+    /// retyped in Python; no Python file computes physics from it.
+    #[getter]
+    fn parameters_json(&self) -> PyResult<String> {
+        let p = self.config.scenario.to_parameters().map_err(value_error)?;
+        serde_json::to_string(&p).map_err(value_error)
+    }
+
     /// The configured route, serialized, or `None` for a free sail.
     #[getter]
     fn route_json(&self) -> PyResult<Option<String>> {

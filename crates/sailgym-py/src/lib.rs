@@ -86,5 +86,6 @@ fn sailgym_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(research::research_state_units, m)?)?;
     m.add_function(wrap_pyfunction!(research::research_state_version, m)?)?;
     m.add_function(wrap_pyfunction!(research::route_waypoints, m)?)?;
+    m.add_function(wrap_pyfunction!(research::model_identity, m)?)?;
     Ok(())
 }

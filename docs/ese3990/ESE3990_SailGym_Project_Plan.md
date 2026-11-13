@@ -103,13 +103,13 @@ Use one experiment reward wrapper with access to the previous and ending state a
 
 Proposed initial contract, to freeze in M0:
 
-\[
+$$
 r_t=-\Delta t_t/30
  +10\,\mathbf1[\mathrm{finished}]
  -10\,\mathbf1[\mathrm{failed}]
  +\gamma\Phi(s_{t+1})-\Phi(s_t),
 \qquad \Phi(s)=-d(s,\mathrm{target})/30,\quad\gamma=0.999.
-\]
+$$
 
 Distances are in metres and elapsed time in seconds. `failed` means a Rust capsize, out-of-bounds, or mark-miss termination. Set the potential of genuine terminal states, including success, to zero. Keep the ending state's potential at a time-limit truncation and bootstrap from its value. This is a discounted task objective with potential shaping; it is not exactly a minimum-time objective.
 
@@ -279,6 +279,7 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 - [ ] Implement the shared wrapper, transition reward, explicit-reset collector, final-state handling and checkpoint metadata.
 - [ ] Audit a complete native planning branch; make one branch-versus-replay proof including a pending observer/gate state. Record missing state and expected implementation cost.
 - [ ] Verify nominal restricted RuleSailor R completion and random-control reports; add/lock Optax and matplotlib in the root uv workspace.
+- [ ] **Viz (§10):** record the episode-log requirements (actions, condition, seed, build identity, checksum) as part of the frozen contract, so that every later run can be replayed.
 
 **Exit:** the benchmark is reproducible and there is an evidence-backed branching approach. If exact branching remains unresolved after two days, make it the first M1 integration task and defer batching/browser work; do not hide the risk until the last week.
 
@@ -289,6 +290,8 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 - [ ] Complete isolated branch/rollout parity at gate, capsize and step-budget boundaries; verify candidate order cannot change the live episode.
 - [ ] Measure a small candidate batch and a 100k-decision PPO pilot; set realistic planning and training budgets.
 - [ ] Freeze the shared task/normalization protocol after any pilot-only corrections and record all changes.
+- [ ] **Viz (§10):** episode store, deterministic replay with build/checksum verification, logging hooks in the evaluator and collector, and a static trajectory plot. Prove it with stored RuleSailor R/U episodes that replay exactly. This is the debugging tool for the remaining milestones.
+- [ ] **Viz (§10):** log the probe set (nominal plus 5 validation conditions) at every saved PPO checkpoint.
 
 **Exit:** PPO is reproducible and correct native hypothetical rollouts exist. If branches are correct but slow, proceed with an explicitly offline planner and retain latency measurement. If branches cannot be made correct, the planned MPC comparison is blocked and must be recorded as unfinished scope.
 
@@ -299,6 +302,7 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 - [ ] Run the same bounded pilot/tuning allowance as PPO; log Q scale, alpha and action saturation.
 - [ ] Freeze PPO/SAC settings and the common final budget using end-to-end runtime.
 - [ ] Queue the first independent-seed main learner runs; retain failed seeds.
+- [ ] **Viz (§10):** SAC logs training rollouts and checkpoint probes through the same store (no new code); check that a SAC probe episode replays exactly.
 
 **Exit:** both learning methods train/evaluate through the same contract, and their collected experience and optimization costs are traceable. No world model or BPTT implementation starts here.
 
@@ -309,6 +313,7 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 - [ ] Run closed-loop R on nominal/validation conditions and compare predicted and executed paths.
 - [ ] Measure K/I/H, actual hypothetical work, latency distributions and 50 ms deadline misses.
 - [ ] Run the five-setting validation horizon/budget sweep and freeze the default planner.
+- [ ] **Viz (§10):** for selected probe episodes, store MPC's planned path at each decision; render the predicted path against the executed one (required artifact 4).
 
 **Exit:** all three methods produce comparable real R outcome reports; MPC's known-model advantage and online cost are explicit. Success is not required to assert a correct implementation, but failure must be diagnosed through trajectories and horizon/cost evidence.
 
@@ -320,6 +325,7 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 - [ ] Make the Nov 24 upwind decision; run all three methods on U only if the stated readiness gate passes.
 - [ ] Audit training versus search seeds, pilot/calibration/evaluation cost, hypothetical rollout counts and failed runs.
 - [ ] Regenerate the five required artifacts and identify unsupported/missing claims.
+- [ ] **Viz (§10):** batch compositor and video specs: a checkpoint overlay per learner, a controller overlay (PPO/SAC/MPC/RuleSailor), a seed overlay, and the first failing episode per controller. Output gif/mp4 from stored episodes only.
 
 **Exit:** reproducible core results exist. After Nov 28, add no core method, reward, wind model or task. BPTT remains deferred until the presentation and reproduction work below are finished too.
 
@@ -328,6 +334,7 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 - [ ] Nov 29–30: freeze checkpoints/results and regenerate all core figures/tables from saved data.
 - [ ] Finish the claim-to-command index and a clean saved-checkpoint evaluation invocation.
 - [ ] Prepare a 10-minute presentation with sailing video/replay or static trajectory fallback.
+- [ ] **Viz (§10):** regenerate every presentation video and trajectory figure from the frozen episode stores with one command; record each spec in the claim index.
 - [ ] Rehearse PPO versus SAC data use, SAC entropy/targets, MPC foresight/compute and all known-model fairness limitations.
 - [ ] Dec 1–2: reproduce a report, rehearse Q&A and confirm final logistics; Dec 3: present measured findings.
 
@@ -348,6 +355,7 @@ experiments/ese3990/
   train.py        # learner entry point: PPO or SAC
   evaluate.py     # one real-simulator evaluator for every controller
   plots.py        # figures from raw summaries
+  viz/            # §10: episode store, replay, rendering, video composition
   tests/          # focused numerical/boundary checks
   model_based.py  # only created for the final BPTT stretch
 ```
@@ -377,6 +385,7 @@ Run focused numerical and integration tests, affected Rust package tests, and `s
 | Information/model advantage hidden | State/context audit | Match learner inputs and disclose richer planner state plus exact model access |
 | Reward exploits or misleading times | Rust outcomes, failed episodes and controls | Freeze geometry/evaluator first; report success and failures alongside conditional times |
 | Scope or compute exceeds deadline | Milestone exits and measured pilots | Cut BPTT first, then U and five-seed expansion; reduce common budgets before dropping independent seeds |
+| Visualization consumes core time | Hours spent against the §10 estimates | Cut the browser export first, then the grid layout, then mp4 (keep gif and static figures). Keep the episode store and replay, because the analysis depends on them |
 
 A missing required method or MPC study remains incomplete work; do not relabel a reduced experiment as the full project. A measured failure with checked code is valid evidence. Any robustness claim is limited to the explicit uniform-wind conditions tested. The core cannot establish real-world transfer, a universal algorithm ranking, equal prior knowledge, or SuperMimic-like speedups.
 
@@ -408,11 +417,11 @@ Use a deterministic tanh actor with the same input features and hidden widths as
 
 Start short imagined trajectories from real buffer states; freeze model parameters during actor updates while preserving derivatives through model inputs. With predicted event probabilities, let `q_cont` be the probability that the next state is continuing. Optimize:
 
-\[
+$$
 c_0=1,\quad c_{t+1}=c_t q_{\mathrm{cont},t},\qquad
 \hat J=\sum_{t=0}^{H-1}\gamma^t c_t\hat r_t
        +\gamma^H c_H V(\hat s_H).
-\]
+$$
 
 The reward head already predicts expected success/failure reward; do not add event bonuses twice. Fit the critic with stopped-gradient bootstrapped targets and terminal/survival masks. Keep the critic parameters frozen for the actor update, but retain its input derivative. Use real-transition TD targets first; any imagined critic targets are an explicit later change, not an undocumented mixture. Record that this is a simplified SHAC/SuperMimic-inspired variant.
 
@@ -443,3 +452,48 @@ If time remains, reuse PPO inside the same frozen learned model with the same st
 No stretch outcome changes whether the three-controller core is complete. Do not add these stages to the dated milestones or postpone the final presentation to finish them.
 
 **First concrete action:** freeze the common transition/reward contract and establish native planning-branch correctness alongside the restricted RuleSailor R baseline. This unlocks the required three-controller comparison; the learned-model option waits until the complete core is ready.
+
+## 10. Visualization and episode-replay harness
+
+The simulator is deterministic, so an episode is fully described by its condition, seed and action sequence on a given physics build. Store that, and re-simulate when rendering. Re-simulating a 45 s R episode costs about 30 ms, so rendering is the only expensive step. The harness serves debugging (M1–M3), the failure analysis (M4) and the presentation (M5) from one code path.
+
+### 10.1 What is stored
+
+| Per episode | Size (R, ≤ 900 decisions) | Purpose |
+|---|---|---|
+| Actions (rudder rate, sheet rate; release is always −1) | ≤ 7.2 KB as f32 for learners, ≤ 14.4 KB as f64 for RuleSailor | Exact replay; the dtype is chosen so storage loses nothing |
+| Condition, seed, controller, run, checkpoint, kind, outcome, reason, return, steps | < 0.5 KB in an index line | Querying without opening shards |
+| Final research-state checksum | 8 B | Detects a changed physics build or contract |
+| Pose (x, y, ψ, φ) at 5 Hz | ~3.6 KB | Fallback plots after a physics change |
+
+Each store records the physics source identity (`ModelIdentity`), the `tasks.json` hash, and the feature and reward versions. Replay refuses an identity or checksum mismatch and falls back to the stored poses, labelling them as such.
+
+Layout: one directory per run, compressed `.npz` shards holding concatenated actions and poses with per-episode offsets, plus an `index.jsonl` with one line per episode. Logging every training rollout costs about 4–8 MB per 500k-decision run before compression, so everything is kept, including failed and diverged runs. Stores live under the gitignored `runs/`.
+
+### 10.2 Two kinds of episode
+
+- **Training rollouts:** the stochastic episodes a learner actually collected, logged automatically.
+- **Probe evaluations:** a fixed probe set (nominal plus 5 validation conditions) evaluated deterministically at every saved checkpoint. RuleSailor and MPC run the same probes. The progress videos come from probes, so each frame shows the same conditions. Test conditions stay closed until the configuration freeze.
+
+MPC additionally stores its planned path at each decision for selected probe episodes only, because it costs about 40 points per decision.
+
+### 10.3 Modules (`experiments/ese3990/viz/`)
+
+| Module | Role | Milestone |
+|---|---|---|
+| `episode_store.py` | Writer and reader; `query(run=…, checkpoint=…, condition=…)` | M1 |
+| `replay.py` | Re-simulation from actions to state arrays, with identity and checksum checks | M1 |
+| `render.py` | Top-down frame and static trajectory figure: hull, boom, gate, track, wind, readout | M1 (static), M4 (animated) |
+| `compose.py` | Checkpoint, controller and seed overlays; small-multiples grid; gif (Pillow) and mp4 (system ffmpeg) | M4 |
+| `make_videos.py` | Command-line entry driven by a video spec, with the spec recorded in the claim index | M4–M5 |
+| Recording export to the web viewer | Optional single-episode inspection in the browser replay UI | Stretch |
+
+### 10.4 Acceptance
+
+- A stored episode re-simulates to its logged final state, outcome, executed steps and return.
+- Replay refuses a mismatched build identity or contract hash.
+- Store, then load, then replay is lossless for both f32 and f64 action logs.
+- A fixed video spec gives the same frame count and the same first frame.
+
+Estimate: 3–4 h in M1, 1–2 h in M3, 3–4 h in M4, 1 h in M5, and 2–3 h for the browser export stretch.
+
