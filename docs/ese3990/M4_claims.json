@@ -1,0 +1,129 @@
+{
+  "task": "R",
+  "training_seeds": [
+    0,
+    1,
+    2
+  ],
+  "mpc_optimizer_seeds": [
+    0,
+    1,
+    2
+  ],
+  "repetition_types": "Training seeds, optimizer seeds, and condition repetitions are distinct; no episode-level confidence intervals.",
+  "artifacts": [
+    {
+      "artifact": "Learning curves",
+      "source_sha256": {
+        "experiments/ese3990/comparison_report.py": "f2c4e32282851ca2f2443b4bce6eae26e58d27fd28216f90bd62f47f6d9fa3ca",
+        "experiments/ese3990/train.py": "577c29a7a68b566703004e09c3f48b471dc893d3168fb6408a0544c0a60dd451"
+      },
+      "inputs": [
+        "experiments/ese3990/configs/M4_freeze.json",
+        "runs/ese3990/M4/episodes.jsonl"
+      ],
+      "commands": [
+        "python experiments/ese3990/comparison_report.py runs/ese3990/M4 --out docs/ese3990"
+      ],
+      "outputs": [
+        "docs/ese3990/figs/M4_learning.png"
+      ],
+      "supported_claim": "All predeclared test checkpoints after validation-only freeze; individual training seeds and mean/range, recorded process wall time."
+    },
+    {
+      "artifact": "Controller outcomes",
+      "source_sha256": {
+        "experiments/ese3990/compare.py": "03281277d68d374dad2e6a1f3660c10c4668e844fed9a0c3178f47d532e2ac72",
+        "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+        "experiments/ese3990/comparison_report.py": "f2c4e32282851ca2f2443b4bce6eae26e58d27fd28216f90bd62f47f6d9fa3ca"
+      },
+      "inputs": [
+        "experiments/ese3990/configs/M4_freeze.json",
+        "runs/ese3990/main/M4_audit.json"
+      ],
+      "commands": [
+        "python experiments/ese3990/compare.py --out runs/ese3990/M4",
+        "python experiments/ese3990/comparison_report.py runs/ese3990/M4 --out docs/ese3990"
+      ],
+      "outputs": [
+        "docs/ese3990/M4_outcomes.md",
+        "docs/ese3990/M4_results.json",
+        "docs/ese3990/figs/M4_outcomes.png"
+      ],
+      "supported_claim": "Finite-set outcomes of selected and final controllers, including failures and conditional completion time."
+    },
+    {
+      "artifact": "MPC resource frontier and controller latency",
+      "source_sha256": {
+        "experiments/ese3990/mpc.py": "d988e65d1ca852596721c3a02d5538c5508f600b3697999972c9b4b26995f8ef",
+        "experiments/ese3990/mpc_study.py": "54e962a18b2bef6971f018b63057fe212c5ee3b88f7f295c3898d5d94ee69245",
+        "experiments/ese3990/mpc_figures.py": "407ae97856c0456dd6b00f48785a3af8c3dc23be21974d47a56b32d0de83f83d",
+        "experiments/ese3990/comparison_report.py": "f2c4e32282851ca2f2443b4bce6eae26e58d27fd28216f90bd62f47f6d9fa3ca"
+      },
+      "inputs": [
+        "experiments/ese3990/configs/M3_freeze.json",
+        "docs/ese3990/M3_results.json",
+        "docs/ese3990/M4_results.json"
+      ],
+      "commands": [
+        "python experiments/ese3990/mpc_figures.py runs/ese3990/mpc/M3 --out docs/ese3990/figs",
+        "python experiments/ese3990/comparison_report.py runs/ese3990/M4 --out docs/ese3990"
+      ],
+      "outputs": [
+        "docs/ese3990/figs/M3_mpc_cost.png",
+        "docs/ese3990/M4_results.json"
+      ],
+      "supported_claim": "Validation-selected planner success/compute frontier and measured act costs; common live adapter measured separately, no hard real-time guarantee."
+    },
+    {
+      "artifact": "Real trajectories, controls and MPC prediction",
+      "source_sha256": {
+        "experiments/ese3990/viz/compose.py": "7ee37041d80f7886d2b5e2e0e85fa3dbed8adfb5ab911442070b21954472a7c8",
+        "experiments/ese3990/viz/render.py": "07981f46403f93709bbd36b979c42f2c37d429f8ebdd90dc3d7fef773fafd076",
+        "experiments/ese3990/viz/replay.py": "e670a8fdbb4465fe20d2b3656c44491afb96a3a5dcb2aebe3f56d11f49d3dc08",
+        "experiments/ese3990/mpc_figures.py": "407ae97856c0456dd6b00f48785a3af8c3dc23be21974d47a56b32d0de83f83d"
+      },
+      "inputs": [
+        "docs/ese3990/M4_videos.json",
+        "runs/ese3990/M4/store",
+        "runs/ese3990/mpc/M3/probes"
+      ],
+      "commands": [
+        "python experiments/ese3990/viz/compose.py docs/ese3990/M4_videos.json --out runs/ese3990/M4/videos",
+        "python experiments/ese3990/mpc_figures.py runs/ese3990/mpc/M3 --out docs/ese3990/figs",
+        "cp runs/ese3990/M4/videos/controllers_nominal.png docs/ese3990/figs/M4_controllers_nominal.png",
+        "cp runs/ese3990/M4/videos/ppo_first_failure.png docs/ese3990/figs/M4_ppo_first_failure.png",
+        "cp runs/ese3990/M4/videos/sac_first_failure.png docs/ese3990/figs/M4_sac_first_failure.png",
+        "cp runs/ese3990/M4/videos/ppo_first_failure_0_controls.png docs/ese3990/figs/M4_ppo_failure_controls.png",
+        "cp runs/ese3990/M4/videos/sac_first_failure_0_controls.png docs/ese3990/figs/M4_sac_failure_controls.png"
+      ],
+      "outputs": [
+        "runs/ese3990/M4/videos",
+        "docs/ese3990/M4_media.json",
+        "docs/ese3990/figs/M3_mpc_prediction.png",
+        "docs/ese3990/figs/M4_controllers_nominal.png",
+        "docs/ese3990/figs/M4_ppo_first_failure.png",
+        "docs/ese3990/figs/M4_sac_first_failure.png",
+        "docs/ese3990/figs/M4_ppo_failure_controls.png",
+        "docs/ese3990/figs/M4_sac_failure_controls.png",
+        "runs/ese3990/M4/videos/grid.png"
+      ],
+      "supported_claim": "Exactly replayed controls/trajectories and declared first-failure examples; zero MPC first-step prediction error on stored M3 probes."
+    }
+  ],
+  "artifact_5": {
+    "status": "Source/config/seed/command/output claim index present; final presentation and rehearsal remain M5.",
+    "index": "docs/ese3990/M4_claims.json",
+    "readme": "experiments/ese3990/README.md"
+  },
+  "command_environment": "Run from repository root with env -u PYTHONPATH; use uv run --frozen --no-sync, RAYON_NUM_THREADS=12 for comparison, MPLCONFIGDIR=/tmp/ese3990-mpl for rendering. Full invocation in README.",
+  "unsupported_or_pending_claims": [
+    "General algorithm ranking or an isolated algorithmic mechanism",
+    "Equal pilot/tuning resources",
+    "MPC as a zero-sample learner or guaranteed upper bound",
+    "Hard real-time control or on-water safety",
+    "Upwind, procedural/gusty wind or sensor-only generalization",
+    "Broad statistical confidence from three seeds",
+    "Final slide deck, final archive and presentation rehearsal (M5 pending)"
+  ]
+}

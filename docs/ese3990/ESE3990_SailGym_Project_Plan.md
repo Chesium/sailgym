@@ -1,7 +1,7 @@
 # Learning versus Planning for Sailboat Control
 
 **ESE3990 project plan · Shimin Chen · revised 2026-11-13**  
-**Status:** M0–M3 are complete (see the [M0 report](M0_report.md), [M1 report](M1_report.md), [M2 report](M2_report.md) and [M3 report](M3_report.md)). PPO, SAC and true-model CEM-MPC are checked and reproducible. All five MPC settings finished 60/60 validation episodes; the selected default is H=40/K=32/I=3. PPO/SAC settings remain frozen at a common 1M-decision budget; final held-out comparison is M4 work. Pilot resources exceeded the planned allowance; M2 records that deviation, and M3 discloses its extra diagnostic run.
+**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm, Nov 14–28) is planned before M5; final presentation/packaging remains M5. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
 The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is retained as the final stretch goal, after the core experiments, analysis, reproducibility work, and presentation are complete.**
@@ -18,7 +18,7 @@ This replaces the pendulum-first scope in the [October proposal](ESE3990_Final_P
 | Required | True-model CEM-MPC | Correct isolated branches of the current episode, closed-loop control, and measured planning cost |
 | Required | Explanation of tradeoffs | Learning curves, controller outcome table, MPC horizon/budget study, decision latency, and failure trajectories |
 | Required | Reproducible presentation | Saved checkpoints/configs, raw summaries, figure commands, and a presentation ready for Dec 3 |
-| Gated extension | Upwind sailing | Same evaluation pipeline; implement only after the reaching comparison works for all three methods |
+| Gated extension | Upwind sailing | Same evaluation pipeline; implement only after the reaching comparison works for all three methods. Scheduled as M4U (§6), with a labeled expert-data arm |
 | Final stretch | Learned dynamics and BPTT-WM | Start only after all selected core/extension results and presentation artifacts are finished; see §9 |
 | Deferred | Further algorithms and infrastructure | No TD3/Dreamer sweep, recurrent policy, full-course racing, or new browser dashboard |
 
@@ -243,7 +243,7 @@ Show individual PPO/SAC training curves plus their means/ranges. Three training 
 
 ### E4 · Gated upwind experiment
 
-Enable U only if, by Nov 24, PPO, SAC and MPC all have valid R evaluations and the core report pipeline works. Train PPO/SAC independently from scratch on U with matched budgets; retain the same MPC planning convention and declare any separately tuned settings. At least three training seeds are required for a comparative learning claim.
+Enable U only if, by Nov 24, PPO, SAC and MPC all have valid R evaluations and the core report pipeline works. Train PPO/SAC independently from scratch on U with matched budgets; retain the same MPC planning convention and declare any separately tuned settings. **Amended 2026-11-14 by [M4U](#m4u--nov-1428--upwind-comparison-with-an-expert-data-arm--1216-h):** U uses γ = 0.99975, a 4M budget and 400k SAC replay, and adds labeled expert-data arms. All are frozen before any U learning run. At least three training seeds are required for a comparative learning claim.
 
 Success remains a directed gate passage. Inspect tacking, irons, backward drift, miss events and planned-versus-executed paths. Short-horizon MPC failure during tacking can be an interpretable result; do not silently add an expert tack script. Omit U or label individual trajectories exploratory if the gate fails. Full multi-leg courses remain outside the required scope.
 
@@ -325,15 +325,86 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 
 ### M4 · Nov 24–28 · Finish comparisons and failure analysis · 10–14 h
 
-- [ ] Complete three PPO/SAC seed pairs; extend to five only if core runtime and analysis remain on schedule.
-- [ ] Evaluate selected MPC/RuleSailor and all predeclared learner checkpoints after the configuration freeze.
-- [ ] Finish the MPC cost/horizon figure, outcome table and representative trajectory analysis.
-- [ ] Make the Nov 24 upwind decision; run all three methods on U only if the stated readiness gate passes.
-- [ ] Audit training versus search seeds, pilot/calibration/evaluation cost, hypothetical rollout counts and failed runs.
-- [ ] Regenerate the five required artifacts and identify unsupported/missing claims.
-- [ ] **Viz (§10):** batch compositor and video specs: a checkpoint overlay per learner, a controller overlay (PPO/SAC/MPC/RuleSailor), a seed overlay, and the first failing episode per controller. Output gif/mp4 from stored episodes only.
+- [x] Complete three PPO/SAC seed pairs; extend to five only if core runtime and analysis remain on schedule. *All six runs complete at 1M; audited against M2 settings. No extension to five.*
+- [x] Evaluate selected MPC/RuleSailor and all predeclared learner checkpoints after the configuration freeze. *36 learner checkpoints + three search seeds + RuleSailor, 71 conditions each; `configs/M4_freeze.json` precedes held-out outcomes. All 2,840 episodes replay exactly; all 36 nominal checkpoint reloads match.*
+- [x] Finish the MPC cost/horizon figure, outcome table and representative trajectory analysis. *M3 frontier/prediction figures retained; M4 test/time learning curves, selected/final tables and deterministic first-failure/control figures generated.*
+- [x] Make the Nov 24 upwind decision; run all three methods on U only if the stated readiness gate passes. *Decision made early: omit optional U to keep the required R comparison/presentation on scope. This is a scope choice, not a claim that the readiness gate failed.*
+- [x] Audit training versus search seeds, pilot/calibration/evaluation cost, hypothetical rollout counts and failed runs. *6M main decisions including 60k calibration; paired calibration/normalization exact. M4 adds 2.117M evaluation decisions / 2.179B hypothetical steps; prior pilot deviations remain disclosed.*
+- [x] Regenerate the five required artifacts and identify unsupported/missing claims. *`M4_claims.json` maps figures/tables/media to sources/freezes/seeds/commands; final presentation/archive/rehearsal explicitly remain M5.*
+- [x] **Viz (§10):** batch compositor and video specs: a checkpoint overlay per learner, a controller overlay (PPO/SAC/MPC/RuleSailor), a seed overlay, and the first failing episode per controller. Output gif/mp4 from stored episodes only. *Eight GIF/MP4 pairs, static grid and control plots; no invented MPC/RuleSailor failures. Fixed specs reproduce first frames and frame counts.*
 
-**Exit:** reproducible core results exist. After Nov 28, add no core method, reward, wind model or task. BPTT remains deferred until the presentation and reproduction work below are finished too.
+**Exit (met 2026-11-13; see [M4 report](M4_report.md)):** reproducible core results exist. After Nov 28, add no core method, reward, wind model or task. BPTT remains deferred until the presentation and reproduction work below are finished too.
+
+### M4U · Nov 14–28 · Upwind comparison with an expert-data arm · 12–16 h
+
+Reopens the optional U experiment (E4), which M4 deferred to protect the R comparison. R's results, freezes and stores are not touched. **M5's dates do not move: if M4U is not complete by Nov 28, stop. M5 then presents R only, and U becomes post-presentation work.**
+
+**Questions.** (1) Does the R ranking survive a task that needs a tack? (2) Is the learners' U bottleneck *discovering* the tack? This is tested by giving SAC RuleSailor's episodes in replay and PPO the same episodes as an initialization. (3) Is MPC limited by its horizon or by its search?
+
+**Settings frozen before any U learning run.** Each is recorded with its reason, and no U outcome may change it.
+
+| Setting | R (unchanged) | U | Reason |
+|---|---|---|---|
+| γ per decision | 0.999: horizon 1,000 decisions = 50 s | **0.99975**: 4,000 decisions = 200 s | Keeps R's ratio of effective horizon to budget (1,000/900). At 0.999, a +10 finish at RuleSailor's typical 70–90 s is worth only 1.7–2.5 from the start; at 0.99975 it is worth 6.4–7.0 |
+| Budget | 1M decisions | **4M**, including calibration and any demonstrations | Same number of full-length episodes as R (≈1,100). Measured runtime: ≈80 min per SAC run and ≈7 min per PPO run |
+| SAC replay capacity | 100k | **400k** | Holds the same ≈110 full-length episodes as R |
+| Checkpoints | 10k … 1M | Initial (after calibration and any demonstrations), 400k, 1M, 2M, 3M, 4M | R's schedule ×4 |
+| Everything else | M2 freeze | Unchanged | Networks, optimizer, PPO/SAC hyperparameters, 10k smooth-random calibration and normalization, release off, condition manifests, checkpoint-selection rule, MPC conventions |
+
+Normalization was checked on 2026-11-14 and needs no amendment. Against seed-0 U calibration statistics, no RuleSailor U position feature reaches the ±5 clip; 4% of its states clip some other feature.
+
+**Arms.** Training seeds are [0, 1, 2]; MPC uses search seeds [0, 1, 2]. Expert-data arms are labeled as such everywhere (§9) and never replace the from-scratch rows.
+
+| Arm | Role | What differs from from-scratch |
+|---|---|---|
+| PPO, SAC from scratch | Primary comparison (§3.1) | Only the U settings above |
+| SAC + demonstrations | Expert-data arm | A separate, never-evicted buffer holds the demonstrations. Each minibatch is 128 demonstration rows + 128 online rows: RLPD-style symmetric sampling only, without RLPD's LayerNorm, ensembles or higher update ratio |
+| PPO + BC | The same data offered to PPO (§9) | Actor mean fitted to the demonstrations by MSE on atanh(clip(a, ±0.99)), and value fitted to their discounted returns-to-go: 20 epochs, minibatch 256, Adam 3e−4. log σ stays −0.5, then frozen PPO |
+| BC only | Pure-imitation reference | PPO + BC's initial checkpoint; no extra run |
+| CEM-MPC | Known-model planning | Frozen M3 default (H=40, K=32, I=3) under the U γ. H=160 (K=32) runs on validation as a diagnostic |
+| RuleSailor | Reference and demonstration source | None |
+
+**Demonstrations.** 50 RuleSailor episodes on `TrainingSampler(1000)` conditions, which are drawn from the training distribution and exclude held-out documents. M0's U validation/test/shift episodes are never used. Every outcome is kept (finishes, misses, timeouts) with its true U-contract reward. Transitions come from exact replay of an ordinary episode store (`kind="demo"`); there is no new data format. All seeds share one demonstration set, whose store hash is frozen. Cost: ≈91k decisions (10 episodes measured 18,253), charged to each expert-data run's 4M budget. RuleSailor's tack recipe (a 1,344-script sweep, `docs/v2/practice-validation.md`) is disclosed as uncounted human prior work.
+
+- [ ] **U contract version.** Leave `configs/tasks.json` byte-identical and add no global identity key, because both are replay identity for every existing store. U stores record the contract version they used, and replay uses that version. *Accept:* all 2,840 M4 episodes and the 21 stored U episodes in `runs/ese3990/viz_demo/store_U` still replay exactly; a test hand-checks one U transition reward at γ = 0.99975 and confirms R still uses 0.999.
+- [ ] Take the task from the freeze in `mpc_study.py` (hard-coded R) and confirm that `compare.py` and `comparison_report.py` handle U.
+- [ ] Demonstration store and loader, the SAC demonstration buffer with symmetric sampling, and PPO's BC/value pretraining. *Accept:* demonstration transitions match replayed rewards and checksums; demonstration rows are never evicted and make up exactly half of each minibatch; BC loss falls and the BC actor reloads exactly; the existing 83 experiment tests still pass.
+- [ ] One 100k smoke run per new arm on pilot seed 100, to check plumbing and runtime. These runs are not used for tuning or reported as results.
+- [ ] RuleSailor and smooth-random on U validation under the U contract. Outcomes should match M0; only returns change.
+- [ ] MPC on U validation: H=40 and H=160, three search seeds each. Selection is predeclared as in M3 (most finishes, then lower p50 latency). Only the selected setting goes to held-out sets; H=160 is labeled offline if selected.
+- [ ] Write `configs/M4U_train_freeze.json` (arms, settings, seeds, demonstration hash) **before** the 12 main learner runs. Queue the runs and retain failed ones.
+- [ ] Write the held-out freeze before opening test/shift, as in M4. Evaluate every predeclared checkpoint, the selected MPC and RuleSailor on nominal/test/shift, then run the exact-replay audit.
+- [ ] U diagnostics from replay, with thresholds frozen before held-out results: tacks completed, time in irons, mark misses, out-of-bounds exits, and final distance for timeouts.
+- [ ] Optional, if the binding exposes RuleSailor's mode: predict that mode from the 17 learner features on the demonstration episodes. This tests whether its memory adds information the learners lack.
+- [ ] `M4U_report.md`, claim-index entries, and handoff `docs/handoffs/ese3990-m4u.md`.
+
+**Schedule.**
+
+| Dates | Work |
+|---|---|
+| Nov 14–15 | Contract version, plumbing and tests |
+| Nov 16–17 | Demonstrations; RuleSailor/MPC validation (≤5 h); training freeze; launch the main runs (≈1.5 h wall for six concurrent SAC runs) |
+| Nov 18–21 | Held-out freeze and evaluation. MPC H=40 held-out takes ≤3.2 h; H=160 takes ≤13 h if selected |
+| Nov 22–26 | Analysis, figures and media |
+| Nov 27–28 | Report and handoff |
+
+Compute is not the constraint; the slack is for debugging. **Cut order:** H=160 diagnostic, then media, then the optional mode check. PPO + BC can be dropped only by amending §9 in writing.
+
+**Readings declared before results.**
+
+| Observation | Reading |
+|---|---|
+| SAC + demonstrations ≫ SAC from scratch | The learner bottleneck was discovering the tack, not representation or memory |
+| SAC + demonstrations > RuleSailor | RL improved on its expert; check whether it removed RuleSailor's mark misses |
+| PPO + BC ≪ SAC + demonstrations | Off-policy learning keeps using expert data; on-policy learning cannot (advanced slides p. 10) |
+| BC only < RuleSailor | Compounding error, or averaging over RuleSailor's hidden mode |
+| MPC H=40 fails, H=160 succeeds | Planning is horizon-bound; a value tail is the next step |
+| Both MPC settings fail | Planning is search-bound: the tack is not being sampled |
+| Every arm fails, including the expert-data arms | A valid result. Report it with the tack/irons diagnostics; do not add a hidden tack script |
+
+**Not in M4U:** a learned value tail, MPC with RuleSailor as its base policy, residual RL, a γ sweep or any other U tuning, and BPTT.
+
+**Exit:** every arm has a valid U evaluation that replays exactly; R evidence still replays unchanged; the report states which reading applies.
 
 ### M5 · Nov 29–Dec 3 · Freeze, explain and present · 7–10 h
 
@@ -348,7 +419,7 @@ Suggested presentation: boat/question (1 min), task/information contract (1), th
 
 ## 7. Implementation footprint and verification
 
-Keep project-specific rewards/trainers in `experiments/ese3990/`, using the existing root uv workspace. The core M0–M3 modules below are implemented; later visualization and presentation work remains in M4/M5:
+Keep project-specific rewards/trainers in `experiments/ese3990/`, using the existing root uv workspace. Core M0–M4 modules and media are implemented; final presentation/packaging remains M5:
 
 ```text
 experiments/ese3990/
@@ -360,6 +431,8 @@ experiments/ese3990/
   mpc.py          # CEM search over a native candidate-rollout interface
   train.py        # learner entry point: PPO or SAC
   evaluate.py     # one real-simulator evaluator for every controller
+  compare.py      # frozen M4 evaluation of every predeclared checkpoint
+  comparison_report.py # outcomes, costs, curves and saved video specs
   plots.py        # figures from raw summaries
   viz/            # §10: episode store, replay, rendering, video composition
   tests/          # focused numerical/boundary checks
@@ -491,7 +564,7 @@ MPC additionally stores its planned path at each decision for selected probe epi
 | `replay.py` | Re-simulation from actions to state arrays, with identity and checksum checks | M1 |
 | `render.py` | Top-down frame and static trajectory figure: hull, boom, gate, track, wind, readout | M1 (static), M4 (animated) |
 | `compose.py` | Checkpoint, controller and seed overlays; small-multiples grid; gif (Pillow) and mp4 (system ffmpeg) | M4 |
-| `make_videos.py` | Command-line entry driven by a video spec, with the spec recorded in the claim index | M4–M5 |
+| `compose.py` CLI (consolidated) | Command-line entry driven by a video spec, recorded in the claim index; no separate wrapper needed | M4 |
 | Recording export to the web viewer | Optional single-episode inspection in the browser replay UI | Stretch |
 
 ### 10.4 Acceptance

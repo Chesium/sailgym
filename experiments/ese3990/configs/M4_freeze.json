@@ -1,0 +1,558 @@
+{
+  "task": "R",
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "groups": [
+    {
+      "id": "mpc_search0",
+      "controller": "mpc",
+      "search_seed": 0,
+      "roles": [
+        "selected"
+      ]
+    },
+    {
+      "id": "mpc_search1",
+      "controller": "mpc",
+      "search_seed": 1,
+      "roles": [
+        "selected"
+      ]
+    },
+    {
+      "id": "mpc_search2",
+      "controller": "mpc",
+      "search_seed": 2,
+      "roles": [
+        "selected"
+      ]
+    },
+    {
+      "id": "rule_sailor",
+      "controller": "rule_sailor",
+      "roles": [
+        "reference"
+      ]
+    },
+    {
+      "id": "ppo_s0_d0010000",
+      "controller": "ppo",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/ppo_R_s0/ckpt/0010000",
+      "decisions": 10000,
+      "training_wall_s": 1.4682833850383759,
+      "roles": [
+        "curve",
+        "selected"
+      ]
+    },
+    {
+      "id": "ppo_s0_d0100112",
+      "controller": "ppo",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/ppo_R_s0/ckpt/0100112",
+      "decisions": 100112,
+      "training_wall_s": 11.568718960043043,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s0_d0251664",
+      "controller": "ppo",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/ppo_R_s0/ckpt/0251664",
+      "decisions": 251664,
+      "training_wall_s": 25.803949166089296,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s0_d0501520",
+      "controller": "ppo",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/ppo_R_s0/ckpt/0501520",
+      "decisions": 501520,
+      "training_wall_s": 48.39298287592828,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s0_d0751376",
+      "controller": "ppo",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/ppo_R_s0/ckpt/0751376",
+      "decisions": 751376,
+      "training_wall_s": 70.80213239090517,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s0_d1000000",
+      "controller": "ppo",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/ppo_R_s0/ckpt/1000000",
+      "decisions": 1000000,
+      "training_wall_s": 93.55049236491323,
+      "roles": [
+        "curve",
+        "final"
+      ]
+    },
+    {
+      "id": "ppo_s1_d0010000",
+      "controller": "ppo",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/ppo_R_s1/ckpt/0010000",
+      "decisions": 10000,
+      "training_wall_s": 1.3862919451203197,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s1_d0100112",
+      "controller": "ppo",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/ppo_R_s1/ckpt/0100112",
+      "decisions": 100112,
+      "training_wall_s": 11.135539384093136,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s1_d0251664",
+      "controller": "ppo",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/ppo_R_s1/ckpt/0251664",
+      "decisions": 251664,
+      "training_wall_s": 25.09624398103915,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s1_d0501520",
+      "controller": "ppo",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/ppo_R_s1/ckpt/0501520",
+      "decisions": 501520,
+      "training_wall_s": 47.73984810290858,
+      "roles": [
+        "curve",
+        "selected"
+      ]
+    },
+    {
+      "id": "ppo_s1_d0751376",
+      "controller": "ppo",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/ppo_R_s1/ckpt/0751376",
+      "decisions": 751376,
+      "training_wall_s": 70.15796527196653,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s1_d1000000",
+      "controller": "ppo",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/ppo_R_s1/ckpt/1000000",
+      "decisions": 1000000,
+      "training_wall_s": 92.84256377792917,
+      "roles": [
+        "curve",
+        "final"
+      ]
+    },
+    {
+      "id": "ppo_s2_d0010000",
+      "controller": "ppo",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/ppo_R_s2/ckpt/0010000",
+      "decisions": 10000,
+      "training_wall_s": 1.2748002370353788,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s2_d0100112",
+      "controller": "ppo",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/ppo_R_s2/ckpt/0100112",
+      "decisions": 100112,
+      "training_wall_s": 11.107026909012347,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s2_d0251664",
+      "controller": "ppo",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/ppo_R_s2/ckpt/0251664",
+      "decisions": 251664,
+      "training_wall_s": 25.323564840946347,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s2_d0501520",
+      "controller": "ppo",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/ppo_R_s2/ckpt/0501520",
+      "decisions": 501520,
+      "training_wall_s": 47.47045366605744,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "ppo_s2_d0751376",
+      "controller": "ppo",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/ppo_R_s2/ckpt/0751376",
+      "decisions": 751376,
+      "training_wall_s": 69.78250384307466,
+      "roles": [
+        "curve",
+        "selected"
+      ]
+    },
+    {
+      "id": "ppo_s2_d1000000",
+      "controller": "ppo",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/ppo_R_s2/ckpt/1000000",
+      "decisions": 1000000,
+      "training_wall_s": 92.09188956697471,
+      "roles": [
+        "curve",
+        "final"
+      ]
+    },
+    {
+      "id": "sac_s0_d0010000",
+      "controller": "sac",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/sac_R_s0/ckpt/0010000",
+      "decisions": 10000,
+      "training_wall_s": 1.47748028091155,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s0_d0100000",
+      "controller": "sac",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/sac_R_s0/ckpt/0100000",
+      "decisions": 100000,
+      "training_wall_s": 113.69738921802491,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s0_d0250000",
+      "controller": "sac",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/sac_R_s0/ckpt/0250000",
+      "decisions": 250000,
+      "training_wall_s": 296.88322334806435,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s0_d0500000",
+      "controller": "sac",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/sac_R_s0/ckpt/0500000",
+      "decisions": 500000,
+      "training_wall_s": 594.5695695818868,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s0_d0750000",
+      "controller": "sac",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/sac_R_s0/ckpt/0750000",
+      "decisions": 750000,
+      "training_wall_s": 892.2504767240025,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s0_d1000000",
+      "controller": "sac",
+      "training_seed": 0,
+      "checkpoint": "runs/ese3990/main/sac_R_s0/ckpt/1000000",
+      "decisions": 1000000,
+      "training_wall_s": 1192.9411389899906,
+      "roles": [
+        "curve",
+        "selected",
+        "final"
+      ]
+    },
+    {
+      "id": "sac_s1_d0010000",
+      "controller": "sac",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/sac_R_s1/ckpt/0010000",
+      "decisions": 10000,
+      "training_wall_s": 1.481638879980892,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s1_d0100000",
+      "controller": "sac",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/sac_R_s1/ckpt/0100000",
+      "decisions": 100000,
+      "training_wall_s": 113.0548084389884,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s1_d0250000",
+      "controller": "sac",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/sac_R_s1/ckpt/0250000",
+      "decisions": 250000,
+      "training_wall_s": 295.15211334102787,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s1_d0500000",
+      "controller": "sac",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/sac_R_s1/ckpt/0500000",
+      "decisions": 500000,
+      "training_wall_s": 591.5920495099854,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s1_d0750000",
+      "controller": "sac",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/sac_R_s1/ckpt/0750000",
+      "decisions": 750000,
+      "training_wall_s": 890.6409995679278,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s1_d1000000",
+      "controller": "sac",
+      "training_seed": 1,
+      "checkpoint": "runs/ese3990/main/sac_R_s1/ckpt/1000000",
+      "decisions": 1000000,
+      "training_wall_s": 1191.6579406119417,
+      "roles": [
+        "curve",
+        "selected",
+        "final"
+      ]
+    },
+    {
+      "id": "sac_s2_d0010000",
+      "controller": "sac",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/sac_R_s2/ckpt/0010000",
+      "decisions": 10000,
+      "training_wall_s": 1.5030123780015856,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s2_d0100000",
+      "controller": "sac",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/sac_R_s2/ckpt/0100000",
+      "decisions": 100000,
+      "training_wall_s": 113.07247520983219,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s2_d0250000",
+      "controller": "sac",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/sac_R_s2/ckpt/0250000",
+      "decisions": 250000,
+      "training_wall_s": 294.1258379078936,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s2_d0500000",
+      "controller": "sac",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/sac_R_s2/ckpt/0500000",
+      "decisions": 500000,
+      "training_wall_s": 590.5901510159019,
+      "roles": [
+        "curve",
+        "selected"
+      ]
+    },
+    {
+      "id": "sac_s2_d0750000",
+      "controller": "sac",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/sac_R_s2/ckpt/0750000",
+      "decisions": 750000,
+      "training_wall_s": 886.3359304789919,
+      "roles": [
+        "curve"
+      ]
+    },
+    {
+      "id": "sac_s2_d1000000",
+      "controller": "sac",
+      "training_seed": 2,
+      "checkpoint": "runs/ese3990/main/sac_R_s2/ckpt/1000000",
+      "decisions": 1000000,
+      "training_wall_s": 1187.129818324931,
+      "roles": [
+        "curve",
+        "final"
+      ]
+    }
+  ],
+  "checkpoint_hashes": {
+    "runs/ese3990/main/ppo_R_s0/ckpt/0010000.json": "f9b83d62d0ab170c521a1ea09785477e4954f080263418efa11dd3ce13d927db",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0010000.npz": "2b630e34a9974458bdc5f8d72c4e4042871cd8f10a9abd2037e038312b423bab",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0100112.json": "1050381a4ac4234b476c06d2fa90f6b9f990ed678e1f82037f1d3a8c60e1ace3",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0100112.npz": "f99ddb1f998aae613f9313a57bc020f971d44f12608a734e7d68e661df70d6c8",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0251664.json": "4518583f9afdad5a510e61a43ad19f6f3e8e0a5da0ba36891dac284c27a457db",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0251664.npz": "c555281ac69bd9a01f2e66b7639e5ab83bcf8866472abe384a69e2aa84a817ca",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0501520.json": "8bb538d4a4316af2ec2660da56f197478fa078f91f3710009068a6c52f6f1c9e",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0501520.npz": "384e1accaa7f149e44a21c96456122b64dc3f40e32b9f6c20d5313e75f0839dc",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0751376.json": "759e3d3ce9236aa00091d069729cc774b040f72d669a45ebe7a555ab56fcb240",
+    "runs/ese3990/main/ppo_R_s0/ckpt/0751376.npz": "23c07b74fb39c8c90ea4f521bb6cc729ec5fa32da0e85079e0333c8382a4cec4",
+    "runs/ese3990/main/ppo_R_s0/ckpt/1000000.json": "0074197f3e132df0bc00086e8d0cfbc3d3e58208ee19c32909360447b2971971",
+    "runs/ese3990/main/ppo_R_s0/ckpt/1000000.npz": "93132bfb18128cd5564f0ca77477f3f3a496d17c419fca35faa5445f9e6ef948",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0010000.json": "ffa20f32ffbc13b1e564e9a87a4826b40e8783f1c0034de377460cd79d14ac4f",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0010000.npz": "3403002f77683b726960252bb5acb3d253de6b8e10d1aed25e6247e1f7894f35",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0100112.json": "cfedcb62a79f7cb3e46132bac3b6f9dfe54ba266ed0b949fa95f83cd51da01c2",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0100112.npz": "6b83b8f44bb189a68c7eb5080fd9abc1ef5f290532d741aa6bdff745edee190d",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0251664.json": "bf27cb35bc7a79803154f860098d9934b28e62e0be16bdb2f67d06eb1cbae448",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0251664.npz": "5f1b8989991365ab4f5aa6f853ac4ce414e1fa268ffd4bc4b9539df21ad8ff5e",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0501520.json": "e6108045bf7a98e635db3481ddf9a2c8d4a3f0311f6e00f8c3672defd59f1a33",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0501520.npz": "afeca5c1cceaa8dad6e37128c6ecded1745e8696cd6c09cbedf11573e97d9f43",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0751376.json": "e02e5910ad864d0f421479838503958bece0d5e3c8098bc36c2e5fb72828132a",
+    "runs/ese3990/main/ppo_R_s1/ckpt/0751376.npz": "0bdb969e8bb05b026023cff54bda755ccb8e44f437b403138530e62649ee2ce7",
+    "runs/ese3990/main/ppo_R_s1/ckpt/1000000.json": "37202aec97cfd810d964f0add1700a72402b53cf9966ee4ad3a8c48c9c35144c",
+    "runs/ese3990/main/ppo_R_s1/ckpt/1000000.npz": "02322a1fe1e8c091fa680b2b8544f421ac0a87df3979051cc2cb3f5662f6158c",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0010000.json": "0a98a60fe8b943230876bfb6fe38c2ccb1e5e27d09a3b30371a7974e4d08d095",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0010000.npz": "89067374d8ccdab6a8c00ed2d794cc737cbc54ee7611bb9789a22ef537e0b26e",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0100112.json": "7b0d83f828219abeb1aed06a6ad74109763216dee7f12a2aaa9dcc4c033e60e4",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0100112.npz": "cdff359bf10cb5a3402392f6d38b79d7c77a69a48b135a55ee5c50144433a6b1",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0251664.json": "08b71da5349278164d8089e7aaae2cafa41171c5bb24f5c006dbe36485f9c752",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0251664.npz": "f5703fa5f1349ad83315752aea2d98c3ff8c647e0a0ed473e797bd1f0ffafcc5",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0501520.json": "44671f3613aef7b35a58a33244bfc8efd1e66465bf5238f94cd66fd58f7aa790",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0501520.npz": "d3767f9ce048d02e2e63ec3fd6695cf7ee08b8fe3517a56984217669d307d5a1",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0751376.json": "dfeb8cef137e40ca720154cdd365d58d9a307304d0ba504a2c497dc684244dc6",
+    "runs/ese3990/main/ppo_R_s2/ckpt/0751376.npz": "5842582ec89691c0b89c8e8fb70a075ab091906745f20e38b0f48c0ed6c08a13",
+    "runs/ese3990/main/ppo_R_s2/ckpt/1000000.json": "de6c9a6edb0380213fb517fe352025e57de4546da7e3e6e8cabc7c89dbcfee0f",
+    "runs/ese3990/main/ppo_R_s2/ckpt/1000000.npz": "cc5e5a3c01dd43b41b0537756fdbd9b831fb3b8a2211e3d314fc105fd8f3bb2d",
+    "runs/ese3990/main/sac_R_s0/ckpt/0010000.json": "5360211baa1a43ad3aa0c1c9712701889c26e5d05e802bf00470e14a200d4b59",
+    "runs/ese3990/main/sac_R_s0/ckpt/0010000.npz": "36c43641f8242961a3ccfba8782d6fa025900169c166805e569f38e78f4892d0",
+    "runs/ese3990/main/sac_R_s0/ckpt/0100000.json": "98f3e910fe87b4754231942efc4e87ee3452e506fb2d48a4726e27155139b505",
+    "runs/ese3990/main/sac_R_s0/ckpt/0100000.npz": "f8dddee85c3546c5437b64b2453b99479147f854bf3ae18933bc3a7a7fee209d",
+    "runs/ese3990/main/sac_R_s0/ckpt/0250000.json": "09859ac2d64c830a561fb585ad37c415d9a2dadeb526a1bcd756c5a9582e7d7b",
+    "runs/ese3990/main/sac_R_s0/ckpt/0250000.npz": "c70c3d7077ff44116633f69de6404bc4f48379f252f4067c20198f061305fb68",
+    "runs/ese3990/main/sac_R_s0/ckpt/0500000.json": "790aa14b62fb085f91b362ece93ca697999bfb4b372f57ca2a8a8be09c7c5126",
+    "runs/ese3990/main/sac_R_s0/ckpt/0500000.npz": "7ba057e774c1034e79f63c14f27c7e3e6e251ef5e050968a47faa426d08dc5fa",
+    "runs/ese3990/main/sac_R_s0/ckpt/0750000.json": "abfa70b65ad861bc59db8920dd6ed64d379a7a03713d9c124a8cf31e6b4ee951",
+    "runs/ese3990/main/sac_R_s0/ckpt/0750000.npz": "96b008966360f75412b7e3ca3474bd5187b1841039ccb472eeffb3f584174cf7",
+    "runs/ese3990/main/sac_R_s0/ckpt/1000000.json": "a0e50f5ad8643a55479e194d867331bf2f3f4639029d38a0abb87ef96cce85b2",
+    "runs/ese3990/main/sac_R_s0/ckpt/1000000.npz": "a3d5553d2ea41c61224079b74a03b2c5587d037bb7b0924ac924a393c74ef3e6",
+    "runs/ese3990/main/sac_R_s1/ckpt/0010000.json": "9d1843094bd78d7e27cc160740928f5ed91a795eed51490e0f70d4058e959360",
+    "runs/ese3990/main/sac_R_s1/ckpt/0010000.npz": "1abd1fd6bcc39650a4577455c4ef1b31bbbd92379bcd900b68110333c4245124",
+    "runs/ese3990/main/sac_R_s1/ckpt/0100000.json": "0fac90f922af399f0e329855faa3f7532b25492a6c68ff9c24d2ba32d50c6306",
+    "runs/ese3990/main/sac_R_s1/ckpt/0100000.npz": "c341b08e01d5d1c443d221cc4c47c414d24bc2fba8850c79b17ca84d3e90d45c",
+    "runs/ese3990/main/sac_R_s1/ckpt/0250000.json": "89e6e6381acbb74d09c38eea8a2ad89443878f02985faad73cfa6e65351643dc",
+    "runs/ese3990/main/sac_R_s1/ckpt/0250000.npz": "234df76230dd71fd74914adb96140841fb65c2308b1742be16dbdef2c88b7de9",
+    "runs/ese3990/main/sac_R_s1/ckpt/0500000.json": "05cdc1d314157935230ffe19c7c7474dc7779e2ec709c78daf422d0800a3f93e",
+    "runs/ese3990/main/sac_R_s1/ckpt/0500000.npz": "97aac3f39503e8f09bb9490ff7a2e19a0915432ca049a9355f83315f0e8086e0",
+    "runs/ese3990/main/sac_R_s1/ckpt/0750000.json": "39e36d2e1206edfbeadd9557933d6ce40a26ecb40a2f071d56abb593c68078f7",
+    "runs/ese3990/main/sac_R_s1/ckpt/0750000.npz": "6c40d897952340b938100e31e5a1f8b5166ee8ea7f48d8cbf5e95a2ad63198d1",
+    "runs/ese3990/main/sac_R_s1/ckpt/1000000.json": "e8f49c4ed8d128aa91598fcfac21fc3b3ae12e9e0b575c2295529ec3b439cc48",
+    "runs/ese3990/main/sac_R_s1/ckpt/1000000.npz": "68ff0903b3cad976beedcf8899823008589c3067a3e73cc3831de21953fcae47",
+    "runs/ese3990/main/sac_R_s2/ckpt/0010000.json": "560ddb41cee05a48a29f241dd1c126c9a0d95500d502db203e209718bcceadfd",
+    "runs/ese3990/main/sac_R_s2/ckpt/0010000.npz": "ad8b195539542d1c96e6938e74c56156f085a1d75467af79ed45b8670f89bc86",
+    "runs/ese3990/main/sac_R_s2/ckpt/0100000.json": "dfcc76c0be9d42886293c37c299de1a43054b8e1d78d6fcc72a572b586c33e1c",
+    "runs/ese3990/main/sac_R_s2/ckpt/0100000.npz": "9a3d295ddd16a7f5e723c5f016d4e0be3ff1aa65e268088613c68056670738f3",
+    "runs/ese3990/main/sac_R_s2/ckpt/0250000.json": "0ce605a8be6f42383f2dbf8e9f8ebceb4eba9ab14d999fee05731f47ab4e8850",
+    "runs/ese3990/main/sac_R_s2/ckpt/0250000.npz": "7940aed6c4511baf51988667139c1ac1810ea5be48b1bd7b679f4a81c5df3d90",
+    "runs/ese3990/main/sac_R_s2/ckpt/0500000.json": "987586e4c11377ef869803e2aa3e645823796b62cb0b3811f7f809244d16525a",
+    "runs/ese3990/main/sac_R_s2/ckpt/0500000.npz": "2bf14bb054eb9032771298962453331c426199c68a21167bf6c6acf30e8ae846",
+    "runs/ese3990/main/sac_R_s2/ckpt/0750000.json": "79bc9b70c081499172967e16c0a4ed327a582f62217bdd9404e40339c1a678a9",
+    "runs/ese3990/main/sac_R_s2/ckpt/0750000.npz": "8e9666eea0bfdd3b6ed96998e4609757d0269f01a5f4a7365404c5649ceb2d5b",
+    "runs/ese3990/main/sac_R_s2/ckpt/1000000.json": "27f4fead9333df86a4b35fd0cf657fb70ac5cde9c13020862d013ca39226aa58",
+    "runs/ese3990/main/sac_R_s2/ckpt/1000000.npz": "261b6249b3f5214c8d59cf8d77ae87a26da5fe5c1655de02443f476658866080"
+  },
+  "freeze_hashes": {
+    "experiments/ese3990/configs/M2_freeze.json": "5ee4ecb4747c3e25d028b0c745733b080006c2a2bfd94db294bfb19d11b11b3f",
+    "experiments/ese3990/configs/M3_freeze.json": "1ded48bf1b8508dc6350d59863a891bdaf8b6f91ba1e28cdfab103ead88dc6e3"
+  },
+  "condition_hashes": {
+    "validation": "3efcb45ff580c0c8abfbd1bc94ccfcd2381b58826c43a118fc22064a2f4bc965",
+    "test": "88c4e38aea3e4030025e631d2b04ceae8f524dd4639a2228d7af253c5c45d825",
+    "shift": "f4a3e0efac5e9e2ea29ed79fac83c082b09f12d12e30813cb302eb43354a2f2a"
+  },
+  "evaluation_manifests": [
+    "nominal",
+    "test",
+    "shift"
+  ],
+  "environment_seed": 0,
+  "rayon_threads": "12",
+  "selection": "Most validation finishes, then greatest validation mean return, then earliest checkpoint. Report final checkpoint too.",
+  "mpc": {
+    "horizon": 40,
+    "candidates": 32,
+    "iterations": 3,
+    "block_s": 0.5,
+    "initial_std": 0.6,
+    "min_std": 0.1
+  },
+  "upwind": "Deferred to keep M4 focused on the required R comparison.",
+  "evaluator_sha256": "03281277d68d374dad2e6a1f3660c10c4668e844fed9a0c3178f47d532e2ac72"
+}

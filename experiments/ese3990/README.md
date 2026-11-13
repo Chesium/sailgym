@@ -10,6 +10,9 @@ and seeds are saved in [`configs/M2_freeze.json`](configs/M2_freeze.json).
 MPC implementation, validation sweep and online cost are documented in the
 [M3 report](../../docs/ese3990/M3_report.md); its selected default is saved in
 [`configs/M3_freeze.json`](configs/M3_freeze.json).
+The [M4 report](../../docs/ese3990/M4_report.md) contains the frozen test/shift
+comparison, exact replay audit, failure analysis and claim-to-command index.
+Its figures and video specs are generated from the saved episode stores.
 
 Physics, gate passage, capsize, bounds and time limits are Rust decisions
 (`sailgym_core`). Nothing in this directory models the boat.
@@ -29,6 +32,9 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `mpc.py` | CEM-MPC: blocked Gaussian proposals, elite mean/std, shifted warm starts, best sampled plan; comments link the mechanism to advanced PDF pp. 120, 178–179 and 199–201 |
 | `mpc_study.py` | Resumable five-setting validation sweep, actual simulator work and latency, validation selection and planned-path probes |
 | `mpc_figures.py` | Cost/success and latency figure; predicted plan versus exactly replayed execution |
+| `compare.py` | M4 freeze and resumable nominal/test/shift evaluation of all predeclared checkpoints and frozen references |
+| `comparison_report.py` | Verify frozen inputs, outcome/cost summaries, test learning curves, representative selections and JSON video specs |
+| `viz/compose.py` | Batch static/GIF/MP4 overlays from exact stored-episode selectors; rejects mixed conditions |
 | `train.py` | Learner entry point (`--learner ppo|sac`): calibration and normalization (identical for both), collection (every episode stored), updates, checkpoints and probe/validation evaluation |
 | `plots.py` | Learning curve from runs' `curve.jsonl` |
 | `audit_runs.py` | Verify saved costs, finite metrics, validation aggregates, exact selected/final probe replay and nominal actor reload; writes a compact JSON evidence file |
@@ -38,7 +44,7 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `viz/show.py` | Command-line entry: select episodes from a store, replay them and render |
 | `tests/` | Contract, branch, baseline and viz checks |
 
-Not yet written (M4+): `viz/compose.py`.
+M4's generated results and media commands are recorded in its report and specs.
 
 ## Commands
 
@@ -78,6 +84,18 @@ env -u PYTHONPATH RAYON_NUM_THREADS=12 uv run --frozen --no-sync python \
     experiments/ese3990/evaluate.py --controller mpc --manifest nominal
 uv run --frozen --no-sync python experiments/ese3990/mpc_figures.py \
     runs/ese3990/mpc/M3 --out docs/ese3990/figs
+
+# M4: audit completed main runs, freeze selection, then open test/shift once.
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/audit_runs.py \
+    runs/ese3990/main/ppo_R_s{0,1,2} runs/ese3990/main/sac_R_s{0,1,2} \
+    --out runs/ese3990/main/M4_audit.json
+env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false RAYON_NUM_THREADS=12 \
+    uv run --frozen --no-sync python experiments/ese3990/compare.py --out runs/ese3990/M4
+env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
+    experiments/ese3990/comparison_report.py runs/ese3990/M4 --out docs/ese3990
+env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
+    experiments/ese3990/viz/compose.py docs/ese3990/M4_videos.json \
+    --out runs/ese3990/M4/videos
 
 # PPO: a 100k pilot, then evaluate a checkpoint and plot the curve
 uv run --frozen --no-sync python experiments/ese3990/train.py --seed 0 --decisions 100000 \
