@@ -37,9 +37,51 @@
 \newcommand{\gate}[3]{%
   \draw[gatecol,line width=0.5pt] #1 circle (5);
   \draw[gatecol,line width=1.4pt] #2 -- #3;}
-\newcommand{\wind}[2]{% top of the arrow, length (m)
-  \draw[-{Stealth[length=1.6mm]},line width=1.2pt,black!60] #1 -- ++(0,-#2)
-    node[below,font=\scriptsize,black!60] {wind};}
+\definecolor{windblue}{HTML}{56B4E9}
+\newcommand{\wind}[2]{% top of the arrow, length (m): a wide sky-blue arrow
+  \draw[-{Triangle[width=7pt,length=5pt]},line width=3pt,windblue] #1 -- ++(0,-#2)
+    node[below,font=\scriptsize,windblue!70!black] {wind};}
+
+% --- Language colours (GitHub linguist) for the pipeline on slide 3
+\definecolor{rustc}{HTML}{DEA584}
+\definecolor{pyc}{HTML}{3572A5}
+\newcommand{\rust}{\textcolor{rustc!60!black}{Rust}}
+\newcommand{\python}{\textcolor{pyc}{Python}}
+% The official Rust logo (rustdoc's rust-logo.svg), transcribed to TikZ.
+\newsavebox{\rustlogo}
+\sbox{\rustlogo}{\begin{tikzpicture}[x=0.0042cm,y=-0.0042cm,baseline=-0.65ex]
+  \fill[black] (0,0) circle (47.5);
+  \fill[rustc!25] (0,0) circle (38.5);
+  \foreach \a in {0,11.25,...,348.75}
+    \fill[black,rotate=\a,rounded corners=0.5] (45,4.5) -- (52.5,0) -- (45,-4.5) -- cycle;
+  \foreach \a in {0,72,...,288}
+    \fill[black,rotate=\a,rounded corners=1] (-10,-45) -- (0,-32) -- (10,-45) -- cycle;
+  \foreach \a in {0,72,...,288} \fill[rustc!25,rotate=\a] (0,-40) circle (3);
+  \fill[black,even odd rule]
+    (-9,-15) -- (4,-15) .. controls (12,-15) and (12,-7) .. (4,-7) -- (-9,-7) -- cycle
+    (-40,22) -- (0,22) -- (0,11) -- (-9,11) -- (-9,3) -- (1,3)
+      .. controls (12,3) and (6,22) .. (15,22) -- (40,22) -- (40,3) -- (34,3) -- (34,5)
+      .. controls (34,13) and (25,12) .. (24,7) .. controls (23,2) and (19,-2) .. (18,-2)
+      .. controls (33,-10) and (24,-26) .. (12,-26) -- (-35,-26) -- (-35,-15) -- (-25,-15)
+      -- (-25,11) -- (-40,11) -- cycle;
+\end{tikzpicture}}
+
+% --- Pseudo-code, without extra packages
+\newcommand{\kw}[1]{\textbf{#1}}
+\newcommand{\cmt}[1]{\hfill\textcolor{black!50}{$\triangleright$ #1}}
+\newcommand{\ind}{\hspace*{1.1em}}
+% One numbered line at an indent level; each level draws a vertical scope rule
+% (as in algorithm2e's vlined style). Lines are paragraphs with no skip, so the
+% strut-high rules of consecutive lines join up.
+\newcounter{pline}
+\newcommand{\scoperule}{\hspace*{0.25em}\textcolor{black!35}{\vrule width 0.6pt
+  height\dimexpr\ht\strutbox+0.2pt\relax depth\dimexpr\dp\strutbox+0.2pt\relax}\hspace*{0.85em}}
+\newcommand{\PL}[2]{\stepcounter{pline}\noindent\strut
+  \makebox[1.2em][r]{\tiny\textcolor{black!45}{\thepline}}\hspace*{0.7em}%
+  \ifcase#1\or\scoperule\or\scoperule\scoperule\or\scoperule\scoperule\scoperule\fi
+  #2\par}
+\newenvironment{pseudo}{\par\footnotesize\raggedright\setlength{\parskip}{0pt}%
+  \setlength{\parindent}{0pt}\setcounter{pline}{0}}{\par}
 \tikzset{
   % ILCA hull 4.23 x 1.37 m (web HULL_OUTLINE), mast 1.2 m forward, 2.72 m
   % boom eased 30 deg to starboard; pic frame: x forward, y port, metres.
@@ -79,6 +121,13 @@
   \insertframenumber\,/\,\inserttotalframenumber\hspace{1.2em}\vspace{0.8ex}%
 }
 
+% Author-year citations for the frame, centred in the footline; the
+% full entries are on the References slide.
+\newcommand{\refnote}[1]{\begin{tikzpicture}[remember picture,overlay]
+  \node[anchor=south,inner sep=0pt,text width=0.64\paperwidth,align=center,
+        font=\tiny,text=black!55] at ([yshift=0.55ex]current page.south) {#1};
+\end{tikzpicture}}
+
 \input{numbers.tex}
 \graphicspath{{figs/}}
 
@@ -115,21 +164,21 @@
         \gate{(0,-10)}{(-2.77,-5.84)}{(2.77,-14.16)}
         \pic[scale=1.6] at (0,0) {boat};
         \node[font=\scriptsize,anchor=east] at (-4,0) {start};
-        \node[font=\scriptsize,align=right,anchor=east] at (-9,20) {Leg 1: beat\\[-1pt]\alert{= task U}};
-        \node[font=\scriptsize,align=left,anchor=west] at (21,31) {Leg 2: reach\\[-1pt]\alert{$\approx$ task R}};
+        \node[font=\scriptsize,align=right,anchor=east] at (-9,20) {Leg 1: beat\\[-1pt]\textbf{= task U}};
+        \node[font=\scriptsize,align=left,anchor=west] at (21,31) {Leg 2: reach\\[-1pt]\textbf{$\approx$ task R}};
       \end{tikzpicture}\\[2pt]
       {\scriptsize Triangle course, as sailed in the web demo}
     \end{column}
     \begin{column}{0.54\textwidth}
       \begin{itemize}
-        \item Controls are \alert{rates}: rudder and sheet, 20 times a second
-        \item The physics decides heel, speed, capsize and whether the gate is passed
-        \item Upwind needs a \alert{tack}: zig-zag through the no-go zone without stalling ``in irons''
+        \item Controls are \textbf{rates}: rudder and sheet, 20 times a second
+        \item The simulator decides heel, speed, capsize and whether the gate is passed
+        \item Upwind needs \textbf{tacks}: zig-zag, turning the bow through the no-go zone without stalling ``in irons''
       \end{itemize}
       \vspace{0.6em}
       \begin{block}{Question}
-        How do on-policy learning, off-policy learning and planning with a known model trade off
-        \alert{success}, \alert{experience} and \alert{computation}?
+        How do \textcolor{colPPO}{on-policy learning}, \textcolor{colSAC}{off-policy learning} and \textcolor{colMPC}{planning with a known model} trade off
+        \textbf{success}, \textbf{experience} and \textbf{computation}?
       \end{block}
     \end{column}
   \end{columns}
@@ -139,13 +188,15 @@
 \begin{frame}{Method: one simulator, one contract for every controller}
   \centering
   \begin{tikzpicture}[node distance=4mm,
-      box/.style={draw=nusblue,fill=nusblue!6,rounded corners=2pt,align=center,
-                  font=\scriptsize,text width=3.0cm,minimum height=1.1cm,inner sep=2pt}]
-    \node[box] (phys) {\textbf{Rust physics}\\SailGym, 200 Hz\\hull, sail, heel, capsize};
-    \node[box,right=of phys] (ep) {\textbf{Episode rules}\\in Rust\\gates, bounds, timeout};
-    \node[box,right=of ep] (con) {\textbf{Shared contract}\\Python: actions,\\reward, features};
-    \node[box,right=of con,draw=nusorange,fill=nusorange!10] (ctl) {\textbf{Controllers}\\\PPO{} \textperiodcentered{} \SAC\\\CEM{} \textperiodcentered{} \Rule};
-    \foreach \a/\b in {phys/ep,ep/con,con/ctl} \draw[-{Stealth},nusblue] (\a) -- (\b);
+      box/.style={rounded corners=2pt,align=center,line width=0.8pt,
+                  font=\scriptsize,text width=3.0cm,minimum height=1.1cm,inner sep=2pt},
+      rust/.style={box,draw=rustc,fill=rustc!25},
+      py/.style={box,draw=pyc,fill=pyc!12}]
+    \node[rust] (phys) {\usebox{\rustlogo}\,\textbf{\rust{} physics}\\SailGym, 200 Hz\\hull, sail, heel, capsize};
+    \node[rust,right=of phys] (ep) {\textbf{Episode rules}\\in \rust\\gates, bounds, timeout};
+    \node[py,right=of ep] (con) {\textbf{Shared contract}\\\python: actions,\\reward, features};
+    \node[box,right=of con,draw=black,fill=white] (ctl) {\textbf{Controllers}\\\PPO{} \textperiodcentered{} \SAC\\\CEM{} \textperiodcentered{} \Rule};
+    \foreach \a/\b in {phys/ep,ep/con,con/ctl} \draw[-{Stealth},black!70] (\a) -- (\b);
   \end{tikzpicture}\\[1.2em]
   \begin{columns}[c]
     \begin{column}{0.50\textwidth}
@@ -173,12 +224,14 @@
     \begin{column}{0.48\textwidth}
       \begin{itemize}\footnotesize
         \item Same action for all: rudder rate, sheet rate in $[-1,1]$
-        \item Reward: $-$time $+10$ finish $-10$ failure $+$ distance shaping
-        \item 50 held-out test conditions $+$ 20 shifted (wind 4/6\,m/s, heading $\pm$30$^\circ$)
-        \item Every episode replays bit-exactly from its actions
+        \item Reward $=$ \textcolor{green!55!black}{$+10$ finish} \textcolor{red!85!black}{$-10$ failure} $-$ time \textcolor{black!50}{($+$ distance shaping)}
+        \item 50 held-out test conditions $+$ 20 shifted (wind 4 or 6\,m/s, start heading 15--30$^\circ$ beyond training)
+        \item Discount $\gamma$ = 0.999 (R), 0.99975 (U): the horizon $1/(1-\gamma)$ = 50\,s or 200\,s just covers each time limit, so a finish still counts from the start
+        \item Episodes are stored as actions and replay bit-exactly (all 2{,}840 R evaluations audited)
       \end{itemize}
     \end{column}
   \end{columns}
+  \refnote{Distance shaping: potential-based (Ng, Harada \& Russell 1999).}
 \end{frame}
 
 % ---------------------------------------------------------------- 1:30
@@ -187,18 +240,18 @@
     \begin{column}{0.32\textwidth}
       \begin{algblock}{PPO}{colPPO}{on-policy}
         \footnotesize Collect 2{,}048 fresh decisions, take clipped policy-gradient steps, then
-        \alert{discard} the data.
+        \textbf{discard} the data.
       \end{algblock}
     \end{column}
     \begin{column}{0.32\textwidth}
       \begin{algblock}{SAC}{colSAC}{off-policy}
-        \footnotesize Store every decision in a \alert{replay buffer}; twin Q-networks and an
+        \footnotesize Store every decision in a \textbf{replay buffer}; twin Q-networks and an
         entropy bonus; one update per decision.
       \end{algblock}
     \end{column}
     \begin{column}{0.32\textwidth}
       \begin{algblock}{CEM-MPC}{colMPC}{planning}
-        \footnotesize Each decision: \alert{fork the live simulator}, try 32 rate plans $\times$ 3
+        \footnotesize Each decision: \textbf{fork the live simulator}, try 32 rate plans $\times$ 3
         refits over a 2 or 8\,s horizon, execute the first action.
       \end{algblock}
     \end{column}
@@ -206,14 +259,115 @@
   \vspace{1em}
   \begin{itemize}\small
     \item \PPO{} and \SAC: same networks (2$\times$64), features, budget and 3 training seeds
-    \item \MPC{} uses the \alert{exact simulator}: it pays in compute per decision, not in experience
-    \item On U only, \alert{expert-data arms}: \SAC{} with 50 \Rule{} demonstrations in replay;
+    \item \MPC{} uses the \textbf{exact simulator}: it pays in compute per decision, not in experience
+    \item On U only, \textbf{expert-data arms}: \SAC{} with 50 \Rule{} demonstrations in replay;
           \PPO{} initialised by behaviour cloning
   \end{itemize}
+  \refnote{PPO: Schulman et al.\ 2017. SAC: Haarnoja et al.\ 2018a, b. CEM: de Boer et al.\ 2005; Chua et al.\ 2018. Demonstrations: Ball et al.\ 2023; behaviour cloning: Pomerleau 1991.}
+\end{frame}
+
+% ---------------------------------------------------------------- pause-to-read: one page per controller
+\begin{frame}{The controllers in pseudo-code: PPO}
+  \begin{columns}[T]
+    \begin{column}{0.60\textwidth}
+      \begin{algblock}{PPO}{colPPO}{on-policy}
+        \begin{pseudo}
+          \PL{0}{Normalise inputs from 10k random decisions}
+          \PL{0}{\kw{repeat} until the budget is spent:}
+          \PL{1}{Collect $N{=}2048$ decisions:}
+          \PL{2}{$u\sim\mathcal N(\mu_\theta(s),\sigma^2)$, $a=\tanh u$}
+          \PL{1}{GAE, $\lambda{=}0.95$:}
+          \PL{2}{$\delta_t = r_t + \gamma b_t V(s'_t) - V(s_t)$}
+          \PL{2}{$\hat A_t = \delta_t + \gamma\lambda c_t \hat A_{t+1}$,\ \ $\hat R_t = \hat A_t + V(s_t)$}
+          \PL{1}{\kw{for} 4 epochs, minibatches of 256:}
+          \PL{2}{$\rho = \pi_\theta(u|s)/\pi_{\text{old}}(u|s)$}
+          \PL{2}{$L = -\min(\rho\hat A,\ \mathrm{clip}(\rho,0.8,1.2)\hat A)$}
+          \PL{2}{\hspace*{1.2em}${}+0.5\,(V-\hat R)^2 - 0.001\,\mathcal H$}
+          \PL{2}{Adam step, $\|\nabla\|\le 1$}
+          \PL{1}{Discard the batch \cmt{on-policy}}
+        \end{pseudo}
+      \end{algblock}
+    \end{column}
+    \begin{column}{0.37\textwidth}
+      \begin{itemize}\footnotesize
+        \item Actor and critic: 2$\times$64 tanh MLPs
+        \item Adam $3\times10^{-4}$, clip 0.2, $\gamma$ from the task
+        \item Budget: 1M (R) or 4M (U) real decisions, 3 training seeds
+        \item \alert{U, \PPO\,+\,BC}: first fit $\mu_\theta$ to $\operatorname{atanh} a_{\text{demo}}$ and $V$ to the demos' returns-to-go (20 epochs), then the loop on the left
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \refnote{PPO: Schulman et al.\ 2017. GAE: Schulman et al.\ 2016. Adam: Kingma \& Ba 2015.}
+\end{frame}
+
+\begin{frame}{The controllers in pseudo-code: SAC}
+  \begin{columns}[T]
+    \begin{column}{0.60\textwidth}
+      \begin{algblock}{SAC}{colSAC}{off-policy}
+        \begin{pseudo}
+          \PL{0}{$\mathcal D \leftarrow$ 10k random transitions}
+          \PL{0}{\kw{for} every real decision:}
+          \PL{1}{$a=\tanh(\mu_\theta(s)+\sigma_\theta(s)\,\varepsilon)$; step}
+          \PL{1}{$\mathcal D \leftarrow \mathcal D \cup \{(s,a,r,s',b)\}$}
+          \PL{1}{$B \leftarrow$ 256 rows of $\mathcal D$}
+          \PL{1}{$a'\sim\pi_\theta(\cdot|s')$:}
+          \PL{2}{$y = r + \gamma b\,\big(\min_j \bar Q_j(s',a') - \alpha\log\pi_\theta(a'|s')\big)$}
+          \PL{1}{Critics: min.\ $\sum_j (Q_j(s,a)-y)^2$}
+          \PL{1}{Actor: $\tilde a\sim\pi_\theta(\cdot|s)$,}
+          \PL{2}{min.\ $\alpha\log\pi_\theta(\tilde a|s) - \min_j Q_j(s,\tilde a)$}
+          \PL{1}{Temperature: min.\ $-\alpha\,(\log\pi_\theta(\tilde a|s) + \bar{\mathcal H})$}
+          \PL{1}{$\bar Q_j \leftarrow (1-\tau)\bar Q_j + \tau Q_j$, $\tau{=}0.005$}
+        \end{pseudo}
+      \end{algblock}
+    \end{column}
+    \begin{column}{0.37\textwidth}
+      \begin{itemize}\footnotesize
+        \item Actor and two critics: 2$\times$64 tanh MLPs
+        \item Replay $|\mathcal D|$ = 100k (R) or 400k (U); one update per decision
+        \item $\alpha_0 = 0.2$, target entropy $\bar{\mathcal H} = -2$
+        \item Budget: 1M (R) or 4M (U) real decisions, 3 training seeds
+        \item \alert{U, \SAC\,+\,demos}: half of every minibatch from a fixed buffer of 50 \Rule{} episodes (83k decisions, charged to the budget)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \refnote{SAC: Haarnoja et al.\ 2018a; learned temperature: Haarnoja et al.\ 2018b. Clipped double Q: Fujimoto et al.\ 2018. Symmetric sampling: Ball et al.\ 2023.}
+\end{frame}
+
+\begin{frame}{The controllers in pseudo-code: CEM-MPC}
+  \begin{columns}[T]
+    \begin{column}{0.60\textwidth}
+      \begin{algblock}{CEM-MPC}{colMPC}{planning}
+        \begin{pseudo}
+          \PL{0}{\kw{for} every live decision (20\,Hz):}
+          \PL{1}{$\mu \leftarrow$ last plan shifted by one decision}
+          \PL{1}{$\sigma \leftarrow 0.6$ \cmt{0.5\,s action blocks}}
+          \PL{1}{\kw{for} $i=1,2,3$:}
+          \PL{2}{Sample $K{=}32$ plans $\sim \mathrm{clip}(\mathcal N(\mu,\sigma^2))$}
+          \PL{2}{\kw{in Rust, in parallel}, per plan:}
+          \PL{3}{fork the live episode, run $H$ decisions}
+          \PL{3}{(stop at finish, failure or time limit)}
+          \PL{3}{score $= \sum_t \gamma^t r_t$ \cmt{no value tail}}
+          \PL{2}{Keep the best plan seen}
+          \PL{2}{Elites $E$ = top 4 plans}
+          \PL{2}{$\mu \leftarrow \mathrm{mean}(E)$, $\sigma \leftarrow \max(\mathrm{std}(E), 0.1)$}
+          \PL{1}{Execute the best plan's first decision}
+        \end{pseudo}
+      \end{algblock}
+    \end{column}
+    \begin{column}{0.37\textwidth}
+      \begin{itemize}\footnotesize
+        \item Plans are 0.5\,s blocks of (rudder, sheet) rates
+        \item $H$ = 40 decisions (2\,s) or 160 (8\,s); $K=32$, 3 refits, 4 elites, $\sigma\ge0.1$
+        \item Same reward and Rust rules as the live episode; 3 search seeds
+        \item \alert{Known model}: no learning, but 8\,s costs $\approx$\uMPCpLong\,ms per decision (validation median)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \refnote{Cross-entropy method: de Boer et al.\ 2005. Receding-horizon MPC: Mayne et al.\ 2000. CEM planning in RL: Chua et al.\ 2018.}
 \end{frame}
 
 % ---------------------------------------------------------------- 2:00
-\begin{frame}{Results on the reach (R): off-policy learning works, on-policy does not}
+\begin{frame}{Results on the reach (R): SAC learns on every seed; PPO is seed-sensitive}
   \begin{columns}[c]
     \begin{column}{0.56\textwidth}
       \includegraphics[width=\textwidth]{r_learning.png}
@@ -230,20 +384,21 @@
         \Rule                & \rRULEtest     & \rRULEshift \\
         \bottomrule
       \end{tabular}\\[0.6em]
-      {\scriptsize Learners: 3 training seeds, validation-selected checkpoints.
-       MPC: 3 search seeds. RuleSailor: hand-written reference.}\\[0.8em]
-      \SAC{} learns the reach in about 0.5M decisions; \PPO{} never finds the gate.
+      {\scriptsize Main seeds: validation-selected checkpoints. MPC: 3 search seeds.
+       Pilots: same settings, 20 validation conditions.}\\[0.8em]
+      \SAC{} learns most of the reach by 0.5M decisions on all 3 seeds, and its 12 pilot seeds agree; shifted conditions are harder (\rSACshift).\\[0.4em]
+      \PPO{}'s 3 main seeds never learn the gate, but in pilot runs (validation only) about 1 in 4 \PPO{} seeds did.
     \end{column}
   \end{columns}
 \end{frame}
 
-% ---------------------------------------------------------------- 2:25
-\begin{frame}{Results upwind (U, preliminary): the tack is the bottleneck}
+% ---------------------------------------------------------------- 2:20
+\begin{frame}{Results upwind (U, preliminary): only the 8\,s planner finishes reliably}
   \begin{columns}[c]
     \begin{column}{0.55\textwidth}
       \centering
-      \includegraphics[height=0.72\textheight]{u_tracks.png}\\
-      {\scriptsize First validation condition (5.1\,m/s from N), one seed each}
+      \includegraphics[width=\linewidth,height=0.72\textheight,keepaspectratio]{u_tracks.png}\\
+      {\scriptsize First three validation conditions, seed 0; learners at their validation-selected checkpoint}
     \end{column}
     \begin{column}{0.43\textwidth}
       \footnotesize
@@ -261,26 +416,60 @@
         \MPC{} 8\,s horizon (test)            & \uMPCtest \\
         \bottomrule
       \end{tabular}\\[0.3em]
-      {\scriptsize\uMPCpartial}\\[0.6em]
-      \alert{Planning is horizon-bound:} 8\,s always tacks but needs \uMPCpLong\,ms per decision
-      (offline). \alert{Learners never find the tack} in 4M decisions.
+      \uMPCpartial
+      \textbf{Planning is horizon-bound:} the 2\,s planner never tacks; 8\,s finished every validation and test run but needs
+      \uMPCpLong\,ms per decision (offline).\\[0.3em]
+      \textbf{No learner finishes reliably:} \SAC{} $+$ demonstrations tacks in \uSACDtacked{} held-out runs
+      (\SAC{} from scratch: \uSACtacked) but rarely reaches the gate.
     \end{column}
   \end{columns}
 \end{frame}
 
-% ---------------------------------------------------------------- 2:50
+% ---------------------------------------------------------------- 2:43
 \begin{frame}{Takeaways and next steps}
   \begin{itemize}
-    \item \alert{Known model + long enough horizon} (\MPC): reliable, but not real-time upwind
-    \item \alert{Reusing experience} (\SAC) beats fresh batches (\PPO) on the reach
-    \item Upwind is an \alert{exploration} problem: from scratch no learner tacks;
-          expert data helps only a little
+    \item \textbf{Known model + long enough horizon} (\MPC): finished every test so far, but not in real time upwind
+    \item On the reach, \SAC{} was far more \textbf{reliable} than \PPO: 3/3 main seeds vs 0/3 (about 1 in 4 \PPO{} pilot seeds learn it)
+    \item Upwind, no learner finishes reliably: \textbf{demonstrations teach \SAC{} to tack}
+          (\uSACDtacked{} held-out runs) but it rarely reaches the gate (\uSACDtest{} tests)
   \end{itemize}
   \vspace{1em}
   \begin{block}{Next (final presentation, Dec 3)}
-    Finish the upwind held-out evaluation; diagnose tacks, irons and mark misses from exact
-    replays; claim-to-evidence index for every number.
+    \textbf{Why learners fail upwind:} \SAC{}'s value estimates blow up on U but not on R;
+    test the standard fix (critic LayerNorm, as in RLPD) as a labelled extra arm.\\[0.3em]
+    \textbf{Learning $+$ planning:} give the 2\,s \MPC{} a learned value at its horizon.
+    Can it tack in real time?
   \end{block}
+\end{frame}
+
+
+% ---------------------------------------------------------------- flash at the end
+\begin{frame}{References}
+  \begin{columns}[T]
+    \begin{column}{0.49\textwidth}
+      \tiny\raggedright\setlength{\parskip}{3pt}
+      Ball, P.\,J., Smith, L., Kostrikov, I., Levine, S. (2023). Efficient online reinforcement learning with offline data. \emph{ICML}.\par
+      Chua, K., Calandra, R., McAllister, R., Levine, S. (2018). Deep reinforcement learning in a handful of trials using probabilistic dynamics models. \emph{NeurIPS}.\par
+      de Boer, P.-T., Kroese, D.\,P., Mannor, S., Rubinstein, R.\,Y. (2005). A tutorial on the cross-entropy method. \emph{Annals of Operations Research} 134, 19--67.\par
+      Fujimoto, S., van Hoof, H., Meger, D. (2018). Addressing function approximation error in actor-critic methods. \emph{ICML}.\par
+      Haarnoja, T., Zhou, A., Abbeel, P., Levine, S. (2018a). Soft actor-critic: off-policy maximum entropy deep reinforcement learning with a stochastic actor. \emph{ICML}.\par
+      Haarnoja, T., Zhou, A., Hartikainen, K., et al. (2018b). Soft actor-critic algorithms and applications. arXiv:1812.05905.\par
+      Kingma, D.\,P., Ba, J. (2015). Adam: a method for stochastic optimization. \emph{ICLR}.\par
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \tiny\raggedright\setlength{\parskip}{3pt}
+      Mayne, D.\,Q., Rawlings, J.\,B., Rao, C.\,V., Scokaert, P.\,O.\,M. (2000). Constrained model predictive control: stability and optimality. \emph{Automatica} 36(6), 789--814.\par
+      Ng, A.\,Y., Harada, D., Russell, S. (1999). Policy invariance under reward transformations: theory and application to reward shaping. \emph{ICML}.\par
+      Pomerleau, D.\,A. (1991). Efficient training of artificial neural networks for autonomous navigation. \emph{Neural Computation} 3(1), 88--97.\par
+      Schulman, J., Moritz, P., Levine, S., Jordan, M., Abbeel, P. (2016). High-dimensional continuous control using generalized advantage estimation. \emph{ICLR}.\par
+      Schulman, J., Wolski, F., Dhariwal, P., Radford, A., Klimov, O. (2017). Proximal policy optimization algorithms. arXiv:1707.06347.\par
+      Sutton, R.\,S., Barto, A.\,G. (2018). \emph{Reinforcement Learning: An Introduction}, 2nd ed. MIT Press.\par
+      ESE3990 lecture slides (2026): L1--L13 Foundations; L14--L19 Advanced Topics. NUS.\par
+      \vspace{4pt}
+      \textcolor{black!55}{Simulator, environment, controllers and experiments: this project (SailGym).
+      Rust logo \textcopyright{} Rust Foundation, CC BY. Colours: NUS corporate palette; GitHub linguist language colours.}\par
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \end{document}

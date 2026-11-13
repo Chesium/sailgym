@@ -4,7 +4,7 @@
 **Requirement** (`docs/ese3990/intermediate_presentation_requirements.txt`):
 minute 1 problem and motivation, minute 2 method, minute 3 preliminary results.
 
-Slides: `build/main.pdf` (7 frames, 16:9). Every number on them comes from
+Slides: `build/main.pdf` (11 frames, 16:9). Every number on them comes from
 `numbers.tex`, which `make_figures.py` generates from the saved runs.
 
 ## Timeline at a glance
@@ -14,11 +14,13 @@ Slides: `build/main.pdf` (7 frames, 16:9). Every number on them comes from
 | 0:00–0:08 | Slides | 1 Title | ~18 |
 | 0:08–0:55 | **Browser: Triangle course, live** | — | ~105 |
 | 0:55–1:05 | Slides | 2 Problem | ~25 |
-| 1:05–1:35 | Slides | 3 Method: contract | ~70 |
-| 1:35–2:00 | Slides | 4 Method: controllers | ~60 |
-| 2:00–2:25 | Slides | 5 Results R | ~55 |
-| 2:25–2:50 | Slides | 6 Results U | ~55 |
-| 2:50–3:00 | Slides | 7 Takeaways | ~25 |
+| 1:05–1:30 | Slides | 3 Method: contract | ~45 |
+| 1:30–1:54 | Slides | 4 Method: controllers | ~50 |
+| 1:54–2:00 | Slides | 5–7 Pseudo-code, one page per controller (flip ~2 s each) | ~10 |
+| 2:00–2:20 | Slides | 8 Results R | ~45 |
+| 2:20–2:43 | Slides | 9 Results U | ~50 |
+| 2:43–3:00 | Slides | 10 Takeaways and next | ~40 |
+| last 2–3 s | Slides | 11 References (flash, silent) | — |
 
 ## Narration
 
@@ -32,7 +34,7 @@ Lines in *italics* are actions, not speech. Trim words before trimming the demo.
 ### 0:08 — Live demo: Triangle course
 *Press P to start. Clock at 2×. Steer with A/D; trim with the on-screen mainsheet pad.*
 
-> This is SailGym, a physics simulator I built. I only control two things: how fast the rudder turns and how fast the sail is pulled in. Everything else — heel, speed, capsize, whether I pass the gate — comes from the physics.
+> This is SailGym, my sailing simulator. I control only two things: how fast the rudder turns and how fast the sail comes in. Heel, speed, capsize and gate passage all come from the simulation.
 
 *Point the bow straight at mark 1: the boat slows and stalls.*
 
@@ -44,7 +46,7 @@ Lines in *italics* are actions, not speech. Trim words before trimming the demo.
 
 *Round mark 1 and bear away onto the reach. Switch to 4× if behind time.*
 
-> The next leg, across the wind, is easy: point and go. These two legs are my two tasks: the upwind beat, U, and the reach, R.
+> The next leg, across the wind, is easy: point and go. Leg one is my upwind task, U; my reach task, R, is a leg like this one.
 
 *Switch to slides (frame 2).*
 
@@ -52,19 +54,24 @@ Lines in *italics* are actions, not speech. Trim words before trimming the demo.
 > So the question is: how do learning from experience and planning with a model trade off success, experience and computation on these tasks?
 
 ### 1:05 — Frame 3, method: one contract
-> Every controller sails the same Rust physics, under the same rules for gates, bounds and time limits. They send the same two rates, get the same reward — minus time, plus ten for finishing, minus ten for failing, plus distance shaping — and are tested on fifty held-out wind and heading conditions plus twenty shifted ones. Every episode replays bit-exactly.
+> Every controller sails the same Rust simulator, sends the same two rates and gets the same reward: plus ten for finishing, minus ten for failing, minus time, plus distance shaping. All are tested on fifty held-out conditions plus twenty shifted ones, and every episode replays bit-exactly.
 
-### 1:35 — Frame 4, method: three controllers
-> I implemented three methods. PPO learns on-policy: it collects fresh experience, updates, and throws it away. SAC learns off-policy: it keeps everything in a replay buffer. CEM-MPC doesn't learn at all: at every decision it forks the real simulator, tries thirty-two action plans, and executes the best first step. It has the exact model, so it pays in computation, not experience.
+### 1:30 — Frame 4, method: three controllers
+> PPO learns on-policy: it collects fresh experience, updates, and throws it away. SAC learns off-policy: it keeps everything in a replay buffer. CEM-MPC doesn't learn: at every decision it forks the real simulator, tries thirty-two plans and executes the best first step, paying in computation, not experience.
 
-### 2:00 — Frame 5, results R
-> On the reach, SAC learns most of the task within half a million decisions and finishes 117 of 150 held-out tests; PPO never finds the gate. Planning with the true model, and the hand-written RuleSailor, finish every time.
+### 1:54 — Frames 5–7, pseudo-code (flip)
+> Pseudo-code for each follows; pause to read it.
 
-### 2:25 — Frame 6, results U
-> Upwind is much harder. With a two-second horizon, MPC never completes a tack; with eight seconds it always does, but each decision takes about 0.2 seconds, so it is not real-time. After four million decisions no learner finds the tack on its own, and even fifty expert demonstrations help SAC only a little.
+### 2:00 — Frame 8, results R
+> On the reach, SAC learns on all three seeds and finishes 117 of 150 held-out tests. PPO's three seeds never learned it, though about one pilot seed in four did: PPO is seed-sensitive, not hopeless. The true-model planner and the hand-written RuleSailor finish every time.
 
-### 2:50 — Frame 7, takeaways
-> So: a known model with enough foresight wins, at a cost; reusing experience beats fresh batches; and upwind sailing is fundamentally an exploration problem. Thanks!
+### 2:20 — Frame 9, results U
+> Upwind is much harder. A two-second horizon never tacks; eight seconds finishes every run so far, but at 0.2 seconds per decision, not in real time. No learner finishes reliably: fifty demonstrations teach SAC to tack in four runs out of ten, but it reaches the gate only five times in 150 tests.
+
+### 2:43 — Frame 10, takeaways and next
+> So: a known model with foresight works, at a compute cost, and SAC beat PPO on the reach. Next: can the standard fix stop SAC's values blowing up upwind, and can a learned value let the two-second planner tack in real time? Thanks!
+
+*Advance to frame 11 (References) for 2–3 s, then stop recording. If the take runs over 3:00, take those seconds from the takeaways.*
 
 ## Demo preparation (web frontend)
 
@@ -115,13 +122,16 @@ env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python
 latexmk -pdf -outdir=build main.tex
 ```
 
-Rerun both after the M4U held-out evaluation finishes. Then frame 6's
+Rerun both after the M4U held-out evaluation finishes. Then frame 9's
 "MPC 8 s (test)" row is final, and the "partial" note disappears. Before then
 it shows how many MPC held-out episodes are done; the episodes it reports are
 real, but the count is incomplete.
 
 ## Checklist before upload
 
-- [ ] Numbers regenerated after the held-out run; `numbers.tex` has no "partial".
+- [ ] After the M4U held-out run finishes (`runs/ese3990/M4U/heldout/complete.json` exists): `make data`.
+- [ ] The MPC 8 s shift episodes all finished (`\uMPCshift` in `numbers.tex` is n/n). If not, change "every run so far" (frame 9 narration) and "finished every test so far" (slide 10).
+- [ ] The U held-out replay audit passes before saying "every episode replays bit-exactly" (slide 3 only claims the 2,840 R episodes).
+- [ ] Slide 10 "Next" still matches the plan's M4X arms (X1 critic LayerNorm, X2 value tail).
 - [ ] Video ≤ 3:00; audio clear; slides readable at 1080p.
-- [ ] Every spoken number matches the slide: 117/150, 0/150, 150/150; 0/60 vs 60/60; ~0.2 s; 4M; 50 demonstrations; 5/150.
+- [ ] Every spoken number matches the slide: 117/150, 0/150, 150/150; ~1 in 4 PPO pilot seeds; 0/60 vs 60/60; ~0.2 s; 4M; 50 demonstrations; tacks in ~4/10 runs; 5/150.

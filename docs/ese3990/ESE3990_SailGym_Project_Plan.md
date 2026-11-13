@@ -1,10 +1,10 @@
 # Learning versus Planning for Sailboat Control
 
-**ESE3990 project plan · Shimin Chen · revised 2026-11-13**  
-**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm, Nov 14–28) is planned before M5; final presentation/packaging remains M5. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
+**ESE3990 project plan · Shimin Chen · revised 2026-11-14**  
+**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm): all 12 learner runs and the MPC validation sweep are done; the held-out evaluation is running. **M4X** (added 2026-11-14) tests two explanations of the upwind results with post-hoc, exploratory arms. BPTT-WM moves to after Dec 3. Final presentation/packaging remains M5. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
-The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is retained as the final stretch goal, after the core experiments, analysis, reproducibility work, and presentation are complete.**
+The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is future work after the Dec 3 presentation** (amended 2026-11-14; reasons in [M4X](#m4x--nov-1727--explain-the-upwind-failures-let-learning-shorten-planning--812-h)).
 
 This replaces the pendulum-first scope in the [October proposal](ESE3990_Final_Project_Proposal_Draft.md) and the earlier PPO/BPTT version of this plan. It prioritizes explainable controller behavior and measured learning/planning tradeoffs. SuperMimic motivates the final extension rather than determining the required implementation.
 
@@ -19,8 +19,10 @@ This replaces the pendulum-first scope in the [October proposal](ESE3990_Final_P
 | Required | Explanation of tradeoffs | Learning curves, controller outcome table, MPC horizon/budget study, decision latency, and failure trajectories |
 | Required | Reproducible presentation | Saved checkpoints/configs, raw summaries, figure commands, and a presentation ready for Dec 3 |
 | Gated extension | Upwind sailing | Same evaluation pipeline; implement only after the reaching comparison works for all three methods. Scheduled as M4U (§6), with a labeled expert-data arm |
-| Final stretch | Learned dynamics and BPTT-WM | Start only after all selected core/extension results and presentation artifacts are finished; see §9 |
+| Post-hoc extension | M4X: critic-stability arm and value-tail planner | Labeled exploratory everywhere; starts after M4U's report; whatever is unfinished on Nov 28 is presented as planned work (§6) |
+| Future work (after Dec 3) | Learned dynamics and BPTT-WM | Moved out of the course schedule on 2026-11-14 (§6 M4X, §9) |
 | Deferred | Further algorithms and infrastructure | No TD3/Dreamer sweep, recurrent policy, full-course racing, or new browser dashboard |
+| Not scheduled (2026-11-14) | Harder tasks and observation | Multi-gate or trajectory-following tasks, random/gusty wind, deliberate partial observation; reasons in §6 M4X |
 
 The core is complete without a world model. A valid failed controller run is a result if its implementation is checked and its failures are reported. A missing SAC or MPC implementation is reduced scope, not a completed three-method comparison. The comparison concerns the implemented systems under declared resources; it does not isolate a single algorithmic mechanism.
 
@@ -371,11 +373,11 @@ Normalization was checked on 2026-11-14 and needs no amendment. Against seed-0 U
 - [x] Demonstration store and loader, the SAC demonstration buffer with symmetric sampling, and PPO's BC/value pretraining. *Accept:* demonstration transitions match replayed rewards and checksums; demonstration rows are never evicted and make up exactly half of each minibatch; BC loss falls and the BC actor reloads exactly; the existing 83 experiment tests still pass. *`demos.py`, `sac.symmetric_sample`, `ppo.behavior_clone`. Store sha256 `69575c91…`, D = 83,462 (37 finished, 7 mark missed, 6 truncated). 119 experiment tests pass.*
 - [x] One 100k smoke run per new arm on pilot seed 100, to check plumbing and runtime. These runs are not used for tuning or reported as results. *`runs/ese3990/M4U/smoke/`, all four arms; projected 4M: SAC ≈97 min, PPO ≈10 min.*
 - [x] RuleSailor and smooth-random on U validation under the U contract. Outcomes should match M0; only returns change. *Matched: RuleSailor 13/20 (5 mark missed, 2 truncated), random 0/20.*
-- [ ] MPC on U validation: H=40 and H=160, three search seeds each. Selection is predeclared as in M3 (most finishes, then lower p50 latency). Only the selected setting goes to held-out sets; H=160 is labeled offline if selected.
+- [x] MPC on U validation: H=40 and H=160, three search seeds each. Selection is predeclared as in M3 (most finishes, then lower p50 latency). Only the selected setting goes to held-out sets; H=160 is labeled offline if selected. *H=40 0/60 (59 truncated, 1 out of bounds), H=160 60/60. H=160 selected and labeled offline; `configs/M4U_mpc_freeze.json`.*
 - [x] Write `configs/M4U_train_freeze.json` (arms, settings, seeds, demonstration hash) **before** the 12 main learner runs. Queue the runs and retain failed ones. *Written, then all 12 launched concurrently 2026-11-14 00:43 (+08:00) under `runs/ese3990/M4U/main/`.*
-- [ ] Write the held-out freeze before opening test/shift, as in M4. Evaluate every predeclared checkpoint, the selected MPC and RuleSailor on nominal/test/shift, then run the exact-replay audit.
+- [ ] Write the held-out freeze before opening test/shift, as in M4. Evaluate every predeclared checkpoint, the selected MPC and RuleSailor on nominal/test/shift, then run the exact-replay audit. *Freeze written; evaluation running (73 of 76 groups done on 2026-11-14).*
 - [ ] U diagnostics from replay, with thresholds frozen before held-out results: tacks completed, time in irons, mark misses, out-of-bounds exits, and final distance for timeouts.
-- [ ] Optional, if the binding exposes RuleSailor's mode: predict that mode from the 17 learner features on the demonstration episodes. This tests whether its memory adds information the learners lack.
+- [x] Optional, if the binding exposes RuleSailor's mode: predict that mode from the 17 learner features on the demonstration episodes. This tests whether its memory adds information the learners lack. *[M4U_mode_check.json](M4U_mode_check.json): a 2×64 MLP reaches 0.82 balanced accuracy on held-out demonstration episodes (linear 0.38, majority 0.14). The features carry most of the mode.*
 - [ ] `M4U_report.md`, claim-index entries, and handoff `docs/handoffs/ese3990-m4u.md`.
 
 **Schedule.**
@@ -402,9 +404,67 @@ Compute is not the constraint; the slack is for debugging. **Cut order:** H=160 
 | Both MPC settings fail | Planning is search-bound: the tack is not being sampled |
 | Every arm fails, including the expert-data arms | A valid result. Report it with the tack/irons diagnostics; do not add a hidden tack script |
 
-**Not in M4U:** a learned value tail, MPC with RuleSailor as its base policy, residual RL, a γ sweep or any other U tuning, and BPTT.
+**Not in M4U:** a learned value tail, MPC with RuleSailor as its base policy, residual RL, a γ sweep or any other U tuning, and BPTT. *(2026-11-14: the value tail and a critic-LayerNorm arm are scheduled as M4X, outside M4U's freezes; BPTT moves to after Dec 3.)*
 
 **Exit:** every arm has a valid U evaluation that replays exactly; R evidence still replays unchanged; the report states which reading applies.
+
+### M4X · Nov 17–27 · Explain the upwind failures; let learning shorten planning · 8–12 h
+
+Added 2026-11-14, after M4U's training runs and MPC sweep and before any M4X run. M4/M4U freezes, rows and stores are not touched. U's validation outcomes are already open, so **every M4X row is post-hoc and labeled exploratory**, and is never merged into an M4/M4U table. **Start gate:** M4U's held-out evaluation, replay audit and report are done. **Stop rule:** M5's dates do not move; whatever is unfinished on Nov 28 is presented as planned work.
+
+**Evidence that motivates M4X**, all from existing logs:
+
+| Observation | Source |
+|---|---|
+| SAC's critic stays bounded on R and blows up on U. Max \|Q\| over each run is 18–25 on R, 2,200–5,000 for SAC from scratch on U and 6,900–9,100 for SAC + demonstrations. The three demonstration runs end with mean Q of +743 to +3,314; no U return from any state can exceed about +16 (finish bonus plus the largest shaping gain) | `metrics.jsonl` of all 9 SAC main runs (3 R, 6 U) |
+| The learners settle on running out the clock. A timeout returns about −5.3 from the start; a failure costs −10. 357 of SAC-from-scratch's 360 U validation episodes (all checkpoints, all seeds) are timeouts. PPO did the same on R ([M1 report](M1_report.md) §4) | [M4U_main_audit.json](M4U_main_audit.json) |
+| SAC + demonstrations learned, then lost it: seed 0 reached 7/20 validation finishes at 1M decisions and 0/20 from 2M on | Same audit |
+| The learners are not missing RuleSailor's information: its hidden mode is recoverable from their 17 features (M4U mode check, 0.82 balanced accuracy) | [M4U_mode_check.json](M4U_mode_check.json) |
+| Planning is horizon-bound on U: H=40 0/60, H=160 60/60 on validation, at ≈48 vs ≈193 ms p50 per decision. M4U's declared reading "a value tail is the next step" applies | M4U MPC sweep |
+
+**Arms.** Each differs from its M4U parent in one declared change only.
+
+| Arm | Question | The one change |
+|---|---|---|
+| **X1** SAC + demonstrations + critic LayerNorm | Is SAC's upwind failure caused by its critic blowing up? | LayerNorm after each hidden layer of both critics and their targets, as in RLPD (Ball et al., 2023), the component M4U deliberately omitted. Actor, demonstration store (`69575c91…`), seeds [0, 1, 2], 4M budget, 400k replay, γ, checkpoints and selection rule unchanged |
+| **X1b** SAC + critic LayerNorm, from scratch (optional) | Does a stable critic help without demonstrations? | The same LayerNorm change on M4U's SAC from scratch |
+| **X2** CEM-MPC H=40 + value tail | Can a learned value replace foresight, in real time? | Score adds γ^H·V(φ(s_H)) for candidates still running after H decisions. No tail after a finish, failure or the time limit, as in M3. V is the critic of PPO + BC's initial checkpoint for the same seed: already fitted by regression to the 50 demonstrations' returns-to-go under the U contract (M4U). It needs no new fitting and has no bootstrapping. Search seed s uses PPO + BC seed s's V and normalization. K, I, blocks and warm start unchanged |
+
+**Thresholds declared before results.** A critic is *bounded* if its max \|Q\| stays ≤ 250 (10× R's largest) and its mean Q never exceeds +20 during the run. *Real time* means p50 < 50 ms, with 50 ms deadline misses reported as in M3/M4. X2 records predicted versus executed return, so a planner exploiting V's errors is visible.
+
+- [ ] Critic-scale figure for all 9 SAC main runs (3 R, 6 U): max \|Q\| and mean Q against decisions, with the feasible return range marked. Existing logs only.
+- [ ] Optional critic LayerNorm in `sac.py`, default off, so every existing config and checkpoint reloads unchanged. Unit test; the existing experiment tests still pass.
+- [ ] Optional terminal value in `mpc.py`, default off, so the frozen planners are unchanged. Unit test: the tail is added only to candidates still running at H; the existing MPC tests still pass.
+- [ ] V check on RuleSailor's 20 U validation episodes (never used in fitting): returns-to-go error versus a constant predictor. Reported either way; V is not refitted on planner outcomes.
+- [ ] Write `configs/M4X_freeze.json` (arms, seeds, V checkpoint hashes, the thresholds above) **before** any X run.
+- [ ] Run X1 (X1b if time) and X2 on U validation; select learner checkpoints by M4U's rule. Then evaluate on U test/shift, labeled exploratory, and run the exact-replay audit.
+- [ ] `M4X_report.md`, claim-index entries and handoff `docs/handoffs/ese3990-m4x.md`.
+
+Compute is small: three concurrent SAC runs take ≈100 min; X2 on validation takes about an hour. **Cut order:** X1b, then X2's held-out evaluation (keep validation), then X1's held-out evaluation.
+
+**Readings declared before results.**
+
+| Observation | Reading |
+|---|---|
+| X1 bounded, and finishes > SAC + demonstrations | The critic blowing up was a cause of the upwind failure |
+| X1 bounded, finishes unchanged | The blow-up was a symptom; the bottleneck is elsewhere (exploration, the timeout trap) |
+| X1 still unbounded | LayerNorm alone does not stabilize SAC at γ = 0.99975; report it, with no further fixes in M4X |
+| X2 finishes ≈ H=160 in real time | A learned value substitutes for foresight: learning buys the planner back real time |
+| X2 tacks but finishes less often than H=160 | V points the right way but is imprecise near the gate |
+| X2 never tacks, like H=40 | V does not encode the worth of a tack; the horizon gap remains |
+
+**Ideas considered on 2026-11-14 and not scheduled.**
+
+| Idea | Decision | Reason |
+|---|---|---|
+| BPTT through a learned world model (§9) | After Dec 3 | Its default horizon (1.6 s) is shorter than the 2 s at which even the exact-model planner never tacks, so on U it would rest on a bootstrapped critic, the part observed to blow up. The model would also have to represent stalls and gate events, its worst case. On R, SAC and MPC already succeed. Fitting alone was budgeted at two days |
+| Multi-gate or trajectory-following tasks, random wind | Not scheduled | No learner clears one upwind gate reliably, so more legs add no information. Tasks and wind models freeze after Nov 28 (M4 exit); gusty wind breaks §3.3's information contract |
+| Deliberate partial observation | Not scheduled | The mode check shows the features already carry RuleSailor's hidden mode; removing information would predictably make the learners worse |
+| General tuning of PPO/SAC | Replaced by X1 | With U's outcomes open, only single, hypothesis-driven changes labeled post-hoc are defensible |
+
+**Not in M4X:** BPTT-WM, a γ/α/learning-rate sweep, LayerNorm for PPO, refitting V, new tasks, wind models or observation sets, and replacing any M4/M4U row.
+
+**Exit:** every M4X arm that ran has a validation result, labeled exploratory; held-out results, if run, replay exactly; the report states which reading applies.
 
 ### M5 · Nov 29–Dec 3 · Freeze, explain and present · 7–10 h
 
@@ -415,7 +475,7 @@ Compute is not the constraint; the slack is for debugging. **Cut order:** H=160 
 - [ ] Rehearse PPO versus SAC data use, SAC entropy/targets, MPC foresight/compute and all known-model fairness limitations.
 - [ ] Dec 1–2: reproduce a report, rehearse Q&A and confirm final logistics; Dec 3: present measured findings.
 
-Suggested presentation: boat/question (1 min), task/information contract (1), three controller mechanisms (3), outcomes and learning cost (2), MPC horizon/latency and failures (2), limitations (1). Upwind can replace part of the failure discussion if completed. A late BPTT attempt never displaces the core explanation.
+Suggested presentation: boat/question (1 min), task/information contract (1), three controller mechanisms (3), outcomes and learning cost (2), MPC horizon/latency and failures (2), limitations (1). Upwind can replace part of the failure discussion if completed. M4X's critic-scale figure and value-tail result, labeled exploratory, belong in the failure and horizon slots. BPTT is not attempted before Dec 3 (§9).
 
 ## 7. Implementation footprint and verification
 
@@ -463,7 +523,9 @@ Run focused numerical and integration tests, affected Rust package tests, and `s
 | SAC/PPO implementation error | Numerical checks, Q/entropy/ratio diagnostics | Debug on SailGym; optionally cross-check a public implementation on the same task |
 | Information/model advantage hidden | State/context audit | Match learner inputs and disclose richer planner state plus exact model access |
 | Reward exploits or misleading times | Rust outcomes, failed episodes and controls | Freeze geometry/evaluator first; report success and failures alongside conditional times |
-| Scope or compute exceeds deadline | Milestone exits and measured pilots | Cut BPTT first, then U and five-seed expansion; reduce common budgets before dropping independent seeds |
+| Scope or compute exceeds deadline | Milestone exits and measured pilots | Cut M4X first (its own cut order), then U and five-seed expansion; reduce common budgets before dropping independent seeds. BPTT is already outside the schedule |
+| Post-hoc arm read as confirmatory | An M4X row without its exploratory label, or merged into an M4/M4U table | Label M4X rows everywhere; report them separately |
+| Planner exploits a learned value | X2's predicted versus executed return | Report the gap; do not refit V on planner outcomes |
 | Visualization consumes core time | Hours spent against the §10 estimates | Cut the browser export first, then the grid layout, then mp4 (keep gif and static figures). Keep the episode store and replay, because the analysis depends on them |
 
 A missing required method or MPC study remains incomplete work; do not relabel a reduced experiment as the full project. A measured failure with checked code is valid evidence. Any robustness claim is limited to the explicit uniform-wind conditions tested. The core cannot establish real-world transfer, a universal algorithm ranking, equal prior knowledge, or SuperMimic-like speedups.
@@ -471,6 +533,8 @@ A missing required method or MPC study remains incomplete work; do not relabel a
 The strongest supported story is which implemented controller is useful under which **experience and computation budget**, and how its sailing behavior explains the result.
 
 ## 9. Final stretch: learned world model and BPTT-WM
+
+**Amended 2026-11-14: future work after Dec 3.** The reasons are in [M4X](#m4x--nov-1727--explain-the-upwind-failures-let-learning-shorten-planning--812-h). The design below is kept unchanged for that later work. If it resumes, start from S1's model diagnostics, not from policy learning: on U, check whether the model represents tacks and stalls before any BPTT run.
 
 **Start gate:** all required R results, the MPC study, selected U results (or a documented decision to omit U), reproducibility checks, figures and presentation are complete and frozen. Confirm spare time against the final deadline. If these conditions are not met, this section remains future work. No world-model data collection, fitting or gradient study belongs to the core critical path.
 
