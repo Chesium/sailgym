@@ -1,7 +1,7 @@
 # Learning versus Planning for Sailboat Control
 
 **ESE3990 project plan · Shimin Chen · revised 2026-11-13**  
-**Status:** implementation plan. M0 and M1 are complete (see the [M0 report](M0_report.md) and the [M1 report](M1_report.md)). PPO is implemented, checked and reproducible, but does not yet solve R (0/20 validation through 1M decisions, seed 0).  
+**Status:** M0–M2 are complete (see the [M0 report](M0_report.md), [M1 report](M1_report.md) and [M2 report](M2_report.md)). PPO and SAC are checked and reproducible; pilot outcomes vary by seed and checkpoint. Settings are frozen at a common 1M-decision budget, and the first three main seed pairs are queued. Pilot resources exceeded the planned allowance; M2 records that deviation.
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
 The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is retained as the final stretch goal, after the core experiments, analysis, reproducibility work, and presentation are complete.**
@@ -297,14 +297,14 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 
 ### M2 · Nov 18–20 · SAC on the same task · 10–13 h
 
-- [ ] Implement replay, twin Q/target Q networks, actor, temperature and Polyak updates.
-- [ ] Pass target/mask/gradient/replay checks and a short finite-loss training smoke run.
-- [ ] Run the same bounded pilot/tuning allowance as PPO; log Q scale, alpha and action saturation.
-- [ ] Freeze PPO/SAC settings and the common final budget using end-to-end runtime.
-- [ ] Queue the first independent-seed main learner runs; retain failed seeds.
-- [ ] **Viz (§10):** SAC logs training rollouts and checkpoint probes through the same store (no new code); check that a SAC probe episode replays exactly.
+- [x] Implement replay, twin Q/target Q networks, actor, temperature and Polyak updates. *`sac.py`; comments cite the local slides by PDF page.*
+- [x] Pass target/mask/gradient/replay checks and a short finite-loss training smoke run. *61 experiment tests pass, including 17 SAC tests.*
+- [x] Audit pilot/tuning work; log Q scale, alpha and action saturation. *Deviation: existing PPO/SAC runs exceeded the bounded allowance; resources were unequal. Twelve baseline SAC seeds at 1M were audited, without further tuning ([M2 report](M2_report.md)).*
+- [x] Freeze PPO/SAC settings and the common final budget using end-to-end runtime. *§4.5 baselines, 1M decisions including calibration; `configs/M2_freeze.json`.*
+- [x] Queue the first independent-seed main learner runs; retain failed seeds. *Seeds [0,1,2] for each learner under `runs/ese3990/main/`; main completion is M4 work. PPO seed 0's prior diagnostic use is disclosed.*
+- [x] **Viz (§10):** SAC logs training rollouts and checkpoint probes through the same store (no new code); check that a SAC probe episode replays exactly. *138 selected/final pilot probes replay exactly; all tiny-run calibration/training/evaluation episodes replay too.*
 
-**Exit:** both learning methods train/evaluate through the same contract, and their collected experience and optimization costs are traceable. No world model or BPTT implementation starts here.
+**Exit (met; see [M2 report](M2_report.md)):** both learning methods train/evaluate through the same contract, and their collected experience and optimization costs are traceable. The pilot-allowance deviation remains explicit. No world model or BPTT implementation starts here.
 
 ### M3 · Nov 21–23 · Close the CEM-MPC loop · 9–12 h
 

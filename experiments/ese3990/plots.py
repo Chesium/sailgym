@@ -39,11 +39,14 @@ def learning_curve(runs: list[Path], out: Path) -> None:
 
 
 def tuning_row(run: Path) -> str:
-    """One Markdown row of ``docs/rl/ppo_tuning_log.md`` for a finished run."""
-    from train import CONFIG
+    """One Markdown row of ``docs/rl/{ppo,sac}_tuning_log.md`` for a finished
+    run. The last column but one is final σ for PPO and final α for SAC."""
+    from train import CONFIG, SAC_CONFIG
 
     cfg = json.loads((run / "config.json").read_text())
-    diff = {k: v for k, v in cfg["config"].items() if CONFIG.get(k) != v}
+    sac = cfg["learner"] == "sac"
+    base = SAC_CONFIG if sac else CONFIG
+    diff = {k: v for k, v in cfg["config"].items() if base.get(k) != v}
     for k in ("checkpoints", "decisions"):
         diff.pop(k, None)
     curve = [json.loads(x) for x in (run / "curve.jsonl").read_text().splitlines()]
@@ -60,6 +63,9 @@ def tuning_row(run: Path) -> str:
     n_fin = sum(e["outcome"] == "finished" for e in tr)
     n_miss = sum(e["reason"] == "mark_missed" for e in tr)
     last = json.loads((run / "metrics.jsonl").read_text().splitlines()[-1])
+    noise = (
+        f"{last['alpha']:.3g}" if sac else ", ".join(f"{x:.2f}" for x in last["std"])
+    )
     summ = json.loads((run / "summary.json").read_text())
     return (
         f"| `{run.name}` | {cfg['training_seed']} | "
@@ -67,7 +73,7 @@ def tuning_row(run: Path) -> str:
         f"{at(100_000)} | {at(cfg['config']['decisions'])} | "
         f"{at(best['decisions'])} @ {best['decisions'] // 1000}k | "
         f"{n_fin} / {n_miss} / {len(tr)} | "
-        f"{', '.join(f'{x:.2f}' for x in last['std'])} | {summ['wall_s']:.0f} |"
+        f"{noise} | {summ['wall_s']:.0f} |"
     )
 
 

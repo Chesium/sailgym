@@ -1,0 +1,95 @@
+{
+  "frozen_at_utc": "2026-11-13T04:59:04.965498+00:00",
+  "task": "R",
+  "training_seeds": [
+    0,
+    1,
+    2
+  ],
+  "configs": {
+    "ppo": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        100000,
+        250000,
+        500000,
+        750000,
+        1000000
+      ],
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "rollout": 2048,
+      "minibatch": 256,
+      "epochs": 4,
+      "clip": 0.2,
+      "lam": 0.95,
+      "lr": 0.0003,
+      "max_grad_norm": 1.0,
+      "vf_coef": 0.5,
+      "ent_coef": 0.001,
+      "log_std": -0.5,
+      "hidden": 64
+    },
+    "sac": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        100000,
+        250000,
+        500000,
+        750000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    }
+  },
+  "checkpoint_selection": "Most validation finishes, then greatest validation mean return, then earliest checkpoint. Report final checkpoint too.",
+  "evaluation": "Nominal and validation only during M2; test and shift learner evaluations deferred to M4.",
+  "deviations": [
+    "Pilot cost exceeded plan allowance: see M2_report.md and docs/rl/ppo_tuning_log.md.",
+    "Seed 0 PPO already inspected in M1 and 2M diagnostic; retained as predeclared, not an untouched seed. Seeds 1 and 2 have not been used for tuning."
+  ],
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "source_sha256": {
+    "experiments/ese3990/sac.py": "4b233e786218d823f1eaee38b3e1131bb0c4bec31bdbc2a3f7217cf088fbd6cc",
+    "experiments/ese3990/ppo.py": "e795c8787eb673eeb20c44025e099fac8b2a91d5b48b24a8216dc316c9d1d777",
+    "experiments/ese3990/train.py": "577c29a7a68b566703004e09c3f48b471dc893d3168fb6408a0544c0a60dd451",
+    "experiments/ese3990/sailing.py": "01c54deb7fef53a6a26150e4cf3039d64d79f3cfbdbbb1e7af2a85f7687bbe40",
+    "experiments/ese3990/evaluate.py": "ce412114ec5e78c61cad921a05c77c3007c0f7fcc6ddbfd0179746d3ab0c24e7",
+    "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab",
+    "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+    "experiments/ese3990/viz/episode_store.py": "a8c9f8094eb970dadb8fa4d00648cd15991d5628d540553412dd76243a59bbb7",
+    "experiments/ese3990/viz/replay.py": "e670a8fdbb4465fe20d2b3656c44491afb96a3a5dcb2aebe3f56d11f49d3dc08",
+    "uv.lock": "0bdf29ce2a8c87806e4e5a1b85d5daa8c06e0454fd3e29942168bb6e87d17a5a"
+  }
+}

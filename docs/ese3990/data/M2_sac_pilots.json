@@ -1,0 +1,4533 @@
+[
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s100",
+    "learner": "sac",
+    "seed": 100,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3236.0660822850186,
+      "collect_s": 2065.014864137396,
+      "update_s": 899.9079084431287,
+      "eval_s": 18.088564874604344,
+      "training_episodes": 2099
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.8209851039406807,
+        "val_mean_return": -1.615300683722475,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 18,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.17088813187589,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.178239899974386,
+        "val_mean_return": 2.3440938212034697,
+        "val_episodes": 20,
+        "val_finished": 5,
+        "val_success_rate": 0.25,
+        "val_outcome_counts": {
+          "truncated": 15,
+          "finished": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 29.4730000000001,
+          "min": 23.95499999999952,
+          "max": 43.83500000000397
+        },
+        "val_peak_heel_deg_max": 28.55617733012922,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.306623704874633,
+        "val_mean_return": -1.827951329410471,
+        "val_episodes": 20,
+        "val_finished": 4,
+        "val_success_rate": 0.2,
+        "val_outcome_counts": {
+          "mark_missed": 8,
+          "truncated": 8,
+          "finished": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 27.051249999999992,
+          "min": 18.710000000000562,
+          "max": 35.76999999999985
+        },
+        "val_peak_heel_deg_max": 31.1806971278385,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.600591043475122,
+        "val_mean_return": 10.59755423906421,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.75000000000055,
+          "min": 16.135000000001074,
+          "max": 21.849999999999937
+        },
+        "val_peak_heel_deg_max": 36.45037533928668,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.64649898986574,
+        "val_mean_return": 10.607919959047447,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.351500000000634,
+          "min": 16.575000000000987,
+          "max": 20.47500000000021
+        },
+        "val_peak_heel_deg_max": 31.646455221232653,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.618133690079228,
+        "val_mean_return": 6.902826535938002,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "truncated": 3,
+          "mark_missed": 2,
+          "finished": 15
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.925000000000708,
+          "min": 16.46500000000101,
+          "max": 40.265000000002146
+        },
+        "val_peak_heel_deg_max": 33.34024493769009,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.605096740683136,
+        "val_mean_return": 5.732129056000092,
+        "val_episodes": 20,
+        "val_finished": 12,
+        "val_success_rate": 0.6,
+        "val_outcome_counts": {
+          "mark_missed": 1,
+          "truncated": 7,
+          "finished": 12
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.45208333333395,
+          "min": 17.030000000000896,
+          "max": 20.620000000000182
+        },
+        "val_peak_heel_deg_max": 37.51950014098935,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.597820923517803,
+        "val_mean_return": 9.462218039259165,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "truncated": 2,
+          "finished": 18
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.37333333333376,
+          "min": 16.40500000000102,
+          "max": 27.61999999999879
+        },
+        "val_peak_heel_deg_max": 32.90687371916444,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.573266062564459,
+        "val_mean_return": 9.986514915049439,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "truncated": 1,
+          "finished": 19
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.318157894737038,
+          "min": 15.41000000000101,
+          "max": 36.34000000000014
+        },
+        "val_peak_heel_deg_max": 38.2020973941543,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.644852073838383,
+        "val_mean_return": 2.811883200340616,
+        "val_episodes": 20,
+        "val_finished": 10,
+        "val_success_rate": 0.5,
+        "val_outcome_counts": {
+          "truncated": 5,
+          "finished": 10,
+          "mark_missed": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.571500000000405,
+          "min": 16.675000000000967,
+          "max": 32.20499999999802
+        },
+        "val_peak_heel_deg_max": 35.73947194753311,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.56548390396333,
+        "val_mean_return": 8.405797484708321,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "truncated": 2,
+          "mark_missed": 1,
+          "finished": 17
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.34176470588227,
+          "min": 16.475000000001007,
+          "max": 33.86499999999887
+        },
+        "val_peak_heel_deg_max": 34.51449387647049,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.621155950417354,
+        "val_mean_return": 6.7504095152116985,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "truncated": 7,
+          "finished": 13
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.045384615385235,
+          "min": 16.490000000001004,
+          "max": 41.555000000002806
+        },
+        "val_peak_heel_deg_max": 39.72844405358843,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 300000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.64649898986574,
+      "val_mean_return": 10.607919959047447,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 18.351500000000634,
+        "min": 16.575000000000987,
+        "max": 20.47500000000021
+      },
+      "val_peak_heel_deg_max": 31.646455221232653,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 42143,
+      "validation": 97072,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 310,
+      "finished": 1682,
+      "mark_missed": 107,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 683,
+      "replayed_decisions": 6398
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.02437157742679119,
+        "min": 0.0016799595905467868,
+        "max": 0.051503196358680725
+      },
+      "q2_loss": {
+        "last": 0.02323102578520775,
+        "min": 0.0017101062694564462,
+        "max": 0.04521799460053444
+      },
+      "actor_loss": {
+        "last": -6.017496109008789,
+        "min": -8.073236465454102,
+        "max": -0.2895531952381134
+      },
+      "alpha": {
+        "last": 0.0018977413419634104,
+        "min": 0.00044094279292039573,
+        "max": 0.1929987221956253
+      },
+      "entropy": {
+        "last": -1.954963207244873,
+        "min": -2.076827049255371,
+        "max": 1.3619767427444458
+      },
+      "q_abs_max": {
+        "last": 15.880186080932617,
+        "min": 1.4651106595993042,
+        "max": 17.523164749145508
+      },
+      "saturation": {
+        "last": 0.1226399764418602,
+        "min": 0.0011768341064453125,
+        "max": 0.13172340393066406
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s101",
+    "learner": "sac",
+    "seed": 101,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3226.155928616179,
+      "collect_s": 2066.1742941900156,
+      "update_s": 891.4255515127443,
+      "eval_s": 19.584572771098465,
+      "training_episodes": 1847
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.17955693731606687,
+        "val_mean_return": -3.6003029463153906,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 13,
+          "mark_missed": 7
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170902743253393,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.3040740592233807,
+        "val_mean_return": -0.28720177636724104,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 47.13458662351615,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.234501523151116,
+        "val_mean_return": -1.39471531145012,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 18,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 37.1698267920964,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.4286846360167539,
+        "val_mean_return": 4.477871824431264,
+        "val_episodes": 20,
+        "val_finished": 9,
+        "val_success_rate": 0.45,
+        "val_outcome_counts": {
+          "truncated": 11,
+          "finished": 9
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 28.8622222222219,
+          "min": 17.345000000000834,
+          "max": 39.35500000000168
+        },
+        "val_peak_heel_deg_max": 30.148402486950427,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.620560911577517,
+        "val_mean_return": 4.850601144415239,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "truncated": 3,
+          "finished": 13,
+          "mark_missed": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 23.636923076923118,
+          "min": 17.440000000000815,
+          "max": 40.41000000000222
+        },
+        "val_peak_heel_deg_max": 41.91859159424828,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.609545096592806,
+        "val_mean_return": 8.933577455124379,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.95088235294169,
+          "min": 16.545000000000993,
+          "max": 29.46999999999842
+        },
+        "val_peak_heel_deg_max": 36.8378001716754,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.60598493176097,
+        "val_mean_return": 8.998535698264561,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 1,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.149722222222298,
+          "min": 16.85500000000093,
+          "max": 29.059999999998503
+        },
+        "val_peak_heel_deg_max": 38.451798609858294,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.620636356896735,
+        "val_mean_return": 8.504509365471645,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 2,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.60294117647117,
+          "min": 16.630000000000976,
+          "max": 21.34000000000004
+        },
+        "val_peak_heel_deg_max": 38.452229144138634,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.642749956018625,
+        "val_mean_return": 10.072098509970232,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.039210526316435,
+          "min": 15.28500000000099,
+          "max": 20.84000000000014
+        },
+        "val_peak_heel_deg_max": 33.84031381961837,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.67947911258891,
+        "val_mean_return": 8.411526778889357,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "finished": 16,
+          "truncated": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.23656250000061,
+          "min": 15.055000000000954,
+          "max": 20.77500000000015
+        },
+        "val_peak_heel_deg_max": 26.1831829405116,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.63039837180053,
+        "val_mean_return": 8.959753379439736,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.642058823529982,
+          "min": 15.80500000000107,
+          "max": 29.299999999998455
+        },
+        "val_peak_heel_deg_max": 26.480471299859445,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.606391286373881,
+        "val_mean_return": 8.970106888426399,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.328235294118283,
+          "min": 15.680000000001051,
+          "max": 20.470000000000212
+        },
+        "val_peak_heel_deg_max": 33.665129993029865,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 700000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.642749956018625,
+      "val_mean_return": 10.072098509970232,
+      "val_episodes": 20,
+      "val_finished": 19,
+      "val_success_rate": 0.95,
+      "val_outcome_counts": {
+        "finished": 19,
+        "truncated": 1
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 18.039210526316435,
+        "min": 15.28500000000099,
+        "max": 20.84000000000014
+      },
+      "val_peak_heel_deg_max": 33.84031381961837,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 41007,
+      "validation": 106161,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 424,
+      "mark_missed": 92,
+      "finished": 1331,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 697,
+      "replayed_decisions": 4183
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.008121238090097904,
+        "min": 0.00234344694763422,
+        "max": 0.057124365121126175
+      },
+      "q2_loss": {
+        "last": 0.008045075461268425,
+        "min": 0.002564492402598262,
+        "max": 0.05664154514670372
+      },
+      "actor_loss": {
+        "last": -3.8915646076202393,
+        "min": -7.57645845413208,
+        "max": -0.39387646317481995
+      },
+      "alpha": {
+        "last": 0.001165110501460731,
+        "min": 0.0004778217407874763,
+        "max": 0.19299675524234772
+      },
+      "entropy": {
+        "last": -1.972696304321289,
+        "min": -2.0559396743774414,
+        "max": 1.3570988178253174
+      },
+      "q_abs_max": {
+        "last": 12.057357788085938,
+        "min": 1.0691604614257812,
+        "max": 19.208127975463867
+      },
+      "saturation": {
+        "last": 0.1192423477768898,
+        "min": 0.0012025833129882812,
+        "max": 0.12970447540283203
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s102",
+    "learner": "sac",
+    "seed": 102,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3223.101301755989,
+      "collect_s": 2059.7684680304956,
+      "update_s": 891.1553510762751,
+      "eval_s": 24.76239235070534,
+      "training_episodes": 1423
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.283136720566214,
+        "val_mean_return": -0.41533737202968135,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170917489201315,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.21584000569950898,
+        "val_mean_return": -0.8544845673124101,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 21.677198906201763,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.22167389743548538,
+        "val_mean_return": 0.32797551473603165,
+        "val_episodes": 20,
+        "val_finished": 2,
+        "val_success_rate": 0.1,
+        "val_outcome_counts": {
+          "truncated": 17,
+          "finished": 2,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 30.59999999999831,
+          "min": 28.87999999999854,
+          "max": 32.31999999999808
+        },
+        "val_peak_heel_deg_max": 37.590694755883014,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.3869112714782228,
+        "val_mean_return": 1.241277824951463,
+        "val_episodes": 20,
+        "val_finished": 3,
+        "val_success_rate": 0.15,
+        "val_outcome_counts": {
+          "truncated": 17,
+          "finished": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 27.090000000000682,
+          "min": 20.57500000000019,
+          "max": 39.55000000000178
+        },
+        "val_peak_heel_deg_max": 36.56342467883108,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.227596574075625,
+        "val_mean_return": 2.2865376806276325,
+        "val_episodes": 20,
+        "val_finished": 5,
+        "val_success_rate": 0.25,
+        "val_outcome_counts": {
+          "truncated": 15,
+          "finished": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 34.06099999999975,
+          "min": 26.50999999999901,
+          "max": 38.425000000001205
+        },
+        "val_peak_heel_deg_max": 35.41527816648798,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.385887501194897,
+        "val_mean_return": 3.4410785925036484,
+        "val_episodes": 20,
+        "val_finished": 7,
+        "val_success_rate": 0.35,
+        "val_outcome_counts": {
+          "truncated": 13,
+          "finished": 7
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.98714285714257,
+          "min": 17.15500000000087,
+          "max": 29.41999999999843
+        },
+        "val_peak_heel_deg_max": 33.31084919879299,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.4527108565005665,
+        "val_mean_return": 4.550740374550746,
+        "val_episodes": 20,
+        "val_finished": 10,
+        "val_success_rate": 0.5,
+        "val_outcome_counts": {
+          "finished": 10,
+          "truncated": 9,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 26.054499999999933,
+          "min": 16.65500000000097,
+          "max": 43.72500000000392
+        },
+        "val_peak_heel_deg_max": 37.70368256930175,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.21626093520308481,
+        "val_mean_return": 2.395902264905419,
+        "val_episodes": 20,
+        "val_finished": 6,
+        "val_success_rate": 0.3,
+        "val_outcome_counts": {
+          "truncated": 13,
+          "finished": 6,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 30.48250000000097,
+          "min": 17.040000000000894,
+          "max": 43.87500000000399
+        },
+        "val_peak_heel_deg_max": 35.94621064466198,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.43421062946337063,
+        "val_mean_return": 3.4002925923724923,
+        "val_episodes": 20,
+        "val_finished": 7,
+        "val_success_rate": 0.35,
+        "val_outcome_counts": {
+          "truncated": 13,
+          "finished": 7
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 29.27000000000042,
+          "min": 21.554999999999996,
+          "max": 41.97000000000302
+        },
+        "val_peak_heel_deg_max": 35.46258834302546,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.18942849462110012,
+        "val_mean_return": 7.754877885528222,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "finished": 15,
+          "truncated": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 23.594666666666253,
+          "min": 18.540000000000596,
+          "max": 29.42999999999843
+        },
+        "val_peak_heel_deg_max": 37.77656965964759,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.589311969160324,
+        "val_mean_return": 3.5999764447026017,
+        "val_episodes": 20,
+        "val_finished": 9,
+        "val_success_rate": 0.45,
+        "val_outcome_counts": {
+          "finished": 9,
+          "truncated": 9,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.34833333333406,
+          "min": 17.61000000000078,
+          "max": 43.26500000000368
+        },
+        "val_peak_heel_deg_max": 46.800243979975065,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.595200144503456,
+        "val_mean_return": 6.127731184754377,
+        "val_episodes": 20,
+        "val_finished": 12,
+        "val_success_rate": 0.6,
+        "val_outcome_counts": {
+          "finished": 12,
+          "truncated": 8
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 26.218750000000686,
+          "min": 16.240000000001054,
+          "max": 42.83000000000346
+        },
+        "val_peak_heel_deg_max": 37.601140579263166,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 800000,
+      "nominal_outcome": "truncated",
+      "nominal_return": -0.18942849462110012,
+      "val_mean_return": 7.754877885528222,
+      "val_episodes": 20,
+      "val_finished": 15,
+      "val_success_rate": 0.75,
+      "val_outcome_counts": {
+        "finished": 15,
+        "truncated": 5
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 23.594666666666253,
+        "min": 18.540000000000596,
+        "max": 29.42999999999843
+      },
+      "val_peak_heel_deg_max": 37.77656965964759,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 54134,
+      "validation": 141201,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 701,
+      "mark_missed": 58,
+      "finished": 664,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 1274,
+      "replayed_decisions": 6093
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.021072695031762123,
+        "min": 0.004265387076884508,
+        "max": 0.07953096926212311
+      },
+      "q2_loss": {
+        "last": 0.021849462762475014,
+        "min": 0.0042040590196847916,
+        "max": 0.06971107423305511
+      },
+      "actor_loss": {
+        "last": -0.6798185110092163,
+        "min": -3.2994585037231445,
+        "max": 9.442672729492188
+      },
+      "alpha": {
+        "last": 0.0018496252596378326,
+        "min": 0.0009203850058838725,
+        "max": 0.19300149381160736
+      },
+      "entropy": {
+        "last": -1.9925984144210815,
+        "min": -2.0788025856018066,
+        "max": 1.3620903491973877
+      },
+      "q_abs_max": {
+        "last": 13.883759498596191,
+        "min": 2.416022777557373,
+        "max": 33.43067169189453
+      },
+      "saturation": {
+        "last": 0.1132982075214386,
+        "min": 0.0015401840209960938,
+        "max": 0.12461566925048828
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s103",
+    "learner": "sac",
+    "seed": 103,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3229.7138562898617,
+      "collect_s": 2060.7054556943476,
+      "update_s": 899.4575086757541,
+      "eval_s": 14.98641891987063,
+      "training_episodes": 2022
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.9520837211269991,
+        "val_mean_return": -1.5806408135805994,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 18,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170901070541834,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "terminated",
+        "nominal_return": -9.436613880353852,
+        "val_mean_return": 5.970429546271344,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "mark_missed": 4,
+          "truncated": 1,
+          "finished": 15
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.949000000000314,
+          "min": 17.575000000000788,
+          "max": 23.524999999999604
+        },
+        "val_peak_heel_deg_max": 44.8221128311574,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.588911354711708,
+        "val_mean_return": 7.227982272909353,
+        "val_episodes": 20,
+        "val_finished": 14,
+        "val_success_rate": 0.7,
+        "val_outcome_counts": {
+          "finished": 14,
+          "truncated": 6
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 27.682857142858513,
+          "min": 17.145000000000874,
+          "max": 44.73000000000443
+        },
+        "val_peak_heel_deg_max": 38.92486093257295,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.6079891678888,
+        "val_mean_return": 2.9396961813586637,
+        "val_episodes": 20,
+        "val_finished": 12,
+        "val_success_rate": 0.6,
+        "val_outcome_counts": {
+          "finished": 12,
+          "mark_missed": 7,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 20.568750000000488,
+          "min": 16.20500000000106,
+          "max": 36.980000000000466
+        },
+        "val_peak_heel_deg_max": 33.738156332136114,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.61949611175331,
+        "val_mean_return": 10.04642158313139,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.432631578947984,
+          "min": 16.15000000000107,
+          "max": 31.899999999997938
+        },
+        "val_peak_heel_deg_max": 34.99744334141724,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.609705373622505,
+        "val_mean_return": 10.574665086391324,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.343750000000696,
+          "min": 16.785000000000945,
+          "max": 39.225000000001614
+        },
+        "val_peak_heel_deg_max": 38.69536684237252,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.618726124785548,
+        "val_mean_return": 9.52244838425551,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.828333333334072,
+          "min": 16.46000000000101,
+          "max": 19.765000000000352
+        },
+        "val_peak_heel_deg_max": 36.206376131621234,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.67382555487612,
+        "val_mean_return": 9.535433222211717,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.711944444445205,
+          "min": 16.20000000000106,
+          "max": 20.265000000000253
+        },
+        "val_peak_heel_deg_max": 35.461939109733116,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.637539118971025,
+        "val_mean_return": 9.480744056478034,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.367500000000405,
+          "min": 15.370000000001003,
+          "max": 24.234999999999463
+        },
+        "val_peak_heel_deg_max": 32.431963244400585,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.64558803022132,
+        "val_mean_return": 9.570611138264567,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.935000000000674,
+          "min": 15.530000000001028,
+          "max": 36.60000000000027
+        },
+        "val_peak_heel_deg_max": 37.26506027521656,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.60690223602884,
+        "val_mean_return": 10.058083193776806,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.261578947369067,
+          "min": 15.700000000001054,
+          "max": 20.5250000000002
+        },
+        "val_peak_heel_deg_max": 37.553044451706576,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.514067078040245,
+        "val_mean_return": 8.962843704341216,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "mark_missed": 1,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.086944444444534,
+          "min": 18.150000000000674,
+          "max": 23.68999999999957
+        },
+        "val_peak_heel_deg_max": 37.027674768412155,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 400000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.609705373622505,
+      "val_mean_return": 10.574665086391324,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 19.343750000000696,
+        "min": 16.785000000000945,
+        "max": 39.225000000001614
+      },
+      "val_peak_heel_deg_max": 38.69536684237252,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 30715,
+      "validation": 89809,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 375,
+      "finished": 1605,
+      "mark_missed": 42,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 792,
+      "replayed_decisions": 4593
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.007055235560983419,
+        "min": 0.001952970284037292,
+        "max": 0.05784226208925247
+      },
+      "q2_loss": {
+        "last": 0.007585071958601475,
+        "min": 0.0018465996254235506,
+        "max": 0.06268493831157684
+      },
+      "actor_loss": {
+        "last": -5.298611164093018,
+        "min": -7.662297248840332,
+        "max": -0.26489272713661194
+      },
+      "alpha": {
+        "last": 0.001497218618169427,
+        "min": 0.0005430325400084257,
+        "max": 0.1929982453584671
+      },
+      "entropy": {
+        "last": -1.99470055103302,
+        "min": -2.1042675971984863,
+        "max": 1.361242413520813
+      },
+      "q_abs_max": {
+        "last": 17.396160125732422,
+        "min": 1.881782054901123,
+        "max": 18.61168670654297
+      },
+      "saturation": {
+        "last": 0.1194085031747818,
+        "min": 0.001346588134765625,
+        "max": 0.1310749053955078
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s104",
+    "learner": "sac",
+    "seed": 104,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3219.0065821080934,
+      "collect_s": 2056.7633779533207,
+      "update_s": 887.2748571010306,
+      "eval_s": 23.65674258233048,
+      "training_episodes": 1704
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.9027287157075762,
+        "val_mean_return": -1.1590850785776317,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.17091678209314,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.07744795297725271,
+        "val_mean_return": -0.6995054591134588,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 32.037762956903954,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "terminated",
+        "nominal_return": -9.948190032849512,
+        "val_mean_return": -4.543998825079956,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 11,
+          "mark_missed": 9
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.17375210052462,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.2063416330535236,
+        "val_mean_return": 1.7991353337981493,
+        "val_episodes": 20,
+        "val_finished": 4,
+        "val_success_rate": 0.2,
+        "val_outcome_counts": {
+          "finished": 4,
+          "truncated": 16
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 37.340000000000856,
+          "min": 30.849999999998147,
+          "max": 43.16000000000363
+        },
+        "val_peak_heel_deg_max": 37.66637765839524,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.24580781146838104,
+        "val_mean_return": -0.3774656107938907,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 35.014858782503964,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.024659744975894515,
+        "val_mean_return": 0.16005052694566263,
+        "val_episodes": 20,
+        "val_finished": 1,
+        "val_success_rate": 0.05,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "finished": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 34.4999999999992,
+          "min": 34.4999999999992,
+          "max": 34.4999999999992
+        },
+        "val_peak_heel_deg_max": 34.767008827483814,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.534477446603553,
+        "val_mean_return": 4.519926851042692,
+        "val_episodes": 20,
+        "val_finished": 9,
+        "val_success_rate": 0.45,
+        "val_outcome_counts": {
+          "truncated": 11,
+          "finished": 9
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.057222222222116,
+          "min": 17.035000000000895,
+          "max": 29.67499999999838
+        },
+        "val_peak_heel_deg_max": 39.44446195958207,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.631668158037252,
+        "val_mean_return": 7.47443955909849,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "finished": 16,
+          "mark_missed": 2,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.75687500000055,
+          "min": 15.945000000001093,
+          "max": 24.734999999999363
+        },
+        "val_peak_heel_deg_max": 38.93787340495651,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.610930404663693,
+        "val_mean_return": 10.031266970596581,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.309473684211145,
+          "min": 15.560000000001033,
+          "max": 23.414999999999626
+        },
+        "val_peak_heel_deg_max": 30.04065064756808,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.577262592452037,
+        "val_mean_return": 8.495826974341878,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "mark_missed": 1,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.69029411764763,
+          "min": 16.16000000000107,
+          "max": 22.0299999999999
+        },
+        "val_peak_heel_deg_max": 45.985420592190444,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.600617165489753,
+        "val_mean_return": 10.041375670877468,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.790263157895087,
+          "min": 17.86000000000073,
+          "max": 21.525000000000002
+        },
+        "val_peak_heel_deg_max": 33.14001629964692,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.643986049420418,
+        "val_mean_return": 10.597297991315367,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.099500000000702,
+          "min": 15.645000000001046,
+          "max": 37.30000000000063
+        },
+        "val_peak_heel_deg_max": 24.697604742334374,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 1000000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.643986049420418,
+      "val_mean_return": 10.597297991315367,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 19.099500000000702,
+        "min": 15.645000000001046,
+        "max": 37.30000000000063
+      },
+      "val_peak_heel_deg_max": 24.697604742334374,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 46918,
+      "validation": 122522,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 547,
+      "mark_missed": 66,
+      "finished": 1091,
+      "running": 1
+    },
+    "probe_replays_verified": 6,
+    "verification_cost": {
+      "actor_evaluation_decisions": 334,
+      "replayed_decisions": 2047
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.002170198829844594,
+        "min": 0.0013133398024365306,
+        "max": 0.0584409162402153
+      },
+      "q2_loss": {
+        "last": 0.002127961255609989,
+        "min": 0.0012130415998399258,
+        "max": 0.059339068830013275
+      },
+      "actor_loss": {
+        "last": -7.632559776306152,
+        "min": -7.632559776306152,
+        "max": 3.7743887901306152
+      },
+      "alpha": {
+        "last": 0.0003297959628980607,
+        "min": 0.0003162439097650349,
+        "max": 0.19299983978271484
+      },
+      "entropy": {
+        "last": -1.997171401977539,
+        "min": -2.0526719093322754,
+        "max": 1.3608076572418213
+      },
+      "q_abs_max": {
+        "last": 10.45156192779541,
+        "min": 1.1301782131195068,
+        "max": 23.309598922729492
+      },
+      "saturation": {
+        "last": 0.1022576242685318,
+        "min": 0.0015745162963867188,
+        "max": 0.13544940948486328
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s105",
+    "learner": "sac",
+    "seed": 105,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3237.455963797169,
+      "collect_s": 2065.6713587588165,
+      "update_s": 894.9196583661251,
+      "eval_s": 28.758792404085398,
+      "training_episodes": 1172
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.7817281693028811,
+        "val_mean_return": -0.6710297263959448,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170908909072015,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.6645780289622979,
+        "val_mean_return": -0.4193118608129053,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 32.07125610928661,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.33700758950319715,
+        "val_mean_return": -1.5472625730132907,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 18,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 32.18821271205547,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.3080654052460334,
+        "val_mean_return": 0.18544525495695058,
+        "val_episodes": 20,
+        "val_finished": 1,
+        "val_success_rate": 0.05,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "finished": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 44.560000000004344,
+          "min": 44.560000000004344,
+          "max": 44.560000000004344
+        },
+        "val_peak_heel_deg_max": 25.960550557732585,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.42904247291220066,
+        "val_mean_return": -0.8901869719987191,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 33.99844666034945,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.149891424449024,
+        "val_mean_return": -2.6673188725686643,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "mark_missed": 5,
+          "truncated": 15
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 38.01755616201331,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.395847705680033,
+        "val_mean_return": 3.3842086162098495,
+        "val_episodes": 20,
+        "val_finished": 7,
+        "val_success_rate": 0.35,
+        "val_outcome_counts": {
+          "truncated": 13,
+          "finished": 7
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 26.968571428571153,
+          "min": 16.395000000001023,
+          "max": 38.86000000000143
+        },
+        "val_peak_heel_deg_max": 36.78068352213342,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.150720475493424,
+        "val_mean_return": 5.083214811288712,
+        "val_episodes": 20,
+        "val_finished": 11,
+        "val_success_rate": 0.55,
+        "val_outcome_counts": {
+          "truncated": 8,
+          "finished": 11,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 25.35772727272705,
+          "min": 19.760000000000353,
+          "max": 40.125000000002075
+        },
+        "val_peak_heel_deg_max": 36.86006933566564,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.6660150272412876,
+        "val_mean_return": 2.346529028850663,
+        "val_episodes": 20,
+        "val_finished": 5,
+        "val_success_rate": 0.25,
+        "val_outcome_counts": {
+          "truncated": 15,
+          "finished": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 28.47699999999967,
+          "min": 18.585000000000587,
+          "max": 37.235000000000596
+        },
+        "val_peak_heel_deg_max": 32.97867065336819,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.2504850615797693,
+        "val_mean_return": 1.2107013567974299,
+        "val_episodes": 20,
+        "val_finished": 3,
+        "val_success_rate": 0.15,
+        "val_outcome_counts": {
+          "truncated": 17,
+          "finished": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 39.886666666668624,
+          "min": 34.649999999999274,
+          "max": 43.75500000000393
+        },
+        "val_peak_heel_deg_max": 32.75500244110117,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.43818148265073986,
+        "val_mean_return": 0.19333844516874438,
+        "val_episodes": 20,
+        "val_finished": 1,
+        "val_success_rate": 0.05,
+        "val_outcome_counts": {
+          "truncated": 19,
+          "finished": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.0399999999999,
+          "min": 22.0399999999999,
+          "max": 22.0399999999999
+        },
+        "val_peak_heel_deg_max": 33.53459645755571,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.1353673135314032,
+        "val_mean_return": 2.370841367479534,
+        "val_episodes": 20,
+        "val_finished": 5,
+        "val_success_rate": 0.25,
+        "val_outcome_counts": {
+          "truncated": 15,
+          "finished": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 26.283000000000452,
+          "min": 19.72500000000036,
+          "max": 41.83000000000295
+        },
+        "val_peak_heel_deg_max": 37.150825565573946,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 600000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.150720475493424,
+      "val_mean_return": 5.083214811288712,
+      "val_episodes": 20,
+      "val_finished": 11,
+      "val_success_rate": 0.55,
+      "val_outcome_counts": {
+        "truncated": 8,
+        "finished": 11,
+        "mark_missed": 1
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 25.35772727272705,
+        "min": 19.760000000000353,
+        "max": 40.125000000002075
+      },
+      "val_peak_heel_deg_max": 36.86006933566564,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 61839,
+      "validation": 150702,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 944,
+      "mark_missed": 67,
+      "finished": 159,
+      "out_of_bounds": 2,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 1719,
+      "replayed_decisions": 9764
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.02923157438635826,
+        "min": 0.005331415683031082,
+        "max": 0.057304996997117996
+      },
+      "q2_loss": {
+        "last": 0.027941064909100533,
+        "min": 0.005204552318900824,
+        "max": 0.052135683596134186
+      },
+      "actor_loss": {
+        "last": 13.924786567687988,
+        "min": -4.416788101196289,
+        "max": 13.962475776672363
+      },
+      "alpha": {
+        "last": 0.0023726767394691706,
+        "min": 0.000404149730456993,
+        "max": 0.19300228357315063
+      },
+      "entropy": {
+        "last": -2.0038857460021973,
+        "min": -2.1583070755004883,
+        "max": 1.3521243333816528
+      },
+      "q_abs_max": {
+        "last": 33.67308044433594,
+        "min": 1.4256287813186646,
+        "max": 43.456912994384766
+      },
+      "saturation": {
+        "last": 0.1140848770737648,
+        "min": 0.0013628005981445312,
+        "max": 0.1287250518798828
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s106",
+    "learner": "sac",
+    "seed": 106,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3222.352667441126,
+      "collect_s": 2060.728637619177,
+      "update_s": 893.3118526160251,
+      "eval_s": 16.327537873294204,
+      "training_episodes": 2092
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.7935264526494646,
+        "val_mean_return": -0.7306812255829322,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.17090882270372,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.4220599717280662,
+        "val_mean_return": -0.2792666452673459,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 21.521890012147146,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.18961739213451,
+        "val_mean_return": 1.840776129233673,
+        "val_episodes": 20,
+        "val_finished": 4,
+        "val_success_rate": 0.2,
+        "val_outcome_counts": {
+          "finished": 4,
+          "truncated": 16
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 28.261249999998988,
+          "min": 23.94499999999952,
+          "max": 33.849999999998865
+        },
+        "val_peak_heel_deg_max": 33.40803655142057,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.536474375044815,
+        "val_mean_return": 5.013827398955927,
+        "val_episodes": 20,
+        "val_finished": 10,
+        "val_success_rate": 0.5,
+        "val_outcome_counts": {
+          "finished": 10,
+          "truncated": 10
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 25.75949999999949,
+          "min": 16.930000000000916,
+          "max": 35.294999999999604
+        },
+        "val_peak_heel_deg_max": 27.989500731218012,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.593294265621585,
+        "val_mean_return": 9.50982774569658,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.67805555555608,
+          "min": 15.085000000000958,
+          "max": 26.15999999999908
+        },
+        "val_peak_heel_deg_max": 35.7139134510881,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.651455905769192,
+        "val_mean_return": 9.623208833395333,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.426052631579754,
+          "min": 15.575000000001035,
+          "max": 20.160000000000274
+        },
+        "val_peak_heel_deg_max": 25.615993998005617,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.655455668143157,
+        "val_mean_return": 10.621374629607574,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.575250000000786,
+          "min": 16.0000000000011,
+          "max": 20.345000000000237
+        },
+        "val_peak_heel_deg_max": 35.30900263797741,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.614764319441479,
+        "val_mean_return": 9.624787239368718,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.44105263157974,
+          "min": 15.505000000001024,
+          "max": 19.235000000000458
+        },
+        "val_peak_heel_deg_max": 30.177481522719976,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.667986642754201,
+        "val_mean_return": 6.006137095986496,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "finished": 15,
+          "mark_missed": 4,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.31866666666731,
+          "min": 16.220000000001058,
+          "max": 29.159999999998483
+        },
+        "val_peak_heel_deg_max": 38.30843958736042,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.643029907364449,
+        "val_mean_return": 5.619286993426422,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "finished": 15,
+          "mark_missed": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.16900000000081,
+          "min": 15.15500000000097,
+          "max": 21.500000000000007
+        },
+        "val_peak_heel_deg_max": 33.42213196943857,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.643378119689345,
+        "val_mean_return": 10.077230709342228,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.701052631579707,
+          "min": 15.73000000000106,
+          "max": 20.105000000000285
+        },
+        "val_peak_heel_deg_max": 26.342931727320032,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.656033160064327,
+        "val_mean_return": 10.07200741707781,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.9350000000006,
+          "min": 14.530000000000872,
+          "max": 24.10499999999949
+        },
+        "val_peak_heel_deg_max": 30.58141081857342,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 500000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.655455668143157,
+      "val_mean_return": 10.621374629607574,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 17.575250000000786,
+        "min": 16.0000000000011,
+        "max": 20.345000000000237
+      },
+      "val_peak_heel_deg_max": 35.30900263797741,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 35830,
+      "validation": 97563,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 307,
+      "finished": 1644,
+      "mark_missed": 141
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 658,
+      "replayed_decisions": 4023
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.024176262319087982,
+        "min": 0.0004601356340572238,
+        "max": 0.08043283969163895
+      },
+      "q2_loss": {
+        "last": 0.025181617587804794,
+        "min": 0.0004729867505375296,
+        "max": 0.08079395443201065
+      },
+      "actor_loss": {
+        "last": -6.32436466217041,
+        "min": -8.45281982421875,
+        "max": -0.337792307138443
+      },
+      "alpha": {
+        "last": 0.0008767161052674055,
+        "min": 0.0002976249670609832,
+        "max": 0.19299215078353882
+      },
+      "entropy": {
+        "last": -1.9610015153884888,
+        "min": -2.0642752647399902,
+        "max": 1.3609325885772705
+      },
+      "q_abs_max": {
+        "last": 11.985838890075684,
+        "min": 1.5444809198379517,
+        "max": 15.38058853149414
+      },
+      "saturation": {
+        "last": 0.1179979145526886,
+        "min": 0.001354217529296875,
+        "max": 0.1362752914428711
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s107",
+    "learner": "sac",
+    "seed": 107,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3228.4241404340137,
+      "collect_s": 2059.736156426603,
+      "update_s": 904.6777981342748,
+      "eval_s": 17.836146066430956,
+      "training_episodes": 1915
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.2835383814420798,
+        "val_mean_return": -1.6930066083867614,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 17,
+          "mark_missed": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.17091760811383,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.11077120522987374,
+        "val_mean_return": 1.6247096305787274,
+        "val_episodes": 20,
+        "val_finished": 8,
+        "val_success_rate": 0.4,
+        "val_outcome_counts": {
+          "mark_missed": 5,
+          "truncated": 7,
+          "finished": 8
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 32.623125000000215,
+          "min": 25.089999999999293,
+          "max": 44.620000000004374
+        },
+        "val_peak_heel_deg_max": 29.891006241355743,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.20323925022315198,
+        "val_mean_return": -7.755649676199985,
+        "val_episodes": 20,
+        "val_finished": 1,
+        "val_success_rate": 0.05,
+        "val_outcome_counts": {
+          "finished": 1,
+          "mark_missed": 17,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 32.29999999999807,
+          "min": 32.29999999999807,
+          "max": 32.29999999999807
+        },
+        "val_peak_heel_deg_max": 36.48897562594519,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.33525715560355973,
+        "val_mean_return": 3.4210622498609604,
+        "val_episodes": 20,
+        "val_finished": 7,
+        "val_success_rate": 0.35,
+        "val_outcome_counts": {
+          "finished": 7,
+          "truncated": 13
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.371428571428403,
+          "min": 19.415000000000422,
+          "max": 27.46499999999882
+        },
+        "val_peak_heel_deg_max": 36.31006739687538,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.37291532361932833,
+        "val_mean_return": 2.9037288026490833,
+        "val_episodes": 20,
+        "val_finished": 6,
+        "val_success_rate": 0.3,
+        "val_outcome_counts": {
+          "truncated": 14,
+          "finished": 6
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 26.080833333332876,
+          "min": 20.365000000000233,
+          "max": 35.764999999999844
+        },
+        "val_peak_heel_deg_max": 36.7980663423434,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.38275027078556834,
+        "val_mean_return": 8.448991302328867,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "finished": 16,
+          "truncated": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.359375000000632,
+          "min": 16.56000000000099,
+          "max": 20.855000000000135
+        },
+        "val_peak_heel_deg_max": 33.36620992149298,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.631477456981433,
+        "val_mean_return": 10.583420935281293,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.11500000000047,
+          "min": 15.490000000001022,
+          "max": 28.754999999998564
+        },
+        "val_peak_heel_deg_max": 37.96131703449278,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.622803561445467,
+        "val_mean_return": 9.047864566085632,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "mark_missed": 1,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.201944444444912,
+          "min": 16.66000000000097,
+          "max": 26.524999999999007
+        },
+        "val_peak_heel_deg_max": 47.89526481425928,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.650060528453745,
+        "val_mean_return": 9.04282023702633,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 1,
+          "mark_missed": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.764722222222773,
+          "min": 16.770000000000948,
+          "max": 25.84999999999914
+        },
+        "val_peak_heel_deg_max": 36.95154248449293,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.631299437064124,
+        "val_mean_return": 7.056959626865989,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "mark_missed": 3,
+          "finished": 16,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.966562500000705,
+          "min": 15.900000000001086,
+          "max": 25.974999999999117
+        },
+        "val_peak_heel_deg_max": 32.40692681793719,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.656663103771383,
+        "val_mean_return": 8.045576589450956,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 1,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.514411764706484,
+          "min": 16.325000000001037,
+          "max": 21.38000000000003
+        },
+        "val_peak_heel_deg_max": 33.775636585488215,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.618856833312686,
+        "val_mean_return": 9.48552075693181,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.92833333333385,
+          "min": 17.195000000000864,
+          "max": 27.299999999998853
+        },
+        "val_peak_heel_deg_max": 36.42329127250718,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 500000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.631477456981433,
+      "val_mean_return": 10.583420935281293,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 19.11500000000047,
+        "min": 15.490000000001022,
+        "max": 28.754999999998564
+      },
+      "val_peak_heel_deg_max": 37.96131703449278,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 37883,
+      "validation": 103220,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 380,
+      "finished": 1394,
+      "mark_missed": 141,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 700,
+      "replayed_decisions": 4389
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.012138971127569675,
+        "min": 0.0018179594771936536,
+        "max": 0.06355977803468704
+      },
+      "q2_loss": {
+        "last": 0.011777417734265327,
+        "min": 0.0018458145204931498,
+        "max": 0.0666867271065712
+      },
+      "actor_loss": {
+        "last": -4.013838768005371,
+        "min": -7.793247222900391,
+        "max": -0.40180671215057373
+      },
+      "alpha": {
+        "last": 0.0013711572391912341,
+        "min": 0.0004494581953622401,
+        "max": 0.19299431145191193
+      },
+      "entropy": {
+        "last": -1.9878851175308228,
+        "min": -2.0796079635620117,
+        "max": 1.359431266784668
+      },
+      "q_abs_max": {
+        "last": 20.342058181762695,
+        "min": 1.3775631189346313,
+        "max": 20.342058181762695
+      },
+      "saturation": {
+        "last": 0.1146511510014534,
+        "min": 0.0011377334594726562,
+        "max": 0.13323116302490234
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s108",
+    "learner": "sac",
+    "seed": 108,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3221.567612422863,
+      "collect_s": 2060.595198967494,
+      "update_s": 891.2325919207651,
+      "eval_s": 19.891981004271656,
+      "training_episodes": 1979
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.43655189469145117,
+        "val_mean_return": -0.4340514317739691,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170918159973912,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.2716161154962373,
+        "val_mean_return": -0.482522108445463,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 27.30041675272059,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.355958980915828,
+        "val_mean_return": -0.38253913945097723,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170502439626954,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.4506899447638196,
+        "val_mean_return": 0.25444955969290045,
+        "val_episodes": 20,
+        "val_finished": 2,
+        "val_success_rate": 0.1,
+        "val_outcome_counts": {
+          "truncated": 17,
+          "mark_missed": 1,
+          "finished": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 40.19500000000211,
+          "min": 38.39000000000119,
+          "max": 42.000000000003034
+        },
+        "val_peak_heel_deg_max": 27.719677444130213,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.614160683111326,
+        "val_mean_return": 7.853654012215223,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "truncated": 5,
+          "finished": 15
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 20.203000000000262,
+          "min": 16.640000000000974,
+          "max": 26.26499999999906
+        },
+        "val_peak_heel_deg_max": 35.053079738437184,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.653930933819675,
+        "val_mean_return": 10.633280436546144,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.146500000000792,
+          "min": 14.7100000000009,
+          "max": 19.655000000000374
+        },
+        "val_peak_heel_deg_max": 23.332484350634665,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.645931230654684,
+        "val_mean_return": 8.950197152052349,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.25029411764782,
+          "min": 14.745000000000905,
+          "max": 22.554999999999797
+        },
+        "val_peak_heel_deg_max": 33.907010112602606,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.651978221744722,
+        "val_mean_return": 5.690024181152945,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "mark_missed": 2,
+          "finished": 13,
+          "truncated": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 27.36653846153911,
+          "min": 15.715000000001057,
+          "max": 42.60000000000334
+        },
+        "val_peak_heel_deg_max": 33.58377275655064,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.612159997861083,
+        "val_mean_return": 4.562329296769184,
+        "val_episodes": 20,
+        "val_finished": 9,
+        "val_success_rate": 0.45,
+        "val_outcome_counts": {
+          "truncated": 11,
+          "finished": 9
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 20.578888888889253,
+          "min": 15.495000000001022,
+          "max": 34.57999999999924
+        },
+        "val_peak_heel_deg_max": 37.66990054081643,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.647935339980595,
+        "val_mean_return": 5.667360161835371,
+        "val_episodes": 20,
+        "val_finished": 11,
+        "val_success_rate": 0.55,
+        "val_outcome_counts": {
+          "truncated": 9,
+          "finished": 11
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.965000000000412,
+          "min": 16.585000000000985,
+          "max": 33.579999999998726
+        },
+        "val_peak_heel_deg_max": 34.72918747381764,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.659497612069194,
+        "val_mean_return": 9.539904197548324,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "truncated": 2,
+          "finished": 18
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.217222222223032,
+          "min": 14.895000000000929,
+          "max": 20.195000000000267
+        },
+        "val_peak_heel_deg_max": 39.451316762965504,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.626860526206059,
+        "val_mean_return": 6.77630271655468,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "truncated": 7,
+          "finished": 13
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.515384615385017,
+          "min": 17.480000000000807,
+          "max": 22.769999999999754
+        },
+        "val_peak_heel_deg_max": 29.690918398855597,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 400000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.653930933819675,
+      "val_mean_return": 10.633280436546144,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 17.146500000000792,
+        "min": 14.7100000000009,
+        "max": 19.655000000000374
+      },
+      "val_peak_heel_deg_max": 23.332484350634665,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 49870,
+      "validation": 112502,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 401,
+      "mark_missed": 57,
+      "finished": 1521,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 670,
+      "replayed_decisions": 5896
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.0071518984623253345,
+        "min": 3.380987618584186e-05,
+        "max": 0.03320721536874771
+      },
+      "q2_loss": {
+        "last": 0.006659595295786858,
+        "min": 3.733015546458773e-05,
+        "max": 0.03342587128281593
+      },
+      "actor_loss": {
+        "last": -7.237518310546875,
+        "min": -8.188501358032227,
+        "max": -0.35792309045791626
+      },
+      "alpha": {
+        "last": 0.0012722963001579046,
+        "min": 0.00013324814790394157,
+        "max": 0.19299450516700745
+      },
+      "entropy": {
+        "last": -1.9882575273513794,
+        "min": -2.0878753662109375,
+        "max": 1.3622325658798218
+      },
+      "q_abs_max": {
+        "last": 16.08418846130371,
+        "min": 1.3333675861358643,
+        "max": 19.485383987426758
+      },
+      "saturation": {
+        "last": 0.112030029296875,
+        "min": 0.0018243789672851562,
+        "max": 0.13116741180419922
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s109",
+    "learner": "sac",
+    "seed": 109,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3228.915519997943,
+      "collect_s": 2070.3908632891253,
+      "update_s": 888.426647634944,
+      "eval_s": 21.61883312324062,
+      "training_episodes": 1718
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.42493929311545353,
+        "val_mean_return": -0.425698221611739,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170892606899496,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -1.0510264657071693,
+        "val_mean_return": -0.598565520703867,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 33.82294126867986,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "terminated",
+        "nominal_return": -9.819702843757733,
+        "val_mean_return": 1.3104073727066623,
+        "val_episodes": 20,
+        "val_finished": 4,
+        "val_success_rate": 0.2,
+        "val_outcome_counts": {
+          "truncated": 15,
+          "mark_missed": 1,
+          "finished": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 33.40624999999913,
+          "min": 30.349999999998246,
+          "max": 38.190000000001085
+        },
+        "val_peak_heel_deg_max": 19.177558990142007,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.144684810345685,
+        "val_mean_return": 2.8196760021938703,
+        "val_episodes": 20,
+        "val_finished": 6,
+        "val_success_rate": 0.3,
+        "val_outcome_counts": {
+          "finished": 6,
+          "truncated": 14
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 28.852499999999832,
+          "min": 20.795000000000147,
+          "max": 42.83500000000346
+        },
+        "val_peak_heel_deg_max": 28.324026996995475,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.47079300905616683,
+        "val_mean_return": 2.6952493283877224,
+        "val_episodes": 20,
+        "val_finished": 10,
+        "val_success_rate": 0.5,
+        "val_outcome_counts": {
+          "truncated": 5,
+          "finished": 10,
+          "mark_missed": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.833999999999918,
+          "min": 15.555000000001032,
+          "max": 31.03499999999811
+        },
+        "val_peak_heel_deg_max": 34.32956529703737,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.625176534939385,
+        "val_mean_return": 5.6553373803239575,
+        "val_episodes": 20,
+        "val_finished": 11,
+        "val_success_rate": 0.55,
+        "val_outcome_counts": {
+          "finished": 11,
+          "truncated": 9
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.463636363636972,
+          "min": 16.080000000001085,
+          "max": 26.239999999999064
+        },
+        "val_peak_heel_deg_max": 33.14843786585929,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.620528156957938,
+        "val_mean_return": 9.424228680772886,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "truncated": 2,
+          "finished": 18
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 23.128888888888742,
+          "min": 15.345000000000999,
+          "max": 34.47999999999919
+        },
+        "val_peak_heel_deg_max": 39.256670921586,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.612505582098741,
+        "val_mean_return": 9.426609614558632,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.637222222222512,
+          "min": 15.555000000001032,
+          "max": 38.88000000000144
+        },
+        "val_peak_heel_deg_max": 37.607626191262334,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.61017788105898,
+        "val_mean_return": 6.120431660607617,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "finished": 13,
+          "mark_missed": 1,
+          "truncated": 6
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 29.103846153845907,
+          "min": 18.610000000000582,
+          "max": 40.750000000002395
+        },
+        "val_peak_heel_deg_max": 37.924744418446416,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.601294936038398,
+        "val_mean_return": 8.82786861294118,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "truncated": 3,
+          "finished": 17
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 25.24058823529353,
+          "min": 16.195000000001063,
+          "max": 35.37999999999965
+        },
+        "val_peak_heel_deg_max": 36.58448624790734,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.585775426082883,
+        "val_mean_return": 7.427142361733104,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "finished": 16,
+          "mark_missed": 2,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.453437500000017,
+          "min": 16.0100000000011,
+          "max": 29.609999999998394
+        },
+        "val_peak_heel_deg_max": 39.060916316564565,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.635792152602544,
+        "val_mean_return": 8.516932681030536,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.143888888889396,
+          "min": 15.315000000000994,
+          "max": 40.595000000002315
+        },
+        "val_peak_heel_deg_max": 38.95093072597022,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 600000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.612505582098741,
+      "val_mean_return": 9.426609614558632,
+      "val_episodes": 20,
+      "val_finished": 18,
+      "val_success_rate": 0.9,
+      "val_outcome_counts": {
+        "finished": 18,
+        "truncated": 2
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 22.637222222222512,
+        "min": 15.555000000001032,
+        "max": 38.88000000000144
+      },
+      "val_peak_heel_deg_max": 37.607626191262334,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 44902,
+      "validation": 119700,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 507,
+      "finished": 1143,
+      "mark_missed": 68,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 696,
+      "replayed_decisions": 4830
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.00767066515982151,
+        "min": 0.0022622402757406235,
+        "max": 0.033379651606082916
+      },
+      "q2_loss": {
+        "last": 0.007472599390894175,
+        "min": 0.002427416853606701,
+        "max": 0.03404324874281883
+      },
+      "actor_loss": {
+        "last": -5.463100910186768,
+        "min": -5.463100910186768,
+        "max": -0.3614196479320526
+      },
+      "alpha": {
+        "last": 0.0008794825989753008,
+        "min": 0.0006243542884476483,
+        "max": 0.1929963380098343
+      },
+      "entropy": {
+        "last": -1.9397591352462769,
+        "min": -2.065930128097534,
+        "max": 1.3617304563522339
+      },
+      "q_abs_max": {
+        "last": 10.667396545410156,
+        "min": 1.1119999885559082,
+        "max": 18.262283325195312
+      },
+      "saturation": {
+        "last": 0.1162651926279068,
+        "min": 0.00128173828125,
+        "max": 0.12584495544433594
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s110",
+    "learner": "sac",
+    "seed": 110,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3210.660006028833,
+      "collect_s": 2059.1253031652886,
+      "update_s": 887.0045615932904,
+      "eval_s": 17.745407556183636,
+      "training_episodes": 2012
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.24302621965556304,
+        "val_mean_return": -0.3218771464884161,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.17090126818343,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.6489989214427114,
+        "val_mean_return": -0.6115955909382926,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 35.31935646043073,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "terminated",
+        "nominal_return": -9.754729953853666,
+        "val_mean_return": -7.6785386064552394,
+        "val_episodes": 20,
+        "val_finished": 1,
+        "val_success_rate": 0.05,
+        "val_outcome_counts": {
+          "mark_missed": 17,
+          "truncated": 2,
+          "finished": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 28.449999999998624,
+          "min": 28.449999999998624,
+          "max": 28.449999999998624
+        },
+        "val_peak_heel_deg_max": 33.28505308608777,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.656556246170018,
+        "val_mean_return": 9.481423161993199,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.05916666666716,
+          "min": 16.345000000001033,
+          "max": 24.34999999999944
+        },
+        "val_peak_heel_deg_max": 34.97847907619298,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.619065341386191,
+        "val_mean_return": 5.9829455286220155,
+        "val_episodes": 20,
+        "val_finished": 14,
+        "val_success_rate": 0.7,
+        "val_outcome_counts": {
+          "finished": 14,
+          "mark_missed": 3,
+          "truncated": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.452857142857926,
+          "min": 15.445000000001015,
+          "max": 19.460000000000413
+        },
+        "val_peak_heel_deg_max": 36.09288298335995,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.633478701522543,
+        "val_mean_return": 10.080599573723433,
+        "val_episodes": 20,
+        "val_finished": 19,
+        "val_success_rate": 0.95,
+        "val_outcome_counts": {
+          "finished": 19,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.486052631579724,
+          "min": 15.260000000000986,
+          "max": 18.92000000000052
+        },
+        "val_peak_heel_deg_max": 31.848233237830506,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.35739245106755835,
+        "val_mean_return": 8.404694824480279,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "finished": 16,
+          "truncated": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.776875000000548,
+          "min": 16.15000000000107,
+          "max": 22.58499999999979
+        },
+        "val_peak_heel_deg_max": 28.787779368868364,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.207034089514487,
+        "val_mean_return": 8.374191937777004,
+        "val_episodes": 20,
+        "val_finished": 16,
+        "val_success_rate": 0.8,
+        "val_outcome_counts": {
+          "finished": 16,
+          "truncated": 4
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 20.967812500000495,
+          "min": 14.230000000000825,
+          "max": 42.1300000000031
+        },
+        "val_peak_heel_deg_max": 38.76463331564765,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.591634659724585,
+        "val_mean_return": 6.709109487281458,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "truncated": 7,
+          "finished": 13
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 21.53384615384629,
+          "min": 15.490000000001022,
+          "max": 34.71499999999931
+        },
+        "val_peak_heel_deg_max": 33.63701217610948,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.628515801064841,
+        "val_mean_return": 6.4689793196619,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "truncated": 2,
+          "finished": 15,
+          "mark_missed": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.594333333333918,
+          "min": 16.225000000001057,
+          "max": 22.459999999999816
+        },
+        "val_peak_heel_deg_max": 39.56403563739278,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.658050006542654,
+        "val_mean_return": 10.618533104575139,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 17.639750000000685,
+          "min": 14.065000000000799,
+          "max": 19.865000000000332
+        },
+        "val_peak_heel_deg_max": 32.563471946694456,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.626978117491078,
+        "val_mean_return": 10.60818869857202,
+        "val_episodes": 20,
+        "val_finished": 20,
+        "val_success_rate": 1.0,
+        "val_outcome_counts": {
+          "finished": 20
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.19800000000066,
+          "min": 16.25500000000105,
+          "max": 20.365000000000233
+        },
+        "val_peak_heel_deg_max": 32.05433873147563,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 900000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.658050006542654,
+      "val_mean_return": 10.618533104575139,
+      "val_episodes": 20,
+      "val_finished": 20,
+      "val_success_rate": 1.0,
+      "val_outcome_counts": {
+        "finished": 20
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 17.639750000000685,
+        "min": 14.065000000000799,
+        "max": 19.865000000000332
+      },
+      "val_peak_heel_deg_max": 32.563471946694456,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 36933,
+      "validation": 99175,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 366,
+      "mark_missed": 88,
+      "finished": 1558,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 664,
+      "replayed_decisions": 4135
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.019876934587955475,
+        "min": 0.0020521569531410933,
+        "max": 0.03077053092420101
+      },
+      "q2_loss": {
+        "last": 0.020132429897785187,
+        "min": 0.0022025047801434994,
+        "max": 0.030631035566329956
+      },
+      "actor_loss": {
+        "last": -7.51307487487793,
+        "min": -7.51307487487793,
+        "max": -0.27086225152015686
+      },
+      "alpha": {
+        "last": 0.0008197863353416324,
+        "min": 0.0003838982665911317,
+        "max": 0.19299888610839844
+      },
+      "entropy": {
+        "last": -2.002260684967041,
+        "min": -2.11321759223938,
+        "max": 1.3622190952301025
+      },
+      "q_abs_max": {
+        "last": 12.693755149841309,
+        "min": 1.4432464838027954,
+        "max": 16.462081909179688
+      },
+      "saturation": {
+        "last": 0.0920138880610466,
+        "min": 0.001621246337890625,
+        "max": 0.13516807556152344
+      }
+    }
+  },
+  {
+    "run": "runs/ese3990/sac/pilots/S1_base_s111",
+    "learner": "sac",
+    "seed": 111,
+    "config": {
+      "task": "R",
+      "decisions": 1000000,
+      "checkpoints": [
+        10000,
+        50000,
+        100000,
+        200000,
+        300000,
+        400000,
+        500000,
+        600000,
+        700000,
+        800000,
+        900000,
+        1000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 100000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048
+    },
+    "identity": {
+      "model": {
+        "model_version": 2,
+        "source": {
+          "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+          "state": "dirty"
+        }
+      },
+      "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+      "research_state_version": 1,
+      "feature_version": 1,
+      "reward_version": 1
+    },
+    "summary": {
+      "decisions": 1000000,
+      "wall_s": 3234.912567202002,
+      "collect_s": 2066.070688172709,
+      "update_s": 894.259778036736,
+      "eval_s": 20.759787410730496,
+      "training_episodes": 1881
+    },
+    "curve": [
+      {
+        "decisions": 10000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.9051046789483401,
+        "val_mean_return": -1.6897600411617237,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 18,
+          "mark_missed": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 19.170933979589716,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 50000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.17176755621677514,
+        "val_mean_return": -2.6612852485989396,
+        "val_episodes": 20,
+        "val_finished": 0,
+        "val_success_rate": 0.0,
+        "val_outcome_counts": {
+          "truncated": 15,
+          "mark_missed": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": null,
+          "min": null,
+          "max": null
+        },
+        "val_peak_heel_deg_max": 33.47048614042014,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 100000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.10771815633881,
+        "val_mean_return": -0.2285045535410454,
+        "val_episodes": 20,
+        "val_finished": 2,
+        "val_success_rate": 0.1,
+        "val_outcome_counts": {
+          "truncated": 16,
+          "mark_missed": 2,
+          "finished": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 35.24499999999958,
+          "min": 32.14499999999799,
+          "max": 38.345000000001164
+        },
+        "val_peak_heel_deg_max": 36.42095440032014,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 200000,
+        "nominal_outcome": "truncated",
+        "nominal_return": -0.1592468453964517,
+        "val_mean_return": 1.2869532388272258,
+        "val_episodes": 20,
+        "val_finished": 3,
+        "val_success_rate": 0.15,
+        "val_outcome_counts": {
+          "truncated": 17,
+          "finished": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 26.71499999999897,
+          "min": 21.909999999999926,
+          "max": 31.204999999998076
+        },
+        "val_peak_heel_deg_max": 30.98824903794252,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 300000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.361089381971134,
+        "val_mean_return": 9.376229590618376,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "truncated": 2
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 24.673055555555422,
+          "min": 17.41000000000082,
+          "max": 42.87500000000348
+        },
+        "val_peak_heel_deg_max": 37.08077430023964,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 400000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.579047856191158,
+        "val_mean_return": 8.95837334096247,
+        "val_episodes": 20,
+        "val_finished": 17,
+        "val_success_rate": 0.85,
+        "val_outcome_counts": {
+          "finished": 17,
+          "truncated": 3
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.55088235294189,
+          "min": 15.180000000000973,
+          "max": 39.970000000001995
+        },
+        "val_peak_heel_deg_max": 30.487680303853534,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 500000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.625398572054126,
+        "val_mean_return": 8.977295097854494,
+        "val_episodes": 20,
+        "val_finished": 18,
+        "val_success_rate": 0.9,
+        "val_outcome_counts": {
+          "finished": 18,
+          "mark_missed": 1,
+          "truncated": 1
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 22.106666666666797,
+          "min": 15.86000000000108,
+          "max": 36.35000000000014
+        },
+        "val_peak_heel_deg_max": 37.27107767212966,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 600000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.49835744530596,
+        "val_mean_return": 5.1823016170413245,
+        "val_episodes": 20,
+        "val_finished": 10,
+        "val_success_rate": 0.5,
+        "val_outcome_counts": {
+          "finished": 10,
+          "truncated": 10
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.147000000000435,
+          "min": 14.910000000000931,
+          "max": 28.959999999998523
+        },
+        "val_peak_heel_deg_max": 34.161907818813624,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 700000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.640877425599967,
+        "val_mean_return": 6.24308189104608,
+        "val_episodes": 20,
+        "val_finished": 12,
+        "val_success_rate": 0.6,
+        "val_outcome_counts": {
+          "finished": 12,
+          "truncated": 8
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 16.739166666667586,
+          "min": 15.54000000000103,
+          "max": 19.390000000000427
+        },
+        "val_peak_heel_deg_max": 30.980224359885643,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 800000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.623339905765064,
+        "val_mean_return": 7.855848292959635,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "finished": 15,
+          "truncated": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 19.25233333333392,
+          "min": 15.910000000001087,
+          "max": 34.844999999999374
+        },
+        "val_peak_heel_deg_max": 31.948359363280275,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 900000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.597014504444,
+        "val_mean_return": 6.753681945821951,
+        "val_episodes": 20,
+        "val_finished": 13,
+        "val_success_rate": 0.65,
+        "val_outcome_counts": {
+          "finished": 13,
+          "truncated": 7
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.770384615385165,
+          "min": 16.435000000001015,
+          "max": 30.0799999999983
+        },
+        "val_peak_heel_deg_max": 36.05129855243028,
+        "val_release_requests_overridden": 0
+      },
+      {
+        "decisions": 1000000,
+        "nominal_outcome": "finished",
+        "nominal_return": 10.640174233626349,
+        "val_mean_return": 7.849481181890757,
+        "val_episodes": 20,
+        "val_finished": 15,
+        "val_success_rate": 0.75,
+        "val_outcome_counts": {
+          "finished": 15,
+          "truncated": 5
+        },
+        "val_finish_time_s_given_success": {
+          "mean": 18.882333333333857,
+          "min": 15.975000000001097,
+          "max": 23.24999999999966
+        },
+        "val_peak_heel_deg_max": 36.89834511526607,
+        "val_release_requests_overridden": 0
+      }
+    ],
+    "selected": {
+      "decisions": 300000,
+      "nominal_outcome": "finished",
+      "nominal_return": 10.361089381971134,
+      "val_mean_return": 9.376229590618376,
+      "val_episodes": 20,
+      "val_finished": 18,
+      "val_success_rate": 0.9,
+      "val_outcome_counts": {
+        "finished": 18,
+        "truncated": 2
+      },
+      "val_finish_time_s_given_success": {
+        "mean": 24.673055555555422,
+        "min": 17.41000000000082,
+        "max": 42.87500000000348
+      },
+      "val_peak_heel_deg_max": 37.08077430023964,
+      "val_release_requests_overridden": 0
+    },
+    "real_decisions_by_kind": {
+      "calibration": 10000,
+      "probe": 42661,
+      "validation": 118813,
+      "training": 990000
+    },
+    "training_outcomes": {
+      "truncated": 489,
+      "mark_missed": 30,
+      "finished": 1362,
+      "running": 1
+    },
+    "probe_replays_verified": 12,
+    "verification_cost": {
+      "actor_evaluation_decisions": 1011,
+      "replayed_decisions": 6218
+    },
+    "all_curve_rows_match_episode_index": true,
+    "nominal_reload_verified": true,
+    "finite_metrics_verified": true,
+    "diagnostics": {
+      "q1_loss": {
+        "last": 0.003716100472956896,
+        "min": 0.001097994507290423,
+        "max": 0.03637760877609253
+      },
+      "q2_loss": {
+        "last": 0.0042159780859947205,
+        "min": 0.0011450243182480335,
+        "max": 0.035666584968566895
+      },
+      "actor_loss": {
+        "last": -5.270219802856445,
+        "min": -7.550024032592773,
+        "max": -0.3703993558883667
+      },
+      "alpha": {
+        "last": 0.0008157250704243779,
+        "min": 0.0005462225526571274,
+        "max": 0.1929963082075119
+      },
+      "entropy": {
+        "last": -2.0284793376922607,
+        "min": -2.0931715965270996,
+        "max": 1.362205147743225
+      },
+      "q_abs_max": {
+        "last": 11.697895050048828,
+        "min": 1.4515838623046875,
+        "max": 15.28232479095459
+      },
+      "saturation": {
+        "last": 0.1288859099149704,
+        "min": 0.00154876708984375,
+        "max": 0.13218307495117188
+      }
+    }
+  }
+]

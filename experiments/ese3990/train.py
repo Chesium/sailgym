@@ -1,12 +1,12 @@
-"""Learner entry point: calibration, collection, PPO updates, checkpoints.
+"""Learner entry point: calibration, collection, PPO or SAC updates, checkpoints.
 
-Plan §4.1, §4.5 and E1.
+Plan §4.1, §4.2, §4.5 and E1.
 
 Usage::
 
     uv run --frozen --no-sync python experiments/ese3990/train.py --seed 0 \
         --decisions 100000 --checkpoints 10000,25000,50000,75000,100000 \
-        --out runs/ese3990/ppo/R_pilot_s0
+        --out runs/ese3990/ppo/R_pilot_s0 [--learner sac]
 
 A run directory holds ``config.json``, ``metrics.jsonl`` (one line per PPO
 update), ``curve.jsonl`` (one line per checkpoint: validation outcomes),
@@ -29,6 +29,7 @@ from typing import Any
 import jax
 import numpy as np
 import ppo
+import sac
 from baselines import SmoothRandom
 from evaluate import run_episode, summarize
 from make_conditions import TrainingSampler
@@ -66,6 +67,21 @@ CONFIG: dict[str, Any] = {
     "log_std": -0.5,
     "hidden": 64,
 }
+# Plan §4.5 SAC starting values. Shared with PPO: calibration, normalisation,
+# hidden width, optimizer. Exploration warmup = the 10k calibration decisions,
+# which go into replay; updates start right after them.
+SAC_CONFIG: dict[str, Any] = {
+    **{k: CONFIG[k] for k in ("task", "decisions", "checkpoints", "lr", "hidden")},
+    **{k: CONFIG[k] for k in ("calibration_decisions", "calibration_hold")},
+    **{k: CONFIG[k] for k in ("norm_clip", "std_floor", "max_grad_norm")},
+    "replay": 100_000,
+    "minibatch": 256,
+    "utd": 1,  # gradient updates per real decision
+    "tau": 0.005,
+    "alpha0": 0.2,
+    "target_entropy": -2.0,  # H_min = −dim(a), on the squashed actions
+    "log_every": 2048,  # decisions per metrics.jsonl row (PPO: one per rollout)
+}
 PROBE_IDS = ("nominal", *[c.id for c in load_manifest("validation")[:5]])
 """The probe set (plan §10.2): nominal plus the first 5 validation documents."""
 
@@ -96,7 +112,7 @@ class Collector:
 
     def run(self, n: int, choose) -> tuple[dict[str, np.ndarray], list]:
         """``n`` real decisions; ``choose(rs) -> (action, extra)``."""
-        keys = ("rs", "next_rs", "reward", "bootstrap", "cont")
+        keys = ("rs", "action", "next_rs", "reward", "bootstrap", "cont")
         rows: dict[str, list] = {k: [] for k in keys}
         extras, ended = [], []
         for _ in range(n):
@@ -129,17 +145,19 @@ def append_jsonl(path: Path, row: dict[str, Any]) -> None:
 
 def calibrate(
     task: Task, seed: int, cfg: dict[str, Any], sampler, writer
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
     """10k smooth-random decisions → frozen feature normalisation (plan §4.5).
 
     A function of the training seed only, so PPO and SAC see identical data.
+    Returns the normalisation and the transitions (SAC puts them in replay).
     """
     rnd = SmoothRandom(seed, cfg["calibration_hold"])
     meta = {"controller": "smooth_random", "kind": "calibration"}
     col = Collector(task, sampler, writer, meta, "float64")
     data, _ = col.run(cfg["calibration_decisions"], lambda rs: (rnd.act(None), 0.0))
     col.close()
-    return ppo.normalization_from(features(data["rs"], task.target), cfg["std_floor"])
+    norm = ppo.normalization_from(features(data["rs"], task.target), cfg["std_floor"])
+    return norm, data
 
 
 def evaluate_checkpoint(task, policy, decisions, writer) -> dict[str, Any]:
@@ -170,8 +188,24 @@ def evaluate_checkpoint(task, policy, decisions, writer) -> dict[str, Any]:
     }
 
 
+def checkpoint(out, task, writer, policy_cls, params, meta) -> None:
+    """Save ``params`` and evaluate them on nominal + validation (plan E1)."""
+    decisions = meta["decisions"]
+    path = out / "ckpt" / f"{decisions:07d}"
+    ppo.save(path, params, meta)
+    row = evaluate_checkpoint(
+        task, policy_cls(params, meta, str(path)), decisions, writer
+    )
+    append_jsonl(out / "curve.jsonl", row)
+    print(
+        f"[ckpt {decisions:>7}] val success {row['val_success_rate']:.2f} "
+        f"return {row['val_mean_return']:+.2f} nominal {row['nominal_outcome']}",
+        flush=True,
+    )
+
+
 def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=False)  # never mix or overwrite recorded runs
     task = Task.load(cfg["task"])
     gamma = TransitionReward(task).gamma  # the task's discount, not a PPO knob
     meta0 = run_metadata(
@@ -187,7 +221,7 @@ def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
     sampler = TrainingSampler(seed)
     t0 = time.perf_counter()
 
-    norm = calibrate(task, seed, cfg, sampler, writer)
+    norm, _ = calibrate(task, seed, cfg, sampler, writer)
     decisions = cfg["calibration_decisions"]
     norm_obs = lambda rs: ppo.normalize(rs, task.target, norm, cfg["norm_clip"])  # noqa: E731
 
@@ -206,32 +240,19 @@ def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
     )
     timing = {"collect_s": 0.0, "update_s": 0.0, "eval_s": 0.0}
 
-    def checkpoint() -> None:
-        ts = time.perf_counter()
-        meta = {
-            **meta0,
-            "decisions": decisions,
-            "obs_dim": len(norm["mean"]),
-            "normalization": norm,
-            "wall_s": time.perf_counter() - t0,
-        }
-        path = out / "ckpt" / f"{decisions:07d}"
-        ppo.save(path, params, meta)
-        row = evaluate_checkpoint(
-            task, ppo.PPOPolicy(params, meta, str(path)), decisions, writer
-        )
-        append_jsonl(out / "curve.jsonl", row)
-        timing["eval_s"] += time.perf_counter() - ts
-        print(
-            f"[ckpt {decisions:>7}] val success {row['val_success_rate']:.2f} "
-            f"return {row['val_mean_return']:+.2f} nominal {row['nominal_outcome']}",
-            flush=True,
-        )
-
     while True:
         while pending and decisions >= pending[0]:
             pending.pop(0)
-            checkpoint()
+            ts = time.perf_counter()
+            meta = {
+                **meta0,
+                "decisions": decisions,
+                "obs_dim": len(norm["mean"]),
+                "normalization": norm,
+                "wall_s": ts - t0,
+            }
+            checkpoint(out, task, writer, ppo.PPOPolicy, params, meta)
+            timing["eval_s"] += time.perf_counter() - ts
         if decisions >= cfg["decisions"]:
             break
         n = min(cfg["rollout"], cfg["decisions"] - decisions)
@@ -311,10 +332,147 @@ def train(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
     return out
 
 
+def train_sac(seed: int, out: Path, cfg: dict[str, Any]) -> Path:
+    """SAC through the same contract as :func:`train`: identical calibration
+    data and normalisation, collector, episode store and checkpoint evaluation.
+
+    The loop is the outer loop of [A p.158] with one real decision per
+    iteration: act with a ~ π_θ(·|s), store the transition, then ``utd``
+    gradient updates on minibatches from replay.
+    """
+    out.mkdir(parents=True, exist_ok=False)  # never mix or overwrite recorded runs
+    task = Task.load(cfg["task"])
+    gamma = TransitionReward(task).gamma
+    meta0 = run_metadata(
+        task,
+        learner="sac",
+        sac_version=sac.SAC_VERSION,
+        training_seed=seed,
+        config=cfg,
+        probe_ids=list(PROBE_IDS),
+    )
+    (out / "config.json").write_text(json.dumps(meta0, indent=1))
+    writer = EpisodeWriter(out / "store", {"learner": "sac", "training_seed": seed})
+    sampler = TrainingSampler(seed)
+    t0 = time.perf_counter()
+
+    norm, calib = calibrate(task, seed, cfg, sampler, writer)
+    decisions = cfg["calibration_decisions"]
+    norm_obs = lambda rs: ppo.normalize(rs, task.target, norm, cfg["norm_clip"])  # noqa: E731
+    replay = sac.Replay(cfg["replay"], len(norm["mean"]))
+
+    def store(data):
+        replay.add(
+            obs=norm_obs(data["rs"]),
+            act=data["action"][:, :2],  # the executed rates (release dropped)
+            reward=data["reward"],
+            next_obs=norm_obs(data["next_rs"]),
+            bootstrap=data["bootstrap"],
+            cont=data["cont"],
+        )
+
+    store(calib)  # calibration doubles as the exploration warmup (plan §4.5)
+
+    key = jax.random.PRNGKey(seed)
+    params = sac.init(key, len(norm["mean"]), 2, cfg["hidden"], cfg["alpha0"])
+    init_opt, update = sac.make_update(cfg, gamma)
+    state = {
+        "params": params,
+        "target_q": params["q"],  # Q̄ starts equal to Q
+        "opt": init_opt(params),
+        "key": jax.random.fold_in(key, 1),
+    }
+    rng = np.random.default_rng([seed, 1])  # exploration noise and minibatches
+    actor_dist = jax.jit(sac.actor_dist)
+
+    pending = sorted(cfg["checkpoints"])
+    col = Collector(
+        task, sampler, writer, {"controller": "sac", "kind": "training"}, "float32"
+    )
+    timing = {"collect_s": 0.0, "update_s": 0.0, "eval_s": 0.0}
+    window: list[dict] = []
+    ended_window: list[dict] = []
+
+    def choose(rs):
+        # a = tanh(μ_θ(s) + σ_θ(s)·ε): the same stochastic actor the loss uses.
+        mu, log_std = (
+            np.asarray(x) for x in actor_dist(state["params"]["actor"], norm_obs(rs))
+        )
+        u = (mu + np.exp(log_std) * rng.standard_normal(2)).astype(np.float32)
+        return np.tanh(u), 0.0
+
+    while True:
+        while pending and decisions >= pending[0]:
+            pending.pop(0)
+            ts = time.perf_counter()
+            meta = {
+                **meta0,
+                "decisions": decisions,
+                "obs_dim": len(norm["mean"]),
+                "normalization": norm,
+                "wall_s": ts - t0,
+            }
+            checkpoint(out, task, writer, sac.SACPolicy, state["params"], meta)
+            timing["eval_s"] += time.perf_counter() - ts
+        if decisions >= cfg["decisions"]:
+            break
+
+        ts = time.perf_counter()
+        data, ended = col.run(1, choose)
+        store(data)
+        decisions += 1
+        ended_window += ended
+        timing["collect_s"] += time.perf_counter() - ts
+
+        ts = time.perf_counter()
+        for _ in range(cfg["utd"]):
+            state, stats = update(state, replay.sample(rng, cfg["minibatch"]))
+            window.append(stats)
+        timing["update_s"] += time.perf_counter() - ts
+
+        if decisions % cfg["log_every"] == 0 or decisions == cfg["decisions"]:
+            stats = jax.device_get(window)
+            fin = [e for e in ended_window if e["outcome"] == "finished"]
+            append_jsonl(
+                out / "metrics.jsonl",
+                {
+                    "decisions": decisions,
+                    "wall_s": time.perf_counter() - t0,
+                    "episodes_ended": len(ended_window),
+                    "train_success_rate": len(fin) / len(ended_window)
+                    if ended_window
+                    else None,
+                    "train_mean_return": float(
+                        np.mean([e["return"] for e in ended_window])
+                    )
+                    if ended_window
+                    else None,
+                    "replay_size": replay.size,
+                    **{k: float(np.mean([s[k] for s in stats])) for k in stats[0]},
+                    "q_abs_max": float(np.max([s["q_abs_max"] for s in stats])),
+                    **timing,
+                },
+            )
+            window, ended_window = [], []
+
+    col.close()
+    writer.close()
+    summary = {
+        "decisions": decisions,
+        "wall_s": time.perf_counter() - t0,
+        **timing,
+        "training_episodes": col.episodes,
+    }
+    (out / "summary.json").write_text(json.dumps(summary, indent=1))
+    print(json.dumps(summary, indent=1))
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--learner", choices=["ppo", "sac"], default="ppo")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--decisions", type=int, default=CONFIG["decisions"])
+    ap.add_argument("--decisions", type=int)
     ap.add_argument("--checkpoints", help="comma-separated decision counts")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument(
@@ -325,15 +483,16 @@ def main(argv: list[str] | None = None) -> int:
         help="override a CONFIG entry, e.g. --set log_std=0.0 (pilots only)",
     )
     args = ap.parse_args(argv)
-    cfg = {**CONFIG, "decisions": args.decisions}
+    base = SAC_CONFIG if args.learner == "sac" else CONFIG
+    cfg = {**base, "decisions": args.decisions or base["decisions"]}
     if args.checkpoints:
         cfg["checkpoints"] = [int(x) for x in args.checkpoints.split(",")]
     for kv in args.set:
         k, v = kv.split("=", 1)
-        if k not in CONFIG:
+        if k not in base:
             raise SystemExit(f"unknown config key {k!r}")
         cfg[k] = json.loads(v)
-    train(args.seed, args.out, cfg)
+    (train_sac if args.learner == "sac" else train)(args.seed, args.out, cfg)
     return 0
 
 

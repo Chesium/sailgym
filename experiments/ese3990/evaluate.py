@@ -153,6 +153,10 @@ def make_controller(name: str, seed: int, checkpoint: Path | None = None) -> Any
         from ppo import PPOPolicy
 
         return PPOPolicy.load(checkpoint)
+    if name == "sac":
+        from sac import SACPolicy
+
+        return SACPolicy.load(checkpoint)
     if name == "rule_sailor":
         return RuleSailorController()
     if name == "random":
@@ -195,13 +199,15 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", default="R")
     ap.add_argument(
-        "--controller", default="rule_sailor", choices=["rule_sailor", "random", "ppo"]
+        "--controller",
+        default="rule_sailor",
+        choices=["rule_sailor", "random", "ppo", "sac"],
     )
     ap.add_argument("--manifest", default="nominal")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", type=Path)
     ap.add_argument("--store", type=Path, help="log episodes for replay (plan §10)")
-    ap.add_argument("--checkpoint", type=Path, help="ppo: ckpt path without suffix")
+    ap.add_argument("--checkpoint", type=Path, help="ppo/sac: ckpt path without suffix")
     args = ap.parse_args(argv)
     a = args
     report = evaluate(a.task, a.controller, a.manifest, a.seed, a.store, a.checkpoint)

@@ -4,6 +4,9 @@ Learning versus planning on SailGym: PPO, SAC and true-model CEM-MPC, with
 RuleSailor as an engineering reference. The plan is
 [`docs/ese3990/ESE3990_SailGym_Project_Plan.md`](../../docs/ese3990/ESE3990_SailGym_Project_Plan.md);
 the M0 evidence is in [`docs/ese3990/M0_report.md`](../../docs/ese3990/M0_report.md).
+SAC checks, pilot results, resource deviations and the frozen 1M main budget
+are in the [M2 report](../../docs/ese3990/M2_report.md). Exact learner settings
+and seeds are saved in [`configs/M2_freeze.json`](configs/M2_freeze.json).
 
 Physics, gate passage, capsize, bounds and time limits are Rust decisions
 (`sailgym_core`). Nothing in this directory models the boat.
@@ -19,15 +22,17 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `baselines.py` | `SmoothRandom` and `RuleSailorController` (bound Rust RuleSailor, release forced off) |
 | `evaluate.py` | One evaluator for every controller (`--controller ppo --checkpoint …` too); writes an outcome report |
 | `ppo.py` | PPO: networks, tanh-Gaussian likelihood, GAE, clipped loss, checkpoints, `PPOPolicy`. Comments cite the slides by PDF page |
-| `train.py` | Learner entry point: calibration and normalization, collection (every episode stored), updates, checkpoints and probe/validation evaluation |
+| `sac.py` | SAC: replay buffer, twin Q + Polyak targets, state-dependent tanh-Gaussian actor, learned temperature, `SACPolicy`. Reuses `ppo.py`'s MLP, likelihood and checkpoint format. Comments cite the slides by PDF page |
+| `train.py` | Learner entry point (`--learner ppo|sac`): calibration and normalization (identical for both), collection (every episode stored), updates, checkpoints and probe/validation evaluation |
 | `plots.py` | Learning curve from runs' `curve.jsonl` |
+| `audit_runs.py` | Verify saved costs, finite metrics, validation aggregates, exact selected/final probe replay and nominal actor reload; writes a compact JSON evidence file |
 | `viz/episode_store.py` | Episode logs (actions + condition + seed + build identity + checksum + 5 Hz pose) in compressed shards with an `index.jsonl` (plan §10) |
 | `viz/replay.py` | Exact re-simulation of a stored episode, verified against the log; pose-only fallback |
 | `viz/render.py` | Static track figure, time series, and a synced multi-episode gif/mp4 overlay |
 | `viz/show.py` | Command-line entry: select episodes from a store, replay them and render |
 | `tests/` | Contract, branch, baseline and viz checks |
 
-Not yet written (M2+): `sac.py`, `mpc.py`, `viz/compose.py`.
+Not yet written (M3+): `mpc.py`, `viz/compose.py`.
 
 ## Commands
 
@@ -35,6 +40,7 @@ Run from the repository root. Unset `PYTHONPATH` if a ROS (or other) install
 puts its packages on it — `scripts/py-test.sh` does the same. Use
 `uv run --frozen --no-sync`: a plain `uv run` re-syncs from the lock and
 replaces the freshly built `sailgym_core` with a stale cached wheel.
+Training requires a new output directory; existing runs are never overwritten.
 
 ```bash
 # build the extension after any Rust change
@@ -60,6 +66,12 @@ uv run --frozen --no-sync python experiments/ese3990/evaluate.py --controller pp
     --checkpoint runs/ese3990/ppo/R_pilot_s0/ckpt/0100000 --manifest validation
 uv run --frozen --no-sync python experiments/ese3990/plots.py runs/ese3990/ppo/R_pilot_s0 \
     --out runs/ese3990/figs/ppo_curve.png
+
+# SAC: same entry point, same run-directory layout
+uv run --frozen --no-sync python experiments/ese3990/train.py --learner sac --seed 0 \
+    --decisions 100000 --checkpoints 10000,50000,100000 --out runs/ese3990/sac/R_pilot_s0
+uv run --frozen --no-sync python experiments/ese3990/evaluate.py --controller sac \
+    --checkpoint runs/ese3990/sac/R_pilot_s0/ckpt/0100000 --manifest validation
 
 # log episodes for replay, then render them (plan §10)
 uv run --frozen --no-sync python experiments/ese3990/evaluate.py --task U --controller rule_sailor \
@@ -99,4 +111,5 @@ the episode. Set `MPLCONFIGDIR` if `~/.cache/matplotlib` is not writable.
   them with the same reward.
 * **Normalization.** 10k smooth-random calibration decisions per training
   seed → per-feature mean/std (floor 0.01), inputs clipped to ±5; saved in
-  every checkpoint.
+  every checkpoint. SAC also puts those 10k transitions in replay: they are
+  its exploration warmup, and updates start right after them.

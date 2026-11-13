@@ -323,6 +323,7 @@ class PPOPolicy:
     """
 
     action_dtype = "float32"
+    _act_fn = staticmethod(_mean_action)  # SACPolicy swaps in its own
 
     def __init__(
         self, params: dict[str, Any], meta: dict[str, Any], name: str = ""
@@ -347,7 +348,7 @@ class PPOPolicy:
             self.meta["normalization"],
             self.meta["config"]["norm_clip"],
         )
-        return np.asarray(_mean_action(self.params, obs))
+        return np.asarray(self._act_fn(self.params, obs))
 
     def identity(self) -> dict[str, Any]:
         return {
