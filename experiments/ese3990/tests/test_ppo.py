@@ -155,3 +155,14 @@ def test_every_stored_run_episode_replays_exactly(two_runs):
     assert sum(e["decisions"] for e in s.query(kind="training")) == 2400
     for e in s.index:
         replay(s.load(e), s.identity)  # raises on any mismatch
+
+
+def test_select_checkpoint_prefers_finished_then_return_then_earliest():
+    from evaluate import select_checkpoint
+
+    def row(d, f, r):
+        return {"decisions": d, "val_finished": f, "val_mean_return": r}
+
+    curve = [row(1, 0, 5.0), row(2, 20, 10.0), row(3, 20, 10.5), row(4, 20, 10.5)]
+    assert select_checkpoint(curve)["decisions"] == 3
+    assert select_checkpoint(curve[:2])["decisions"] == 2

@@ -68,6 +68,8 @@ This is a pilot result, not a final claim: one seed, starting values. The plan a
 1. Larger initial σ (log σ = 0), or time-correlated exploration noise.
 2. A higher entropy coefficient.
 
+**Update:** both were tried on pilot seeds 100–102; see [`docs/rl/ppo_tuning_log.md`](../rl/ppo_tuning_log.md). The unchanged baseline solves R on seed 101 (20/20 from 400k). σ₀ = 1 is worse, and c_H = 0.01 is slower. The baseline is kept, and seed variance dominates.
+
 Changing the reward or the gate is **not** a pilot option; it would reopen the frozen M0 contract. The choice is yours. Record whichever is taken here before the final runs.
 
 ## 5. Frozen normalization protocol (plan §3.3, §4.5)

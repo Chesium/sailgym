@@ -317,10 +317,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--decisions", type=int, default=CONFIG["decisions"])
     ap.add_argument("--checkpoints", help="comma-separated decision counts")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="KEY=JSON",
+        help="override a CONFIG entry, e.g. --set log_std=0.0 (pilots only)",
+    )
     args = ap.parse_args(argv)
     cfg = {**CONFIG, "decisions": args.decisions}
     if args.checkpoints:
         cfg["checkpoints"] = [int(x) for x in args.checkpoints.split(",")]
+    for kv in args.set:
+        k, v = kv.split("=", 1)
+        if k not in CONFIG:
+            raise SystemExit(f"unknown config key {k!r}")
+        cfg[k] = json.loads(v)
     train(args.seed, args.out, cfg)
     return 0
 

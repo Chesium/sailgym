@@ -134,6 +134,20 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def select_checkpoint(curve: list[dict[str, Any]]) -> dict[str, Any]:
+    """The validation-selected checkpoint of one training run (plan E3).
+
+    Most validation documents finished; ties go to the higher mean validation
+    return, then to the earlier checkpoint. Validation only: the selected
+    checkpoint's validation score is a selection score, not a held-out result.
+    The same rule applies to every learner.
+    """
+    return min(
+        curve,
+        key=lambda r: (-r["val_finished"], -r["val_mean_return"], r["decisions"]),
+    )
+
+
 def make_controller(name: str, seed: int, checkpoint: Path | None = None) -> Any:
     if name == "ppo":
         from ppo import PPOPolicy
