@@ -1,7 +1,7 @@
 # Learning versus Planning for Sailboat Control
 
 **ESE3990 project plan · Shimin Chen · revised 2026-11-13**  
-**Status:** implementation plan; the experiments below are proposed, not completed.  
+**Status:** implementation plan. M0 and M1 are complete (see the [M0 report](M0_report.md) and the [M1 report](M1_report.md)). PPO is implemented, checked and reproducible, but does not yet solve R (0/20 validation through 1M decisions, seed 0).  
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
 The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is retained as the final stretch goal, after the core experiments, analysis, reproducibility work, and presentation are complete.**
@@ -65,7 +65,7 @@ Both tasks use the ILCA defaults and `free_sail` as the scenario template: at re
 
 | Task | Geometry | Budget | Role |
 |---|---|---|---|
-| **R: reach one gate** | Start `(0,0)`, first waypoint `(30,0)`, half-width 5 m, one lap | 90 simulated seconds | Required learning/planning comparison and MPC study |
+| **R: reach one gate** | Start `(0,0)`, first waypoint `(30,0)`, half-width 5 m, one lap | ~~90~~ **45** simulated seconds (frozen at M0; see [M0 report](M0_report.md) §6) | Required learning/planning comparison and MPC study |
 | **U: reach an upwind gate** | Start `(0,0)`, waypoint `(0,40)`, half-width 5 m, one lap | 180 simulated seconds | Gated extension for long-horizon maneuvering |
 
 Construct each with the existing `Route::waypoints` path, preserving directed crossing and mark-miss behavior. R is the first leg of `courses/reach.json`; U is the first leg of `courses/windward_leeward.json`. They remain ordinary SailGym routes. A single gate keeps navigation and outcome evaluation small while the controllers are established.
@@ -273,27 +273,27 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 
 ### M0 · Nov 13–14 · Freeze the benchmark and audit MPC branching · 9–12 h
 
-- [ ] Inventory actual code/results and any Nov 12 feedback; do not treat earlier draft milestones as completed.
-- [ ] Freeze R/U configs, evaluation manifests, reward/masks, action/cadence and cost units after nominal baseline checks.
-- [ ] Add Rust route construction/export and research-state readout; bind the existing RuleSailor.
-- [ ] Implement the shared wrapper, transition reward, explicit-reset collector, final-state handling and checkpoint metadata.
-- [ ] Audit a complete native planning branch; make one branch-versus-replay proof including a pending observer/gate state. Record missing state and expected implementation cost.
-- [ ] Verify nominal restricted RuleSailor R completion and random-control reports; add/lock Optax and matplotlib in the root uv workspace.
-- [ ] **Viz (§10):** record the episode-log requirements (actions, condition, seed, build identity, checksum) as part of the frozen contract, so that every later run can be replayed.
+- [x] Inventory actual code/results and any Nov 12 feedback; do not treat earlier draft milestones as completed. *No earlier ESE3990 code existed. Nov 12 feedback is expected after Nov 19.*
+- [x] Freeze R/U configs, evaluation manifests, reward/masks, action/cadence and cost units after nominal baseline checks. *Contract v1: R budget cut to 45 s; shift set uses 15–30° heading offsets; the shaping target is the gate centre.*
+- [x] Add Rust route construction/export and research-state readout; bind the existing RuleSailor.
+- [x] Implement the shared wrapper, transition reward, explicit-reset collector, final-state handling and checkpoint metadata. *`experiments/ese3990/sailing.py`; checkpoint metadata comes from `run_metadata`.*
+- [x] Audit a complete native planning branch; make one branch-versus-replay proof including a pending observer/gate state. Record missing state and expected implementation cost. *`Episode::fork`. Costs: 4.5 µs per fork and ~25 µs per branch decision, so ~130–190 ms per baseline planner decision single-threaded.*
+- [x] Verify nominal restricted RuleSailor R completion and random-control reports; add/lock Optax and matplotlib in the root uv workspace.
+- [x] **Viz (§10):** record the episode-log requirements (actions, condition, seed, build identity, checksum) as part of the frozen contract, so that every later run can be replayed.
 
-**Exit:** the benchmark is reproducible and there is an evidence-backed branching approach. If exact branching remains unresolved after two days, make it the first M1 integration task and defer batching/browser work; do not hide the risk until the last week.
+**Exit (met 2026-11-13):** the benchmark is reproducible and there is an evidence-backed branching approach. If exact branching remains unresolved after two days, make it the first M1 integration task and defer batching/browser work; do not hide the risk until the last week.
 
 ### M1 · Nov 15–17 · PPO baseline and complete branching proof · 10–13 h
 
-- [ ] Implement PPO, transformed action likelihoods and GAE; pass the E0 numerical checks.
-- [ ] Save/reload a policy and reproduce its evaluation; produce the first valid PPO R curve.
-- [ ] Complete isolated branch/rollout parity at gate, capsize and step-budget boundaries; verify candidate order cannot change the live episode.
-- [ ] Measure a small candidate batch and a 100k-decision PPO pilot; set realistic planning and training budgets.
-- [ ] Freeze the shared task/normalization protocol after any pilot-only corrections and record all changes.
-- [ ] **Viz (§10):** episode store, deterministic replay with build/checksum verification, logging hooks in the evaluator and collector, and a static trajectory plot. Prove it with stored RuleSailor R/U episodes that replay exactly. This is the debugging tool for the remaining milestones.
-- [ ] **Viz (§10):** log the probe set (nominal plus 5 validation conditions) at every saved PPO checkpoint.
+- [x] Implement PPO, transformed action likelihoods and GAE; pass the E0 numerical checks. *`ppo.py`, `tests/test_ppo.py`.*
+- [x] Save/reload a policy and reproduce its evaluation; produce the first valid PPO R curve. *Seed 0, 1M decisions: 0/20 validation throughout. It found the gate around 500k, then avoided it because of the −10 mark-miss penalty ([M1 report](M1_report.md) §4).*
+- [x] Complete isolated branch/rollout parity at gate, capsize and step-budget boundaries; verify candidate order cannot change the live episode. *Done in M0: `crates/sailgym-env/tests/fork.rs` (6 tests) and `tests/test_branch.py`.*
+- [x] Measure a small candidate batch and a 100k-decision PPO pilot; set realistic planning and training budgets. *`RawEnv.rollout`. The baseline planner costs 158 ms per decision single-threaded, so it runs offline; threading K is the first M3 task. PPO takes 14 s per 100k and 93 s per 1M, so runtime does not limit it. The common budget is set in M2.*
+- [x] Freeze the shared task/normalization protocol after any pilot-only corrections and record all changes. *[M1 report](M1_report.md) §5. No corrections were made. Two PPO pilot configurations remain (§4).*
+- [x] **Viz (§10):** episode store, deterministic replay with build/checksum verification, logging hooks in the evaluator and collector, and a static trajectory plot. Prove it with stored RuleSailor R/U episodes that replay exactly. This is the debugging tool for the remaining milestones. *`experiments/ese3990/viz/`. All 18 rendered RuleSailor R/U episodes replayed exactly, at ~18 B per decision. A basic gif/mp4 overlay landed early. The PPO collector must call `EpisodeRecorder` when it is written.*
+- [x] **Viz (§10):** log the probe set (nominal plus 5 validation conditions) at every saved PPO checkpoint. *All 20 validation documents are stored; the probes are tagged `kind="probe"`. Calibration and training episodes are logged too, and all of them replay exactly.*
 
-**Exit:** PPO is reproducible and correct native hypothetical rollouts exist. If branches are correct but slow, proceed with an explicitly offline planner and retain latency measurement. If branches cannot be made correct, the planned MPC comparison is blocked and must be recorded as unfinished scope.
+**Exit (met 2026-11-13):** PPO is reproducible and correct native hypothetical rollouts exist. If branches are correct but slow, proceed with an explicitly offline planner and retain latency measurement. If branches cannot be made correct, the planned MPC comparison is blocked and must be recorded as unfinished scope.
 
 ### M2 · Nov 18–20 · SAC on the same task · 10–13 h
 

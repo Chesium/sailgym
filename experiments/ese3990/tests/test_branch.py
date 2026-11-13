@@ -88,3 +88,38 @@ def test_a_terminal_branch_never_resets():
     with pytest.raises(ValueError):
         branch.step(np.array([0.0, 0.0, -1.0]), o, f)
     assert live.outcome == "running"
+
+
+def test_native_batch_rollout_equals_fork_stepping_and_leaves_live_untouched():
+    """`TaskEnv.rollout` (Rust `RawEnv.rollout`) against one fork per candidate
+    driven from Python, through the budget boundary (plan §4.3)."""
+    task = Task.load("R")
+    live = TaskEnv(task, NOMINAL)
+    live.reset()
+    # Circle with the rudder hard over until H runs past the time limit.
+    while live.raw.steps < task.max_steps - 6 * task.cadence:
+        live.step(np.array([1.0, 1.0]))
+    assert live.outcome == "running"
+    before, steps_before = live.research_state(), live.raw.steps
+    rng = np.random.default_rng(2)
+    rates = rng.uniform(-1.5, 1.5, size=(4, 10, 2))  # out-of-range rates get clipped
+    nrs, code, steps, rew = live.rollout(rates)
+    np.testing.assert_array_equal(live.research_state(), before)
+    assert live.raw.steps == steps_before
+
+    for k in range(4):
+        acts = [live.adapter(a).copy() for a in rates[k]]
+        want = drive(live.fork(), acts, live.spec.obs_len)
+        n = len(want)
+        assert n == 6  # truncated on the 6th decision
+        cum = steps_before + np.cumsum(steps[k, :n])
+        np.testing.assert_array_equal(cum, [w[3] for w in want])
+        assert (steps[k, n:] == 0).all() and (rew[k, n:] == 0).all()
+        assert code[k, n - 1] == 3 and (code[k, : n - 1] == 0).all()
+        for i, (_, s, _, _) in enumerate(want):
+            np.testing.assert_array_equal(nrs[k, i], s)
+        prev = before
+        for i in range(n):
+            o = {0: "running", 3: "truncated"}[code[k, i]]
+            assert rew[k, i] == live.reward_fn(prev, nrs[k, i], o, int(steps[k, i]))
+            prev = nrs[k, i]

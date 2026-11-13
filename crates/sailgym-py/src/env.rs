@@ -32,10 +32,14 @@
 //! That is what makes 7.4's returns identity an identity rather than an
 //! approximation.
 
-use numpy::{PyReadonlyArray1, PyReadwriteArray1, PyUntypedArrayMethods};
+use numpy::{
+    PyReadonlyArray1, PyReadonlyArray3, PyReadwriteArray1, PyReadwriteArray2, PyReadwriteArray3,
+    PyUntypedArrayMethods,
+};
 use pyo3::prelude::*;
 
 use sailgym_env::episode::{manual_source, Episode};
+use sailgym_env::Outcome;
 
 use crate::spec::{value_error, Spec};
 
@@ -153,6 +157,75 @@ impl RawEnv {
             obs_len: self.obs_len,
             action_dim: self.action_dim,
         })
+    }
+
+    /// A batch of planning branches, all stepped in Rust (ESE3990 plan §4.3).
+    ///
+    /// `actions` is `(K, H, action_dim)`: candidate `k` forks this episode and
+    /// runs its `H` decisions through the ordinary `step()` path, stopping at
+    /// its first terminal outcome. For each decision it writes the research
+    /// state the period ended on (`out_rs`, `(K, H, RESEARCH_STATE_LEN)`), the
+    /// outcome code (`out_code`: 0 running, 1 finished, 2 terminated,
+    /// 3 truncated) and the physics steps executed (`out_steps`). Decisions
+    /// after a terminal one are not simulated: their steps are 0, their code
+    /// and state repeat the terminal ones. This episode is never touched.
+    fn rollout(
+        &self,
+        actions: PyReadonlyArray3<f64>,
+        mut out_rs: PyReadwriteArray3<f64>,
+        mut out_code: PyReadwriteArray2<u8>,
+        mut out_steps: PyReadwriteArray2<u32>,
+    ) -> PyResult<()> {
+        let sh = actions.shape();
+        let (k, h) = (sh[0], sh[1]);
+        let n = crate::research::RESEARCH_STATE_LEN;
+        if sh[2] != self.action_dim {
+            return Err(length_error("actions[..., :]", sh[2], self.action_dim));
+        }
+        let want = |got: &[usize], dims: &[usize], name: &str| -> PyResult<()> {
+            if got != dims {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "`{name}` has shape {got:?}, expected {dims:?}"
+                )));
+            }
+            Ok(())
+        };
+        want(out_rs.shape(), &[k, h, n], "out_rs")?;
+        want(out_code.shape(), &[k, h], "out_code")?;
+        want(out_steps.shape(), &[k, h], "out_steps")?;
+        let acts = actions
+            .as_slice()
+            .map_err(|_| contiguity_error("actions"))?;
+        let rs = out_rs
+            .as_slice_mut()
+            .map_err(|_| contiguity_error("out_rs"))?;
+        let code = out_code
+            .as_slice_mut()
+            .map_err(|_| contiguity_error("out_code"))?;
+        let steps = out_steps
+            .as_slice_mut()
+            .map_err(|_| contiguity_error("out_steps"))?;
+        for c in 0..k {
+            let mut ep = self.ep.fork().map_err(value_error)?;
+            for d in 0..h {
+                let i = c * h + d;
+                let mut ran = 0;
+                if !ep.outcome().is_terminal() {
+                    let a = &acts[i * self.action_dim..(i + 1) * self.action_dim];
+                    ep.push_action(a).map_err(value_error)?;
+                    ran = ep.step().map_err(value_error)?.steps;
+                }
+                crate::research::fill(&ep, &mut rs[i * n..(i + 1) * n]);
+                steps[i] = ran;
+                code[i] = match ep.outcome() {
+                    Outcome::Running => 0,
+                    Outcome::Finished { .. } => 1,
+                    Outcome::Terminated(_) => 2,
+                    Outcome::Truncated => 3,
+                };
+            }
+        }
+        Ok(())
     }
 
     /// The outcome's name: `running`, `finished`, `truncated`, or — for a

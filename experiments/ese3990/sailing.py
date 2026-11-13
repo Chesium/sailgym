@@ -447,6 +447,33 @@ class TaskEnv:
     def fork(self) -> sailgym_core.RawEnv:
         return self.raw.fork()
 
+    def rollout(
+        self, rates: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """K candidate rate sequences ``(K, H, 2)`` from this exact point, stepped
+        in Rust (``RawEnv.rollout``); the live episode is untouched.
+
+        The vector form of ``ActionAdapter``: rates are clipped to [-1, 1] and
+        release is forced to ``release_value``. Returns ``(next_rs (K,H,n),
+        outcome_code (K,H), steps (K,H), reward (K,H))``. ``steps == 0`` marks
+        a decision after the candidate's terminal one; its reward is 0.
+        """
+        r = np.asarray(rates, dtype=np.float64)
+        k, h, _ = r.shape
+        acts = np.empty((k, h, 3))
+        acts[..., :2] = np.clip(r[..., :2], -1.0, 1.0)
+        acts[..., 2] = self.adapter.release_value
+        nrs = np.empty((k, h, len(RS_NAMES)))
+        code = np.empty((k, h), np.uint8)
+        steps = np.empty((k, h), np.uint32)
+        self.raw.rollout(acts, nrs, code, steps)
+        prev = np.concatenate(
+            [np.broadcast_to(self.research_state(), (k, 1, nrs.shape[2])), nrs[:, :-1]],
+            axis=1,
+        )
+        rew = np.where(steps > 0, self.reward_fn.batch(prev, nrs, code, steps), 0.0)
+        return nrs, code, steps, rew
+
 
 # ---------------------------------------------------------------------------
 # Provenance

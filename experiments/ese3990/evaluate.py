@@ -134,7 +134,11 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def make_controller(name: str, seed: int) -> Any:
+def make_controller(name: str, seed: int, checkpoint: Path | None = None) -> Any:
+    if name == "ppo":
+        from ppo import PPOPolicy
+
+        return PPOPolicy.load(checkpoint)
     if name == "rule_sailor":
         return RuleSailorController()
     if name == "random":
@@ -148,10 +152,11 @@ def evaluate(
     manifest: str,
     seed: int = 0,
     store: Path | None = None,
+    checkpoint: Path | None = None,
 ) -> dict[str, Any]:
     task = Task.load(task_name)
     conds = [NOMINAL] if manifest == "nominal" else load_manifest(manifest)
-    ctrl = make_controller(controller_name, seed)
+    ctrl = make_controller(controller_name, seed, checkpoint)
     writer = None
     if store is not None:
         writer = EpisodeWriter(
@@ -176,14 +181,16 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", default="R")
     ap.add_argument(
-        "--controller", default="rule_sailor", choices=["rule_sailor", "random"]
+        "--controller", default="rule_sailor", choices=["rule_sailor", "random", "ppo"]
     )
     ap.add_argument("--manifest", default="nominal")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", type=Path)
     ap.add_argument("--store", type=Path, help="log episodes for replay (plan §10)")
+    ap.add_argument("--checkpoint", type=Path, help="ppo: ckpt path without suffix")
     args = ap.parse_args(argv)
-    report = evaluate(args.task, args.controller, args.manifest, args.seed, args.store)
+    a = args
+    report = evaluate(a.task, a.controller, a.manifest, a.seed, a.store, a.checkpoint)
     print(json.dumps(report["summary"], indent=2))
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
