@@ -1,0 +1,26 @@
+{
+ "generator_version": 1,
+ "split": "training",
+ "seed": 4004,
+ "rounding": {
+  "wind_speed_dp": 3,
+  "angle_dp": 2
+ },
+ "ranges": {
+  "wind_speed": [
+   4.5,
+   5.5
+  ],
+  "wind_bearing_deg": [
+   -5.0,
+   5.0
+  ],
+  "heading_deg": [
+   75.0,
+   105.0
+  ]
+ },
+ "sampling": "numpy default_rng([seed, training_seed]); one uniform triple (speed, bearing, heading) per episode in order; rounded; triples equal to any validation/test/shift document are rejected and redrawn",
+ "excluded_documents": 90,
+ "conditions": []
+}

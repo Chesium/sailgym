@@ -23,3 +23,5 @@ __pycache__/
 .ruff_cache/
 .vscode
 ref
+# ESE3990 experiment outputs (runs, checkpoints, buffers); summaries live in docs/ese3990/
+/runs/

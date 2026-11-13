@@ -1130,6 +1130,96 @@ impl Episode {
         })
     }
 
+    /// A planning branch: an independent episode that continues from exactly
+    /// this point, driven by `manual`.
+    ///
+    /// # What is copied
+    ///
+    /// Everything the **future** of the episode depends on, through the same
+    /// [`Episode::step`] path the live episode uses — there is no second
+    /// stepping loop, no second passage rule and no second outcome order:
+    ///
+    /// * the [`Simulation`], whole: state, parameters, controls, the seeded
+    ///   wind field, the step counter, the cached forces and the F6.10
+    ///   capsize accumulator **including its pending crossing**;
+    /// * the route [`Tracker`] (leg, passages), the previous position the
+    ///   cut test reads, and the miss flag;
+    /// * the episode step counter, outcome, seeds and chain index, so the
+    ///   step budget, the cadence and `Truncated` land where they would have;
+    /// * the agent stream and every sensor substream, so the branch's
+    ///   observations are the ones the live episode would have produced; and
+    ///   the configured reward, by `boxed_clone`.
+    ///
+    /// The tier-0 sensors are rebuilt by id rather than cloned. They carry no
+    /// state between calls (their only fields are mounting configuration, and
+    /// every source of variation is the substream, which **is** cloned), so a
+    /// rebuilt suite is the same suite; `tests::a_fork_*` asserts the fork's
+    /// observations equal the live ones bit for bit.
+    ///
+    /// # What is not copied, and why that is safe
+    ///
+    /// * The **controller**. A branch is driven by `manual`, so it never
+    ///   clones a policy's internal memory. If the live source is `manual`,
+    ///   its latched action is carried over; otherwise the latch starts at
+    ///   zero, and a caller pushes an action before stepping anyway.
+    /// * The **recorder**, the attached **practice task** and the **decision
+    ///   log**. All three are observers: none feeds back into the state or
+    ///   the outcome (see [`Episode::advance`]). A branch keeps no log.
+    /// * **Autoreset.** A branch steps under [`AutoresetMode::Disabled`], so a
+    ///   hypothetical rollout can never simulate through a reset. Forking an
+    ///   episode with a pending `NextStep` reset gives a terminal branch.
+    ///
+    /// The live episode is borrowed immutably, so nothing a branch does can
+    /// reach it.
+    pub fn fork(&self) -> Result<Self, EnvError> {
+        let source = match &self.source {
+            Source::Manual(m) => Source::Manual(m.clone()),
+            Source::Policy(_) => manual_source(self.spec.cadence),
+        };
+        let spec = source.agent().spec();
+        spec.validate()?;
+        let mut sensors: Vec<Box<dyn Sensor + Send>> = Vec::with_capacity(self.sensors.len());
+        for s in &self.sensors {
+            sensors
+                .push(make_sensor(s.id()).ok_or_else(|| EnvError::UnknownSensor(s.id().into()))?);
+        }
+        let mut config = self.config.clone();
+        config.autoreset = AutoresetMode::Disabled;
+        config.task = None;
+        config.log_hz = None;
+        config.log_decisions = false;
+        Ok(Self {
+            config,
+            sim: self.sim.clone(),
+            sensors,
+            streams: self.streams.clone(),
+            layout: self.layout.clone(),
+            adapter: self.adapter,
+            source,
+            spec,
+            rng: self.rng.clone(),
+            scenario_rng: self.scenario_rng.clone(),
+            tracker: self.tracker.clone(),
+            task: None,
+            recorder: None,
+            step: self.step,
+            seed: self.seed,
+            root_seed: self.root_seed,
+            index: self.index,
+            outcome: self.outcome,
+            missed: self.missed,
+            prev_pos: self.prev_pos,
+            obs: self.obs.clone(),
+            obs_step: self.obs_step,
+            final_obs: Vec::new(),
+            log_steps: Vec::new(),
+            log_actions: Vec::new(),
+            reward_acc: 0.0,
+            pending_reset: false,
+            finished: None,
+        })
+    }
+
     /// The next episode's seed, drawn from `STREAM_SCENARIO`.
     ///
     /// The stream `rng.rs` reserved for scenario randomisation, used for

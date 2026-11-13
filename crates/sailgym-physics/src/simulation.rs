@@ -16,6 +16,14 @@ use crate::state::{BoatState, Controls};
 use crate::vec::Vec2;
 
 /// The simulator.
+///
+/// `Clone` copies every field that determines the future trajectory — state,
+/// parameters, controls, the seeded wind field, the step counter, the F6.10
+/// capsize accumulator (including its private pending crossing) and the cached
+/// force breakdown — so a clone stepped with the same controls is
+/// bit-identical to the original. It exists for decision-time planning
+/// branches (`sailgym_env::episode::Episode::fork`); it adds no behaviour.
+#[derive(Clone)]
 pub struct Simulation {
     state: BoatState,
     params: BoatParameters,
@@ -528,4 +536,61 @@ mod tests {
         assert_eq!(out.tension, 0.0);
         assert_eq!(Simulation::new(p, 0).forces().sheet_tension, 0.0);
     }
+}
+
+/// A clone is an independent simulation that continues bit-identically.
+///
+/// The original and the clone are driven through the same control sequence;
+/// every published state, the capsize report and the cached forces must agree
+/// bit for bit, and stepping the clone with different controls must leave the
+/// original untouched.
+#[cfg(test)]
+#[test]
+fn a_clone_continues_bit_identically_and_independently() {
+    use crate::environment::wind::{WindConfig, WindMode};
+    let p = BoatParameters::ilca7();
+    let mut a = Simulation::new(p, 11);
+    a.set_wind(WindConfig {
+        mode: WindMode::Gust,
+        speed: 6.0,
+        bearing_deg: 10.0,
+        ..Default::default()
+    });
+    a.set_controls(Controls {
+        rudder_rate_cmd: 0.3,
+        sheet_rate_cmd: -0.5,
+        sheet_release: false,
+    });
+    a.advance(400);
+
+    let mut b = a.clone();
+    let reference = a.clone();
+    let cmds = [(0.2, -1.0), (-0.7, 0.4), (1.0, 1.0), (0.0, -0.2)];
+    for (rr, sr) in cmds {
+        let c = Controls {
+            rudder_rate_cmd: rr,
+            sheet_rate_cmd: sr,
+            sheet_release: false,
+        };
+        a.set_controls(c);
+        b.set_controls(c);
+        a.advance(150);
+        b.advance(150);
+        assert_eq!(a.state().to_array(), b.state().to_array());
+        assert_eq!(a.capsize(), b.capsize());
+        assert_eq!(a.capsize().pending_since(), b.capsize().pending_since());
+        assert_eq!(a.forces(), b.forces());
+        assert_eq!(a.steps(), b.steps());
+    }
+
+    // The clone taken before the divergence is untouched by either.
+    let mut c = reference.clone();
+    c.set_controls(Controls {
+        rudder_rate_cmd: -1.0,
+        sheet_rate_cmd: 1.0,
+        sheet_release: true,
+    });
+    c.advance(300);
+    assert_ne!(c.state().to_array(), reference.state().to_array());
+    assert_eq!(reference.steps(), 400);
 }

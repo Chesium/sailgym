@@ -42,6 +42,8 @@ dependencies = [
     # below; `python/sailgym/` is useless without it, so it is a dependency and
     # not an extra.
     "sailgym-core",
+    "optax>=0.2.9",
+    "matplotlib>=3.11.2",
 ]
 
 [dependency-groups]

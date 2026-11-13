@@ -63,6 +63,7 @@ use pyo3::prelude::*;
 // recorded, and it is recorded again in `docs/v2/progress/07-handoff.md`
 // rather than quietly absorbed (F13.2).
 mod env;
+mod research;
 mod spec;
 mod vector;
 
@@ -79,5 +80,11 @@ fn sailgym_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(spec::tier0_sensors, m)?)?;
     m.add_function(wrap_pyfunction!(spec::shipped_scenarios, m)?)?;
     m.add_function(wrap_pyfunction!(spec::termination_reasons, m)?)?;
+    // ESE3990 research access (see `research.rs`).
+    m.add_class::<research::PyRuleSailor>()?;
+    m.add_function(wrap_pyfunction!(research::research_state_names, m)?)?;
+    m.add_function(wrap_pyfunction!(research::research_state_units, m)?)?;
+    m.add_function(wrap_pyfunction!(research::research_state_version, m)?)?;
+    m.add_function(wrap_pyfunction!(research::route_waypoints, m)?)?;
     Ok(())
 }

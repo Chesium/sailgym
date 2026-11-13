@@ -124,8 +124,41 @@ impl RawEnv {
         ))
     }
 
-    /// The outcome's name: `running`, `finished`, `terminated` or
-    /// `truncated`.
+    /// Fill `obs` with the current observation at full `f64` precision.
+    ///
+    /// For controllers bound from Rust (the rule sailor), which decide from
+    /// the unnarrowed vector natively; feeding them the `f32` buffer would
+    /// make the Python run a different run.
+    fn observe_f64(&mut self, mut obs: PyReadwriteArray1<f64>) -> PyResult<()> {
+        let out = as_mut_slice(&mut obs, "obs", self.obs_len)?;
+        out.copy_from_slice(self.ep.observation());
+        Ok(())
+    }
+
+    /// Fill `out` with the research state (`sailgym_core.research_state_names()`
+    /// order). A readout, not a restorable snapshot; see [`RawEnv::fork`].
+    fn research_state(&self, mut out: PyReadwriteArray1<f64>) -> PyResult<()> {
+        let dst = as_mut_slice(&mut out, "out", crate::research::RESEARCH_STATE_LEN)?;
+        crate::research::fill(&self.ep, dst);
+        Ok(())
+    }
+
+    /// A planning branch: an independent environment continuing from exactly
+    /// this point (`Episode::fork`). It is driven by actions, never resets
+    /// (`Disabled`), keeps no log, and nothing it does reaches this one.
+    fn fork(&self) -> PyResult<Self> {
+        let ep = self.ep.fork().map_err(value_error)?;
+        Ok(Self {
+            ep,
+            obs_len: self.obs_len,
+            action_dim: self.action_dim,
+        })
+    }
+
+    /// The outcome's name: `running`, `finished`, `truncated`, or — for a
+    /// termination — the reason itself (`capsized`, `out_of_bounds`,
+    /// `mark_missed`; see [`RawEnv::termination_reason`]). `Outcome::as_str`
+    /// spells a termination by its reason, so there is no `terminated` here.
     #[getter]
     fn outcome(&self) -> String {
         self.ep.outcome().as_str().to_string()

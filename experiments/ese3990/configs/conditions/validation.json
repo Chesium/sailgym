@@ -1,0 +1,145 @@
+{
+ "generator_version": 1,
+ "split": "validation",
+ "seed": 1001,
+ "rounding": {
+  "wind_speed_dp": 3,
+  "angle_dp": 2
+ },
+ "ranges": {
+  "wind_speed": [
+   4.5,
+   5.5
+  ],
+  "wind_bearing_deg": [
+   -5.0,
+   5.0
+  ],
+  "heading_deg": [
+   75.0,
+   105.0
+  ]
+ },
+ "conditions": [
+  {
+   "id": "validation-000",
+   "wind_speed": 5.113,
+   "wind_bearing_deg": -4.84,
+   "heading_deg": 80.63
+  },
+  {
+   "id": "validation-001",
+   "wind_speed": 5.358,
+   "wind_bearing_deg": -4.24,
+   "heading_deg": 81.03
+  },
+  {
+   "id": "validation-002",
+   "wind_speed": 5.13,
+   "wind_bearing_deg": -4.01,
+   "heading_deg": 79.57
+  },
+  {
+   "id": "validation-003",
+   "wind_speed": 4.68,
+   "wind_bearing_deg": -3.68,
+   "heading_deg": 104.52
+  },
+  {
+   "id": "validation-004",
+   "wind_speed": 5.265,
+   "wind_bearing_deg": -2.47,
+   "heading_deg": 89.72
+  },
+  {
+   "id": "validation-005",
+   "wind_speed": 4.711,
+   "wind_bearing_deg": -1.4,
+   "heading_deg": 102.39
+  },
+  {
+   "id": "validation-006",
+   "wind_speed": 4.563,
+   "wind_bearing_deg": -2.99,
+   "heading_deg": 82.98
+  },
+  {
+   "id": "validation-007",
+   "wind_speed": 5.456,
+   "wind_bearing_deg": 2.84,
+   "heading_deg": 78.26
+  },
+  {
+   "id": "validation-008",
+   "wind_speed": 5.389,
+   "wind_bearing_deg": -1.2,
+   "heading_deg": 84.87
+  },
+  {
+   "id": "validation-009",
+   "wind_speed": 4.571,
+   "wind_bearing_deg": -1.29,
+   "heading_deg": 104.33
+  },
+  {
+   "id": "validation-010",
+   "wind_speed": 4.89,
+   "wind_bearing_deg": -1.22,
+   "heading_deg": 86.67
+  },
+  {
+   "id": "validation-011",
+   "wind_speed": 4.545,
+   "wind_bearing_deg": -1.42,
+   "heading_deg": 78.73
+  },
+  {
+   "id": "validation-012",
+   "wind_speed": 4.587,
+   "wind_bearing_deg": -2.29,
+   "heading_deg": 87.0
+  },
+  {
+   "id": "validation-013",
+   "wind_speed": 5.218,
+   "wind_bearing_deg": -2.96,
+   "heading_deg": 99.8
+  },
+  {
+   "id": "validation-014",
+   "wind_speed": 4.73,
+   "wind_bearing_deg": -0.64,
+   "heading_deg": 90.34
+  },
+  {
+   "id": "validation-015",
+   "wind_speed": 5.303,
+   "wind_bearing_deg": -1.06,
+   "heading_deg": 98.57
+  },
+  {
+   "id": "validation-016",
+   "wind_speed": 5.192,
+   "wind_bearing_deg": -0.96,
+   "heading_deg": 93.73
+  },
+  {
+   "id": "validation-017",
+   "wind_speed": 4.6,
+   "wind_bearing_deg": -0.66,
+   "heading_deg": 78.13
+  },
+  {
+   "id": "validation-018",
+   "wind_speed": 4.657,
+   "wind_bearing_deg": 1.5,
+   "heading_deg": 95.29
+  },
+  {
+   "id": "validation-019",
+   "wind_speed": 4.901,
+   "wind_bearing_deg": 4.75,
+   "heading_deg": 97.34
+  }
+ ]
+}

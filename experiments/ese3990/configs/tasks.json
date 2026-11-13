@@ -1,0 +1,40 @@
+{
+  "contract_version": 1,
+  "status": "frozen 2026-11-13 at M0 sign-off (docs/ese3990/M0_report.md); change only with a recorded reason before learning curves",
+  "scenario_template": "scenarios/free_sail.json",
+  "cadence_physics_steps": 10,
+  "bounds": { "min_x": -80.0, "min_y": -80.0, "max_x": 120.0, "max_y": 100.0 },
+  "action": {
+    "learned_dims": ["rudder_rate", "sheet_rate"],
+    "release_value": -1.0,
+    "note": "Every controller (random, RuleSailor, learners, MPC live and candidate actions) passes through sailing.ActionAdapter, which forces the release flag to -1."
+  },
+  "reward": {
+    "time_scale_s": 30.0,
+    "distance_scale_m": 30.0,
+    "finish_bonus": 10.0,
+    "failure_penalty": 10.0,
+    "gamma": 0.999,
+    "potential_target": "gate centre (the task's single waypoint)",
+    "terminal_potential": "0 at finished/terminated; kept at truncation"
+  },
+  "tasks": {
+    "R": {
+      "role": "required",
+      "start": [0.0, 0.0],
+      "waypoints": [[30.0, 0.0]],
+      "half_width": 5.0,
+      "budget_s": 45.0,
+      "budget_note": "Reduced from the plan's 90 s at M0: smooth-random finished 54% of nominal seeds within 90 s (12% within 45 s); RuleSailor's worst shift time is 20.2 s",
+      "source": "first leg of courses/reach.json"
+    },
+    "U": {
+      "role": "gated extension",
+      "start": [0.0, 0.0],
+      "waypoints": [[0.0, 40.0]],
+      "half_width": 5.0,
+      "budget_s": 180.0,
+      "source": "first leg of courses/windward_leeward.json"
+    }
+  }
+}

@@ -360,6 +360,26 @@ impl Spec {
         self.config.max_steps
     }
 
+    /// The sailing area as `(min_x, min_y, max_x, max_y)`, or `None` when
+    /// unbounded. Task context for the research features (ESE3990 §3.3).
+    #[getter]
+    fn bounds(&self) -> Option<(f64, f64, f64, f64)> {
+        match self.config.bounds {
+            Bounds::Rect { min, max } => Some((min[0], min[1], max[0], max[1])),
+            _ => None,
+        }
+    }
+
+    /// The configured route, serialized, or `None` for a free sail.
+    #[getter]
+    fn route_json(&self) -> PyResult<Option<String>> {
+        self.config
+            .route
+            .as_ref()
+            .map(|r| serde_json::to_string(r).map_err(value_error))
+            .transpose()
+    }
+
     #[getter]
     fn sensors(&self) -> Vec<String> {
         self.config.sensors.clone()
@@ -382,5 +402,10 @@ impl Spec {
     /// [`crate::vector::RawVecEnv`].
     pub(crate) fn config(&self) -> EpisodeConfig {
         self.config.clone()
+    }
+
+    /// Scalars in one action, for Rust-side callers.
+    pub(crate) fn action_dim_value(&self) -> usize {
+        self.action_dim
     }
 }

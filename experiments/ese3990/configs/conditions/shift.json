@@ -1,0 +1,145 @@
+{
+ "generator_version": 1,
+ "split": "shift",
+ "seed": 3003,
+ "rounding": {
+  "wind_speed_dp": 3,
+  "angle_dp": 2
+ },
+ "ranges": {
+  "wind_speed_values": [
+   4.0,
+   6.0
+  ],
+  "wind_bearing_deg": [
+   -5.0,
+   5.0
+  ],
+  "heading_offset_abs_deg": [
+   15.0,
+   30.0
+  ]
+ },
+ "conditions": [
+  {
+   "id": "shift-000",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 3.86,
+   "heading_deg": 113.63
+  },
+  {
+   "id": "shift-001",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -3.45,
+   "heading_deg": 64.22
+  },
+  {
+   "id": "shift-002",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 0.5,
+   "heading_deg": 68.93
+  },
+  {
+   "id": "shift-003",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -3.8,
+   "heading_deg": 65.67
+  },
+  {
+   "id": "shift-004",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 2.35,
+   "heading_deg": 71.13
+  },
+  {
+   "id": "shift-005",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -2.61,
+   "heading_deg": 119.92
+  },
+  {
+   "id": "shift-006",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": -4.5,
+   "heading_deg": 113.23
+  },
+  {
+   "id": "shift-007",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -2.46,
+   "heading_deg": 63.48
+  },
+  {
+   "id": "shift-008",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 2.97,
+   "heading_deg": 115.56
+  },
+  {
+   "id": "shift-009",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": 1.8,
+   "heading_deg": 63.47
+  },
+  {
+   "id": "shift-010",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 0.8,
+   "heading_deg": 68.56
+  },
+  {
+   "id": "shift-011",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -3.13,
+   "heading_deg": 119.96
+  },
+  {
+   "id": "shift-012",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": -3.77,
+   "heading_deg": 60.31
+  },
+  {
+   "id": "shift-013",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -0.4,
+   "heading_deg": 119.09
+  },
+  {
+   "id": "shift-014",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 2.72,
+   "heading_deg": 116.72
+  },
+  {
+   "id": "shift-015",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": 1.01,
+   "heading_deg": 70.08
+  },
+  {
+   "id": "shift-016",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": -1.46,
+   "heading_deg": 115.42
+  },
+  {
+   "id": "shift-017",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": -1.66,
+   "heading_deg": 116.18
+  },
+  {
+   "id": "shift-018",
+   "wind_speed": 4.0,
+   "wind_bearing_deg": 0.93,
+   "heading_deg": 69.4
+  },
+  {
+   "id": "shift-019",
+   "wind_speed": 6.0,
+   "wind_bearing_deg": 3.58,
+   "heading_deg": 119.63
+  }
+ ]
+}

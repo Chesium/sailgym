@@ -61,6 +61,18 @@ impl CapsizeState {
         }
     }
 
+    /// s. The simulation time at which the **pending** threshold crossing
+    /// began, or `None` when `|φ|` is not over `phi_capsize`.
+    ///
+    /// Read-only. Unlike [`CapsizeState::since`], which is filled only once
+    /// the timer has expired, this is populated for the whole pending
+    /// interval, so a research observer can report how long the boat has been
+    /// past the threshold without reconstructing it from sampled heel. Not
+    /// serialised and read by no force model (F6.10).
+    pub fn pending_since(&self) -> Option<f64> {
+        self.crossed_at
+    }
+
     /// Fold a whole state in, for callers that already hold one.
     pub fn observe(&mut self, st: &BoatState, p: &BoatParameters) {
         self.update(st.phi, st.t, p);
@@ -139,6 +151,29 @@ mod tests {
             c.since
         );
         assert!((c.max_heel - PI / 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn pending_since_covers_the_whole_pending_interval() {
+        let p = params();
+        let mut c = CapsizeState::default();
+        assert_eq!(c.pending_since(), None);
+        let crossing = hold(&mut c, 0.5, 0.0, 1.0, &p);
+        assert_eq!(c.pending_since(), None);
+        let over = p.stability.phi_capsize + 0.1;
+        let t = hold(&mut c, over, crossing, p.stability.t_capsize / 2.0, &p);
+        // Pending, not yet capsized: `since` is still empty, the accessor is not.
+        assert!(!c.capsized);
+        assert_eq!(c.since, 0.0);
+        let pending = c.pending_since().expect("a crossing is pending");
+        assert!((pending - (crossing + p.sim.dt)).abs() < 1e-12);
+        // Once capsized, the two agree.
+        hold(&mut c, over, t, p.stability.t_capsize, &p);
+        assert!(c.capsized);
+        assert_eq!(c.pending_since(), Some(c.since));
+        // Back inside the threshold clears it.
+        hold(&mut c, 0.0, t + p.stability.t_capsize, 0.1, &p);
+        assert_eq!(c.pending_since(), None);
     }
 
     /// A beam reach in a squall, sheeted hard in and never eased.
