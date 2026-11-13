@@ -1,7 +1,7 @@
 # Learning versus Planning for Sailboat Control
 
 **ESE3990 project plan · Shimin Chen · revised 2026-11-13**  
-**Status:** M0–M2 are complete (see the [M0 report](M0_report.md), [M1 report](M1_report.md) and [M2 report](M2_report.md)). PPO and SAC are checked and reproducible; pilot outcomes vary by seed and checkpoint. Settings are frozen at a common 1M-decision budget, and the first three main seed pairs are queued. Pilot resources exceeded the planned allowance; M2 records that deviation.
+**Status:** M0–M3 are complete (see the [M0 report](M0_report.md), [M1 report](M1_report.md), [M2 report](M2_report.md) and [M3 report](M3_report.md)). PPO, SAC and true-model CEM-MPC are checked and reproducible. All five MPC settings finished 60/60 validation episodes; the selected default is H=40/K=32/I=3. PPO/SAC settings remain frozen at a common 1M-decision budget; final held-out comparison is M4 work. Pilot resources exceeded the planned allowance; M2 records that deviation, and M3 discloses its extra diagnostic run.
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
 The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is retained as the final stretch goal, after the core experiments, analysis, reproducibility work, and presentation are complete.**
@@ -186,6 +186,12 @@ These are unvalidated starting values. Freeze any changes using validation evide
 | CEM distribution | Clipped Gaussian rate proposals; initial standard deviation 0.6; standard-deviation floor 0.1 |
 | MPC tail | Zero nonterminal tail value; same true terminal reward/outcome semantics |
 
+**M3 freeze:** the five-setting validation sweep selected H=40, K=32, I=3
+(four elites), retaining the other settings above. The baseline row remains
+the original starting point. See [`configs/M3_freeze.json`](../../experiments/ese3990/configs/M3_freeze.json)
+and the [M3 measurements](M3_report.md); `evaluate.py --controller mpc` loads
+the frozen default.
+
 Freeze feature normalization from the common calibration data, training split only, and save its values. PPO uses calibration for normalization; SAC additionally puts the same transitions in replay. Charge calibration to each learner's budget. This is a disclosed difference in how the algorithms use available experience, not an uncontrolled extra dataset for SAC. Neither receives expert demonstrations in the core.
 
 ## 5. Experiments, fairness and budgets
@@ -308,14 +314,14 @@ Dates assume a Nov 13 start, core results frozen Nov 29, and a Dec 3 presentatio
 
 ### M3 · Nov 21–23 · Close the CEM-MPC loop · 9–12 h
 
-- [ ] Implement blocked candidate sampling, elite refitting, warm starts, release restriction and episode resets.
-- [ ] Score through the same transition reward and Rust outcomes; add ranking/reproducibility checks.
-- [ ] Run closed-loop R on nominal/validation conditions and compare predicted and executed paths.
-- [ ] Measure K/I/H, actual hypothetical work, latency distributions and 50 ms deadline misses.
-- [ ] Run the five-setting validation horizon/budget sweep and freeze the default planner.
-- [ ] **Viz (§10):** for selected probe episodes, store MPC's planned path at each decision; render the predicted path against the executed one (required artifact 4).
+- [x] Implement blocked candidate sampling, elite refitting, warm starts, release restriction and episode resets. *`mpc.py`; comments cite advanced PDF pp. 120, 178–179 and 199–201.*
+- [x] Score through the same transition reward and Rust outcomes; add ranking/reproducibility checks. *18 MPC checks; full experiment suite 79 passed. Independent candidates use the existing native Rayon pool.*
+- [x] Run closed-loop R on nominal/validation conditions and compare predicted and executed paths. *All 300 sweep episodes and six selected probes finish and replay exactly; all 1,628 probe first-step positions match exactly.*
+- [x] Measure K/I/H, actual hypothetical work, latency distributions and 50 ms deadline misses. *11.45B hypothetical physics steps; default sweep p50/p95 15.2/18.8 ms with 0/16,768 misses. Separate probes have 3/1,628 misses; no hard real-time guarantee.*
+- [x] Run the five-setting validation horizon/budget sweep and freeze the default planner. *H=40/K=32/I=3, selected on validation finishes then p50 latency; `configs/M3_freeze.json`. No test/shift evaluation.*
+- [x] **Viz (§10):** for selected probe episodes, store MPC's planned path at each decision; render the predicted path against the executed one (required artifact 4). *Six probe stores retain every selected plan; `mpc_figures.py` renders cost/latency and the nominal predicted/executed continuation.*
 
-**Exit:** all three methods produce comparable real R outcome reports; MPC's known-model advantage and online cost are explicit. Success is not required to assert a correct implementation, but failure must be diagnosed through trajectories and horizon/cost evidence.
+**Exit (met 2026-11-13; see [M3 report](M3_report.md)):** all three methods produce comparable real R outcome reports; MPC's known-model advantage and online cost are explicit. Success is not required to assert a correct implementation, but failure must be diagnosed through trajectories and horizon/cost evidence. No failures occurred in the M3 validation/probe set; held-out outcomes remain M4 work.
 
 ### M4 · Nov 24–28 · Finish comparisons and failure analysis · 10–14 h
 
@@ -342,7 +348,7 @@ Suggested presentation: boat/question (1 min), task/information contract (1), th
 
 ## 7. Implementation footprint and verification
 
-Keep project-specific rewards/trainers in `experiments/ese3990/`, using the existing root uv workspace. Proposed files are not yet implemented:
+Keep project-specific rewards/trainers in `experiments/ese3990/`, using the existing root uv workspace. The core M0–M3 modules below are implemented; later visualization and presentation work remains in M4/M5:
 
 ```text
 experiments/ese3990/

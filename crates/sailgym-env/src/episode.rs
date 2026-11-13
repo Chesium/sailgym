@@ -1130,6 +1130,24 @@ impl Episode {
         })
     }
 
+    /// Visit independent, manually driven futures on the existing Rayon pool.
+    pub fn for_each_fork<T: Send>(
+        &self,
+        inputs: Vec<T>,
+        visit: impl Fn(&mut Self, T) -> Result<(), EnvError> + Send + Sync,
+    ) -> Result<(), EnvError> {
+        use rayon::prelude::*;
+        // Fork serially: Episode is Send, but its sensors need not be Sync.
+        // Only independent futures run in parallel; each keeps ordinary step().
+        let branches = inputs
+            .into_iter()
+            .map(|input| self.fork().map(|ep| (ep, input)))
+            .collect::<Result<Vec<_>, _>>()?;
+        branches
+            .into_par_iter()
+            .try_for_each(|(mut ep, input)| visit(&mut ep, input))
+    }
+
     /// A planning branch: an independent episode that continues from exactly
     /// this point, driven by `manual`.
     ///

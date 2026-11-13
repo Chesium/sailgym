@@ -1,0 +1,166 @@
+{
+  "selection": "most validation finishes, then lower p50 latency, then setting name",
+  "setting": "H40_K32",
+  "config": {
+    "horizon": 40,
+    "candidates": 32,
+    "iterations": 3,
+    "block_s": 0.5,
+    "initial_std": 0.6,
+    "min_std": 0.1
+  },
+  "search_seeds": [
+    0,
+    1,
+    2
+  ],
+  "study": "runs/ese3990/mpc/M3",
+  "privilege": "known-model planning with exact episode branches",
+  "tail_value": 0,
+  "validation_summary": {
+    "setting": "H40_K32",
+    "config": {
+      "horizon": 40,
+      "candidates": 32,
+      "iterations": 3,
+      "block_s": 0.5,
+      "initial_std": 0.6,
+      "min_std": 0.1
+    },
+    "episodes": 60,
+    "finished": 60,
+    "success_rate": 1.0,
+    "outcome_counts": {
+      "finished": 60
+    },
+    "finish_time_s_given_success": {
+      "mean": 13.953750000000783,
+      "min": 12.890000000000615,
+      "max": 15.29000000000099
+    },
+    "peak_heel_deg_max": 27.972550041241696,
+    "release_requests_overridden": 0,
+    "real_decisions": 16768,
+    "real_physics_steps": 167445,
+    "hypothetical_physics_steps": 601009984,
+    "rollout_calls": 50304,
+    "candidate_rollouts": 1609728,
+    "wall_s": 244.12560273637064,
+    "latency_ms": {
+      "p50": 15.202139620669186,
+      "p95": 18.803332105744627,
+      "max": 27.98589109443128
+    },
+    "deadline_misses_50ms": 0,
+    "deadline_miss_rate": 0.0,
+    "per_search_seed": {
+      "0": {
+        "episodes": 20,
+        "finished": 20,
+        "success_rate": 1.0,
+        "outcome_counts": {
+          "finished": 20
+        },
+        "finish_time_s_given_success": {
+          "mean": 13.955250000000783,
+          "min": 12.900000000000617,
+          "max": 15.29000000000099
+        },
+        "peak_heel_deg_max": 26.044661488631206,
+        "release_requests_overridden": 0,
+        "real_decisions": 5589,
+        "real_physics_steps": 55821,
+        "hypothetical_physics_steps": 200364371,
+        "rollout_calls": 16767,
+        "candidate_rollouts": 536544,
+        "wall_s": 81.3468240792863,
+        "latency_ms": {
+          "p50": 15.217141946777701,
+          "p95": 18.68752022273838,
+          "max": 25.176495080813766
+        },
+        "deadline_misses_50ms": 0,
+        "deadline_miss_rate": 0.0
+      },
+      "1": {
+        "episodes": 20,
+        "finished": 20,
+        "success_rate": 1.0,
+        "outcome_counts": {
+          "finished": 20
+        },
+        "finish_time_s_given_success": {
+          "mean": 13.93900000000078,
+          "min": 12.900000000000617,
+          "max": 15.260000000000986
+        },
+        "peak_heel_deg_max": 26.884382324587502,
+        "release_requests_overridden": 0,
+        "real_decisions": 5584,
+        "real_physics_steps": 55756,
+        "hypothetical_physics_steps": 200105425,
+        "rollout_calls": 16752,
+        "candidate_rollouts": 536064,
+        "wall_s": 81.60468204808421,
+        "latency_ms": {
+          "p50": 15.244795009493828,
+          "p95": 19.0319649875164,
+          "max": 27.98589109443128
+        },
+        "deadline_misses_50ms": 0,
+        "deadline_miss_rate": 0.0
+      },
+      "2": {
+        "episodes": 20,
+        "finished": 20,
+        "success_rate": 1.0,
+        "outcome_counts": {
+          "finished": 20
+        },
+        "finish_time_s_given_success": {
+          "mean": 13.967000000000784,
+          "min": 12.890000000000615,
+          "max": 15.275000000000988
+        },
+        "peak_heel_deg_max": 27.972550041241696,
+        "release_requests_overridden": 0,
+        "real_decisions": 5595,
+        "real_physics_steps": 55868,
+        "hypothetical_physics_steps": 200540188,
+        "rollout_calls": 16785,
+        "candidate_rollouts": 537120,
+        "wall_s": 81.17409660900012,
+        "latency_ms": {
+          "p50": 15.16114710830152,
+          "p95": 18.658597837202255,
+          "max": 27.21424587070942
+        },
+        "deadline_misses_50ms": 0,
+        "deadline_miss_rate": 0.0
+      }
+    },
+    "mean_return": 10.701127078461948,
+    "failures": []
+  },
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "sources_sha256": {
+    "experiments/ese3990/mpc.py": "d988e65d1ca852596721c3a02d5538c5508f600b3697999972c9b4b26995f8ef",
+    "experiments/ese3990/mpc_study.py": "54e962a18b2bef6971f018b63057fe212c5ee3b88f7f295c3898d5d94ee69245",
+    "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+    "experiments/ese3990/sailing.py": "d8886ceeb2dbc8517d1cd2105140ce8076685a935b0b86c47c7cfa73a78d1981",
+    "crates/sailgym-py/src/env.rs": "748eed5c2a8125064c5605356aea4f8925d22520bec63a9526816db7aca98eb7",
+    "crates/sailgym-env/src/episode.rs": "bb1b80ade91af2c90ed8bc1644cea65351c369f81682f9f7a9f2ee41ac0c082d"
+  }
+}

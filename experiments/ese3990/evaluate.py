@@ -23,6 +23,7 @@ import numpy as np
 from baselines import RuleSailorController, SmoothRandom
 from sailing import (
     FINISHED,
+    HERE,
     NOMINAL,
     RS,
     Condition,
@@ -61,9 +62,16 @@ def run_episode(
     sheet_travel = 0.0
     traj = [rs0.tolist()] if keep_trajectory else None
     actions = [] if keep_trajectory else None
+    latency = []
     t0 = time.perf_counter()
     while env.outcome == "running":
+        act_start = time.perf_counter()
         a = controller.act(env)
+        latency.append(time.perf_counter() - act_start)
+        if recorder is not None and (log_meta or {}).get("kind") == "probe":
+            plan = getattr(controller, "last_plan_xy", None)
+            if plan is not None:
+                recorder.plan(plan)
         rec = env.step(a)
         if recorder is not None:
             recorder.step(rec)
@@ -92,7 +100,14 @@ def run_episode(
         "rudder_travel_rad_decision_sampled": rudder_travel,
         "sheet_travel_m_decision_sampled": sheet_travel,
         "wall_s": wall,
+        "decision_latency_s": latency,
     }
+    if hasattr(controller, "physics_steps"):
+        out["planning"] = {
+            "hypothetical_physics_steps": controller.physics_steps,
+            "rollout_calls": controller.rollout_calls,
+            "candidate_rollouts": controller.candidate_rollouts,
+        }
     if hasattr(controller, "release_requests"):
         out["release_requests_overridden"] = controller.release_requests
     if recorder is not None:
@@ -149,6 +164,11 @@ def select_checkpoint(curve: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def make_controller(name: str, seed: int, checkpoint: Path | None = None) -> Any:
+    if name == "mpc":
+        from mpc import CEMMPC, CEMConfig
+
+        frozen = json.loads((HERE / "configs" / "M3_freeze.json").read_text())
+        return CEMMPC(seed, CEMConfig(**frozen["config"]))
     if name == "ppo":
         from ppo import PPOPolicy
 
@@ -201,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--controller",
         default="rule_sailor",
-        choices=["rule_sailor", "random", "ppo", "sac"],
+        choices=["rule_sailor", "random", "ppo", "sac", "mpc"],
     )
     ap.add_argument("--manifest", default="nominal")
     ap.add_argument("--seed", type=int, default=0)

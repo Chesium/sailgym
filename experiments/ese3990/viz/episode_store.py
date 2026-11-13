@@ -63,6 +63,7 @@ class EpisodeLog:
     meta: dict[str, Any]
     actions: np.ndarray  # (decisions, 2): rudder rate, sheet rate
     pose: np.ndarray  # (k, 4): POSE_FIELDS at POSE_HZ, including t=0 and the end
+    plans: np.ndarray | None = None  # selected MPC probes: (decisions, H+1, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +91,10 @@ class EpisodeRecorder:
         self._ret = 0.0
         self._steps = 0
         self._k = 0
+        self._plans: list[np.ndarray] = []
+
+    def plan(self, xy: np.ndarray) -> None:
+        self._plans.append(xy.copy())
 
     def start(self, rs0: np.ndarray) -> None:
         self._pose.append(self._pose_of(rs0))
@@ -136,7 +141,10 @@ class EpisodeRecorder:
             "pose_every_decisions": self.pose_every,
             **meta,
         }
-        return EpisodeLog(m, acts, np.stack(self._pose))
+        plans = np.stack(self._plans) if self._plans else None
+        if plans is not None and len(plans) != len(acts):
+            raise ValueError("MPC probes need exactly one planned path per decision")
+        return EpisodeLog(m, acts, np.stack(self._pose), plans)
 
 
 # ---------------------------------------------------------------------------
@@ -202,10 +210,15 @@ class EpisodeWriter:
         poses: list[np.ndarray] = []
         p_off = 0
         lines = []
+        plans = {}
         for log in self._pending:
             dt = log.meta["action_dtype"]
             n = len(log.actions)
             entry = dict(log.meta)
+            if log.plans is not None:
+                key = f"plans_{entry['episode_id']}"
+                plans[key] = log.plans
+                entry["plan_key"] = key
             entry.update(
                 shard=name,
                 action_offset=offs[dt],
@@ -226,6 +239,7 @@ class EpisodeWriter:
                 arrays["float64"] or [np.zeros((0, 2), np.float64)]
             ),
             pose=np.concatenate(poses),
+            **plans,
         )
         with open(self.dir / "index.jsonl", "a") as f:
             f.write("\n".join(lines) + "\n")
@@ -294,7 +308,10 @@ class EpisodeStore:
         p0, m = entry["pose_offset"], entry["pose_len"]
         acts = z[f"actions_{entry['action_dtype']}"][a0 : a0 + n]
         return EpisodeLog(
-            dict(entry), acts.copy(), z["pose"][p0 : p0 + m].astype(np.float64)
+            dict(entry),
+            acts.copy(),
+            z["pose"][p0 : p0 + m].astype(np.float64),
+            z[entry["plan_key"]].copy() if "plan_key" in entry else None,
         )
 
     def condition_of(self, entry: dict[str, Any]) -> Condition:

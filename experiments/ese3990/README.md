@@ -7,6 +7,9 @@ the M0 evidence is in [`docs/ese3990/M0_report.md`](../../docs/ese3990/M0_report
 SAC checks, pilot results, resource deviations and the frozen 1M main budget
 are in the [M2 report](../../docs/ese3990/M2_report.md). Exact learner settings
 and seeds are saved in [`configs/M2_freeze.json`](configs/M2_freeze.json).
+MPC implementation, validation sweep and online cost are documented in the
+[M3 report](../../docs/ese3990/M3_report.md); its selected default is saved in
+[`configs/M3_freeze.json`](configs/M3_freeze.json).
 
 Physics, gate passage, capsize, bounds and time limits are Rust decisions
 (`sailgym_core`). Nothing in this directory models the boat.
@@ -23,6 +26,9 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `evaluate.py` | One evaluator for every controller (`--controller ppo --checkpoint …` too); writes an outcome report |
 | `ppo.py` | PPO: networks, tanh-Gaussian likelihood, GAE, clipped loss, checkpoints, `PPOPolicy`. Comments cite the slides by PDF page |
 | `sac.py` | SAC: replay buffer, twin Q + Polyak targets, state-dependent tanh-Gaussian actor, learned temperature, `SACPolicy`. Reuses `ppo.py`'s MLP, likelihood and checkpoint format. Comments cite the slides by PDF page |
+| `mpc.py` | CEM-MPC: blocked Gaussian proposals, elite mean/std, shifted warm starts, best sampled plan; comments link the mechanism to advanced PDF pp. 120, 178–179 and 199–201 |
+| `mpc_study.py` | Resumable five-setting validation sweep, actual simulator work and latency, validation selection and planned-path probes |
+| `mpc_figures.py` | Cost/success and latency figure; predicted plan versus exactly replayed execution |
 | `train.py` | Learner entry point (`--learner ppo|sac`): calibration and normalization (identical for both), collection (every episode stored), updates, checkpoints and probe/validation evaluation |
 | `plots.py` | Learning curve from runs' `curve.jsonl` |
 | `audit_runs.py` | Verify saved costs, finite metrics, validation aggregates, exact selected/final probe replay and nominal actor reload; writes a compact JSON evidence file |
@@ -32,7 +38,7 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `viz/show.py` | Command-line entry: select episodes from a store, replay them and render |
 | `tests/` | Contract, branch, baseline and viz checks |
 
-Not yet written (M3+): `mpc.py`, `viz/compose.py`.
+Not yet written (M4+): `viz/compose.py`.
 
 ## Commands
 
@@ -58,6 +64,20 @@ uv run --frozen --no-sync python experiments/ese3990/make_conditions.py --check
 # an outcome report
 uv run --frozen --no-sync python experiments/ese3990/evaluate.py --task R --controller rule_sailor \
     --manifest validation --out runs/ese3990/eval/R_rule_validation.json
+
+# M3: five settings × 20 validation conditions × search seeds [0,1,2]
+# Candidate branches run on the existing Rayon pool. Allow roughly an hour
+# on the measured CPU; use a fresh output directory for a new measurement.
+env -u PYTHONPATH RAYON_NUM_THREADS=12 uv run --frozen --no-sync python \
+    experiments/ese3990/mpc_study.py --out runs/ese3990/mpc/M3
+# Select the default, then record/replay nominal + five validation probes.
+env -u PYTHONPATH RAYON_NUM_THREADS=12 uv run --frozen --no-sync python \
+    experiments/ese3990/mpc_study.py --out runs/ese3990/mpc/M3 --probes
+# The committed freeze is copied from the study's M3_freeze.json.
+env -u PYTHONPATH RAYON_NUM_THREADS=12 uv run --frozen --no-sync python \
+    experiments/ese3990/evaluate.py --controller mpc --manifest nominal
+uv run --frozen --no-sync python experiments/ese3990/mpc_figures.py \
+    runs/ese3990/mpc/M3 --out docs/ese3990/figs
 
 # PPO: a 100k pilot, then evaluate a checkpoint and plot the curve
 uv run --frozen --no-sync python experiments/ese3990/train.py --seed 0 --decisions 100000 \

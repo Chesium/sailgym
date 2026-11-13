@@ -459,6 +459,10 @@ class TaskEnv:
         a decision after the candidate's terminal one; its reward is 0.
         """
         r = np.asarray(rates, dtype=np.float64)
+        if r.ndim != 3 or r.shape[2] != 2 or min(r.shape[:2]) < 1:
+            raise ValueError("rates must have shape (K>0, H>0, 2)")
+        if not np.isfinite(r).all():
+            raise ValueError("candidate rates must be finite")
         k, h, _ = r.shape
         acts = np.empty((k, h, 3))
         acts[..., :2] = np.clip(r[..., :2], -1.0, 1.0)

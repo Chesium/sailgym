@@ -205,27 +205,38 @@ impl RawEnv {
         let steps = out_steps
             .as_slice_mut()
             .map_err(|_| contiguity_error("out_steps"))?;
-        for c in 0..k {
-            let mut ep = self.ep.fork().map_err(value_error)?;
-            for d in 0..h {
-                let i = c * h + d;
-                let mut ran = 0;
-                if !ep.outcome().is_terminal() {
-                    let a = &acts[i * self.action_dim..(i + 1) * self.action_dim];
-                    ep.push_action(a).map_err(value_error)?;
-                    ran = ep.step().map_err(value_error)?.steps;
-                }
-                crate::research::fill(&ep, &mut rs[i * n..(i + 1) * n]);
-                steps[i] = ran;
-                code[i] = match ep.outcome() {
-                    Outcome::Running => 0,
-                    Outcome::Finished { .. } => 1,
-                    Outcome::Terminated(_) => 2,
-                    Outcome::Truncated => 3,
-                };
-            }
+        if k == 0 || h == 0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "K and H must be positive",
+            ));
         }
-        Ok(())
+        let inputs = acts
+            .chunks(h * self.action_dim)
+            .zip(rs.chunks_mut(h * n))
+            .zip(code.chunks_mut(h))
+            .zip(steps.chunks_mut(h))
+            .collect();
+        let action_dim = self.action_dim;
+        self.ep
+            .for_each_fork(inputs, |ep, (((acts, rs), code), steps)| {
+                for d in 0..h {
+                    let mut ran = 0;
+                    if !ep.outcome().is_terminal() {
+                        ep.push_action(&acts[d * action_dim..(d + 1) * action_dim])?;
+                        ran = ep.step()?.steps;
+                    }
+                    crate::research::fill(ep, &mut rs[d * n..(d + 1) * n]);
+                    steps[d] = ran;
+                    code[d] = match ep.outcome() {
+                        Outcome::Running => 0,
+                        Outcome::Finished { .. } => 1,
+                        Outcome::Terminated(_) => 2,
+                        Outcome::Truncated => 3,
+                    };
+                }
+                Ok(())
+            })
+            .map_err(value_error)
     }
 
     /// The outcome's name: `running`, `finished`, `truncated`, or — for a
