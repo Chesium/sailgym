@@ -34,11 +34,11 @@ Lines in *italics* are actions, not speech. Trim words before trimming the demo.
 ### 0:08 — Live demo: Triangle course
 *Press P to start. Clock at 2×. Steer with A/D; trim with the on-screen mainsheet pad.*
 
-> This is SailGym, my sailing simulator. I control only two things: how fast the rudder turns and how fast the sail comes in. Heel, speed, capsize and gate passage all come from the simulation.
+> This is SailGym, my sailing simulator. Its physics engine is built with Rust for high speed RL training and this is an interactive web frontend. I control only two things: how fast the rudder turns and how fast the sail comes in. The physics do the rest.
 
 *Point the bow straight at mark 1: the boat slows and stalls.*
 
-> The first mark is straight upwind, and a boat can't sail into the wind: within about 45 degrees it stalls. That's called being in irons.
+> See this course: The first mark is straight upwind, and a boat can't sail into the wind: within about 45 degrees it stalls. That's called being in irons.
 
 *Bear away to close-hauled, about 45° off the wind; build speed; then tack across.*
 
@@ -46,30 +46,32 @@ Lines in *italics* are actions, not speech. Trim words before trimming the demo.
 
 *Round mark 1 and bear away onto the reach. Switch to 4× if behind time.*
 
-> The next leg, across the wind, is easy: point and go. Leg one is my upwind task, U; my reach task, R, is a leg like this one.
+> The next gate, across the wind, is easy: point and go. Gate one is my upwind RL task, U; and my RL reach task, R, is a Gate like this one.
 
 *Switch to slides (frame 2).*
 
 ### 0:55 — Frame 2, problem
-> So the question is: how do learning from experience and planning with a model trade off success, experience and computation on these tasks?
+> So the question is: how do learning from experience and planning with a model, trade off success, experience and computation on these tasks?
 
 ### 1:05 — Frame 3, method: one contract
-> Every controller sails the same Rust simulator, sends the same two rates and gets the same reward: plus ten for finishing, minus ten for failing, minus time, plus distance shaping. All are tested on fifty held-out conditions plus twenty shifted ones, and every episode replays bit-exactly.
+> Every controller sails the same Rust simulator, sends the same two rates and gets the same reward: plus ten for finishing, minus ten for failing, minus time and plus distance shaping.
+
+> The learners see seventeen numbers of the true boat state. And everything is tested on fifty held-out conditions plus twenty shifted ones.
 
 ### 1:30 — Frame 4, method: three controllers
-> PPO learns on-policy: it collects fresh experience, updates, and throws it away. SAC learns off-policy: it keeps everything in a replay buffer. CEM-MPC doesn't learn: at every decision it forks the real simulator, tries thirty-two plans and executes the best first step, paying in computation, not experience.
+> OK so I implemented these three algorithms: PPO learns on-policy: it collects fresh experience, updates, and ... throws it away. SAC learns off-policy: it keeps everything in a replay buffer. (Then the Cross Entropy Method Model Predictive Control) CEM-MPC doesn't learn: at every decision it just forks the real simulator, tries thirty-two plans and executes the best first step, spending much in computation, but not experience.
 
 ### 1:54 — Frames 5–7, pseudo-code (flip)
-> Pseudo-code for each follows; pause to read it.
+> And these are the Pseudo-code for the three; please pause to read it.
 
 ### 2:00 — Frame 8, results R
-> On the reach, SAC learns on all three seeds and finishes 117 of 150 held-out tests. PPO's three seeds never learned it, though about one pilot seed in four did: PPO is seed-sensitive, not hopeless. The true-model planner and the hand-written RuleSailor finish every time.
+> OK so on the reach task, the easy one, we found that SAC learns pretty good and finishes about three quarters of held-out tests. but PPO is not that good, about one seed in four passed in pilot tests, so you can say PPO is seed-sensitive but not hopeless. The true-model MPC planner and the hand-written RuleSailor finish every time.
 
 ### 2:20 — Frame 9, results U
-> Upwind is much harder. A two-second horizon never tacks; eight seconds finishes every run so far, but at 0.2 seconds per decision, not in real time. No learner finishes reliably: fifty demonstrations teach SAC to tack in four runs out of ten, but it reaches the gate only five times in 150 tests.
+> Then, The second, Upwind task is much harder. For MPC, a two-second horizon never tacks; After increasing it to eight seconds, it can finish every run, but at 0.2 seconds per decision, it's a lots of computation, and can't be done in real time. And No PPO or SAC learner finishes reliably: fifty demonstrations from the our handmade rule sailor does teach SAC to tack in four runs out of ten, but it reaches the gate only five times in 150 tests.
 
 ### 2:43 — Frame 10, takeaways and next
-> So: a known model with foresight works, at a compute cost, and SAC beat PPO on the reach. Next: can the standard fix stop SAC's values blowing up upwind, and can a learned value let the two-second planner tack in real time? Thanks!
+> So in conclusion, clearly MPC works, which is a known model with foresight. but at a compute cost, and SAC performs better then PPO. The next steps is trying some standard fix to stop SAC's values from blowing up in the harder task, and see whether a **learned** trajectory-end value let the two-second MPC tack in real time? Thanks!
 
 *Advance to frame 11 (References) for 2–3 s, then stop recording. If the take runs over 3:00, take those seconds from the takeaways.*
 
@@ -129,9 +131,9 @@ real, but the count is incomplete.
 
 ## Checklist before upload
 
-- [ ] After the M4U held-out run finishes (`runs/ese3990/M4U/heldout/complete.json` exists): `make data`.
-- [ ] The MPC 8 s shift episodes all finished (`\uMPCshift` in `numbers.tex` is n/n). If not, change "every run so far" (frame 9 narration) and "finished every test so far" (slide 10).
-- [ ] The U held-out replay audit passes before saying "every episode replays bit-exactly" (slide 3 only claims the 2,840 R episodes).
+- [x] After the M4U held-out run finishes (`runs/ese3990/M4U/heldout/complete.json` exists): `make data`.
+- [x] The MPC 8 s shift episodes all finished (`\uMPCshift` in `numbers.tex` is n/n). If not, change "every run so far" (frame 9 narration) and "finished every test so far" (slide 10).
+- [x] The U held-out replay audit passes before saying "every episode replays bit-exactly" (slide 3 only claims the 2,840 R episodes).
 - [ ] Slide 10 "Next" still matches the plan's M4X arms (X1 critic LayerNorm, X2 value tail).
 - [ ] Video ≤ 3:00; audio clear; slides readable at 1080p.
 - [ ] Every spoken number matches the slide: 117/150, 0/150, 150/150; ~1 in 4 PPO pilot seeds; 0/60 vs 60/60; ~0.2 s; 4M; 50 demonstrations; tacks in ~4/10 runs; 5/150.

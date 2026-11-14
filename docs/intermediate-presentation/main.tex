@@ -197,7 +197,7 @@
     \node[py,right=of ep] (con) {\textbf{Shared contract}\\\python: actions,\\reward, features};
     \node[box,right=of con,draw=black,fill=white] (ctl) {\textbf{Controllers}\\\PPO{} \textperiodcentered{} \SAC\\\CEM{} \textperiodcentered{} \Rule};
     \foreach \a/\b in {phys/ep,ep/con,con/ctl} \draw[-{Stealth},black!70] (\a) -- (\b);
-  \end{tikzpicture}\\[1.2em]
+  \end{tikzpicture}\\[0.3em]
   \begin{columns}[c]
     \begin{column}{0.50\textwidth}
       \centering
@@ -222,12 +222,12 @@
       \end{tikzpicture}
     \end{column}
     \begin{column}{0.48\textwidth}
-      \begin{itemize}\footnotesize
-        \item Same action for all: rudder rate, sheet rate in $[-1,1]$
+      \begin{itemize}\footnotesize\setlength{\itemsep}{0pt}
+        \item \PPO/\SAC{} input: \textbf{17 numbers of the true boat state} (gate offset, heading, heel,
+              velocities, boom, rudder, sheet, wind); action for all: rudder, sheet rates in $[-1,1]$
         \item Reward $=$ \textcolor{green!55!black}{$+10$ finish} \textcolor{red!85!black}{$-10$ failure} $-$ time \textcolor{black!50}{($+$ distance shaping)}
         \item 50 held-out test conditions $+$ 20 shifted (wind 4 or 6\,m/s, start heading 15--30$^\circ$ beyond training)
         \item Discount $\gamma$ = 0.999 (R), 0.99975 (U): the horizon $1/(1-\gamma)$ = 50\,s or 200\,s just covers each time limit, so a finish still counts from the start
-        \item Episodes are stored as actions and replay bit-exactly (all 2{,}840 R evaluations audited)
       \end{itemize}
     \end{column}
   \end{columns}
@@ -293,7 +293,7 @@
         \item Actor and critic: 2$\times$64 tanh MLPs
         \item Adam $3\times10^{-4}$, clip 0.2, $\gamma$ from the task
         \item Budget: 1M (R) or 4M (U) real decisions, 3 training seeds
-        \item \alert{U, \PPO\,+\,BC}: first fit $\mu_\theta$ to $\operatorname{atanh} a_{\text{demo}}$ and $V$ to the demos' returns-to-go (20 epochs), then the loop on the left
+        \item \textbf{U, \PPO\,+\,BC}: first fit $\mu_\theta$ to $\operatorname{atanh} a_{\text{demo}}$ and $V$ to the demos' returns-to-go (20 epochs), then the loop on the left
       \end{itemize}
     \end{column}
   \end{columns}
@@ -326,7 +326,7 @@
         \item Replay $|\mathcal D|$ = 100k (R) or 400k (U); one update per decision
         \item $\alpha_0 = 0.2$, target entropy $\bar{\mathcal H} = -2$
         \item Budget: 1M (R) or 4M (U) real decisions, 3 training seeds
-        \item \alert{U, \SAC\,+\,demos}: half of every minibatch from a fixed buffer of 50 \Rule{} episodes (83k decisions, charged to the budget)
+        \item \textbf{U, \SAC\,+\,demos}: half of every minibatch from a fixed buffer of 50 \Rule{} episodes (83k decisions, charged to the budget)
       \end{itemize}
     \end{column}
   \end{columns}
@@ -359,7 +359,7 @@
         \item Plans are 0.5\,s blocks of (rudder, sheet) rates
         \item $H$ = 40 decisions (2\,s) or 160 (8\,s); $K=32$, 3 refits, 4 elites, $\sigma\ge0.1$
         \item Same reward and Rust rules as the live episode; 3 search seeds
-        \item \alert{Known model}: no learning, but 8\,s costs $\approx$\uMPCpLong\,ms per decision (validation median)
+        \item \textbf{Known model}: no learning, but 8\,s costs $\approx$\uMPCpLong\,ms per decision (validation median)
       \end{itemize}
     \end{column}
   \end{columns}
@@ -417,7 +417,7 @@
         \bottomrule
       \end{tabular}\\[0.3em]
       \uMPCpartial
-      \textbf{Planning is horizon-bound:} the 2\,s planner never tacks; 8\,s finished every validation and test run but needs
+      \textbf{Planning is horizon-bound:} the 2\,s planner never tacks; 8\,s finished every validation and held-out run but needs
       \uMPCpLong\,ms per decision (offline).\\[0.3em]
       \textbf{No learner finishes reliably:} \SAC{} $+$ demonstrations tacks in \uSACDtacked{} held-out runs
       (\SAC{} from scratch: \uSACtacked) but rarely reaches the gate.
@@ -428,7 +428,7 @@
 % ---------------------------------------------------------------- 2:43
 \begin{frame}{Takeaways and next steps}
   \begin{itemize}
-    \item \textbf{Known model + long enough horizon} (\MPC): finished every test so far, but not in real time upwind
+    \item \textbf{Known model + long enough horizon} (\MPC): finished every held-out run, but not in real time upwind
     \item On the reach, \SAC{} was far more \textbf{reliable} than \PPO: 3/3 main seeds vs 0/3 (about 1 in 4 \PPO{} pilot seeds learn it)
     \item Upwind, no learner finishes reliably: \textbf{demonstrations teach \SAC{} to tack}
           (\uSACDtacked{} held-out runs) but it rarely reaches the gate (\uSACDtest{} tests)
