@@ -1,0 +1,237 @@
+{
+ "status": "FROZEN before any M4X run",
+ "written_utc": "2026-11-16T21:07:55+00:00",
+ "label": "M4X: post-hoc, exploratory (U validation outcomes were open before M4X)",
+ "task": "U",
+ "contract_version": 2,
+ "contract_amendment_sha256": {
+  "2": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac"
+ },
+ "identity": {
+  "model": {
+   "model_version": 2,
+   "source": {
+    "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+    "state": "dirty"
+   }
+  },
+  "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+  "research_state_version": 1,
+  "feature_version": 1,
+  "reward_version": 1
+ },
+ "arms": {
+  "X1": {
+   "arm": "sac_demo_ln",
+   "parent": "sac_demo (M4U SAC + demonstrations)",
+   "change": "LayerNorm (learned scale and offset, eps 1e-6) between the Dense and the tanh of each hidden layer of both critics and their Polyak targets, in RLPD's order (Ball et al. 2023). Actor, demonstrations, seeds, budget, replay, \u03b3, checkpoints and selection unchanged",
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "required": true
+  },
+  "X1b": {
+   "arm": "sac_ln",
+   "parent": "sac (M4U SAC from scratch)",
+   "change": "the same LayerNorm change",
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "required": false
+  },
+  "X2": {
+   "arm": "x2",
+   "parent": "M4U MPC H40_K32 (the frozen M3 default under U's \u03b3)",
+   "change": "score += \u03b3^H\u00b7V(\u03c6(s_H)) for candidates still running after H decisions; no tail after a finish, failure or the time limit. K, I, blocks, warm start and search seeds unchanged",
+   "search_seeds": [
+    0,
+    1,
+    2
+   ],
+   "value": "search seed s uses PPO + BC seed s's initial critic and normalization",
+   "required": true
+  }
+ },
+ "configs": {
+  "sac_demo_ln": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "lr": 0.0003,
+   "hidden": 64,
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "max_grad_norm": 1.0,
+   "replay": 400000,
+   "minibatch": 256,
+   "utd": 1,
+   "tau": 0.005,
+   "alpha0": 0.2,
+   "target_entropy": -2.0,
+   "log_every": 2048,
+   "arm": "sac_demo_ln",
+   "demos": {
+    "store": "runs/ese3990/M4U/demos/store",
+    "sha256": "69575c914fdee66e0abac8fc1e1fca0c5fbbe56f0465d2e554f8d2a47a26b85b",
+    "decisions": 83462
+   },
+   "critic_layernorm": true
+  },
+  "sac_ln": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "lr": 0.0003,
+   "hidden": 64,
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "max_grad_norm": 1.0,
+   "replay": 400000,
+   "minibatch": 256,
+   "utd": 1,
+   "tau": 0.005,
+   "alpha0": 0.2,
+   "target_entropy": -2.0,
+   "log_every": 2048,
+   "arm": "sac_ln",
+   "critic_layernorm": true
+  }
+ },
+ "x2": {
+  "config": {
+   "horizon": 40,
+   "candidates": 32,
+   "iterations": 3,
+   "block_s": 0.5,
+   "initial_std": 0.6,
+   "min_std": 0.1
+  },
+  "search_seeds": [
+   0,
+   1,
+   2
+  ],
+  "value_checkpoints": {
+   "0": {
+    "checkpoint": "runs/ese3990/M4U/main/ppo_bc_U_s0/ckpt/0093462",
+    "sha256": {
+     ".json": "b689f0edbedf750c6d7aa5098567c3e8eecb93fe471904fa6328bac688c41a22",
+     ".npz": "cadc79ded74ad1871dac0b2612f40afe66c05dace587a8130e777c1aa23a25d8"
+    }
+   },
+   "1": {
+    "checkpoint": "runs/ese3990/M4U/main/ppo_bc_U_s1/ckpt/0093462",
+    "sha256": {
+     ".json": "e72e7c3dd04f2215ee7ba17e725dd53dc128fae63359f80036534d36af5f6792",
+     ".npz": "8f872ef199b26d80333b9bf6d5903afe75f5a6a674f62461cff08adbfc593e5f"
+    }
+   },
+   "2": {
+    "checkpoint": "runs/ese3990/M4U/main/ppo_bc_U_s2/ckpt/0093462",
+    "sha256": {
+     ".json": "682e0d372a27eaec356822602b6cb898053bc60d6f87b8c76e8e2a66d3ff8d9e",
+     ".npz": "d7add3b43a19698e3dda2b32aa832322cb088cbbf77bd124bd74df5030151356"
+    }
+   }
+  }
+ },
+ "thresholds": {
+  "bounded_as_declared": "max |Q| \u2264 250 (10\u00d7 R's largest) at every logged window, and mean Q never above +20 (plan M4X)",
+  "bounded_entropy_adjusted": {
+   "rule": "Q' = Q \u2212 o_t, o_t = \u03b1_t\u00b7H_t\u00b7\u03b3/(1\u2212\u03b3) from window t's mean temperature \u03b1_t and policy entropy H_t: the discounted entropy term of SAC's soft value if \u03b1 and H held. A critic is bounded if max(q_max \u2212 o_t, o_t \u2212 q_min) \u2264 250 and mean Q \u2212 o_t \u2264 +20 at every logged window (2,048 updates)",
+   "gamma": 0.99975,
+   "why": "added 2026-11-17 before any X run (user decision): at \u03b3 = 0.99975 an accurate soft critic reads \u2248 task return \u2212 8000\u00b7\u03b1 when H sits at its \u22122 target, so the declared rule cannot tell a blow-up from a large \u03b1",
+   "used_for_readings": true
+  },
+  "logging": "new runs add per-window q_max and q_min (minibatch extremes) to metrics.jsonl; instrumentation only, training unchanged",
+  "real_time": "p50 decision latency < 50 ms on U validation, 50 ms deadline misses reported (as M3/M4)",
+  "latency_conditions": "RAYON_NUM_THREADS=4, 3 worker processes (the M4U sweep's settings) and no other experiment process running for the validation run; the tail's own wall time is logged. M4U's H=40 and H=160 latencies were measured while 12 training runs shared the CPU (AMD Ryzen AI 9 HX 370, 12 cores of two kinds)",
+  "predicted_vs_executed": "X2 records each decision's best planned score (tail included) and compares it with the discounted return-to-go actually received, from exact replay"
+ },
+ "diagnostics_thresholds": {
+  "experiments/ese3990/configs/M4U_diagnostics.json": "33e6e9286da091c9235844dc38cebcd92c4d905fc35bf89f996e6b0a15ce980f"
+ },
+ "vcheck": {
+  "docs/ese3990/M4X_vcheck.json": "6816ba70201d256e30227d9ee21f9fe36f1475d8cc0fee593ff49c38c5dd9be7"
+ },
+ "selection": "Validation only (evaluate.select_checkpoint): most validation finishes, then greatest validation mean return, then earliest checkpoint. Final checkpoints and PPO + BC's initial checkpoint (role bc_only) are reported too.",
+ "stages": {
+  "validation": [
+   "validation"
+  ],
+  "heldout": [
+   "nominal",
+   "test",
+   "shift"
+  ]
+ },
+ "environment_seed": 0,
+ "readings": [
+  [
+   "X1 bounded, and finishes > SAC + demonstrations",
+   "The critic blowing up was a cause of the upwind failure"
+  ],
+  [
+   "X1 bounded, finishes unchanged",
+   "The blow-up was a symptom; the bottleneck is elsewhere (exploration, the timeout trap)"
+  ],
+  [
+   "X1 still unbounded",
+   "LayerNorm alone does not stabilize SAC at \u03b3 = 0.99975; report it, with no further fixes in M4X"
+  ],
+  [
+   "X2 finishes \u2248 H=160 in real time",
+   "A learned value substitutes for foresight: learning buys the planner back real time"
+  ],
+  [
+   "X2 tacks but finishes less often than H=160",
+   "V points the right way but is imprecise near the gate"
+  ],
+  [
+   "X2 never tacks, like H=40",
+   "V does not encode the worth of a tack; the horizon gap remains"
+  ]
+ ],
+ "cut_order": [
+  "X1b",
+  "X2 held-out (keep validation)",
+  "X1 held-out"
+ ],
+ "source_sha256": {
+  "experiments/ese3990/m4x.py": "7416977149a7b030759d4e31c0b3f0589c37cb25d743af63f0c473460d10d7fe",
+  "experiments/ese3990/sac.py": "470dddb9a70b836a6d04f8b620dfeae9175297e6b1c1dd96ba7adf2f43712447",
+  "experiments/ese3990/mpc.py": "d10f77f9deb5480f8fe26f94e347ef0788ffc0dbf958b1a7e341ab19de9647ff",
+  "experiments/ese3990/train.py": "2dedf2904f04888057f1ef8b65cbd89de445aeea17bc4e676faa704d0de0570c",
+  "experiments/ese3990/ppo.py": "b383dc76fd3c280e04d3588c9cb8fe27839ed1b7dbea0f0c7a723e9417a093f2",
+  "experiments/ese3990/demos.py": "7f23d6d933cb8241efd80805218847418cdda7a5e835a8777258771b35d18c08",
+  "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+  "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+  "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+  "experiments/ese3990/m4u_compare.py": "ce8161c1d6a2ad0b15f5656584c4f3fa3a759b3696c28d8d49c93429c02e11f4",
+  "experiments/ese3990/compare.py": "03281277d68d374dad2e6a1f3660c10c4668e844fed9a0c3178f47d532e2ac72",
+  "experiments/ese3990/viz/episode_store.py": "f64bc6f29675f05bb521ad8e639a027ef4fc47c8867faf6ec64f9426426d87d8",
+  "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf"
+ }
+}

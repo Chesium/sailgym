@@ -1,7 +1,7 @@
 # Learning versus Planning for Sailboat Control
 
 **ESE3990 project plan · Shimin Chen · revised 2026-11-14**  
-**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm): all 12 learner runs and the MPC validation sweep are done; the held-out evaluation is running. **M4X** (added 2026-11-14) tests two explanations of the upwind results with post-hoc, exploratory arms. BPTT-WM moves to after Dec 3. Final presentation/packaging remains M5. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
+**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm): all 12 learner runs and the MPC validation sweep are done; the held-out evaluation is running. **M4X** (added 2026-11-14) tests two explanations of the upwind results with post-hoc, exploratory arms. M4X was closed early on 2026-11-17: readings settled, held-out audit and generated files skipped. **M4P** (added and completed 2026-11-17) asks, with no learning, whether random exploration with different noise and action intervals ever produces a tack on U. Per-decision white noise never tacks; correlated or held noise tacks in up to 25% of episodes, but no random episode makes real upwind progress or finishes ([M4P report](M4P_report.md)). BPTT-WM moves to after Dec 3. Final presentation/packaging remains M5. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
 The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is future work after the Dec 3 presentation** (amended 2026-11-14; reasons in [M4X](#m4x--nov-1727--explain-the-upwind-failures-let-learning-shorten-planning--812-h)).
@@ -20,6 +20,7 @@ This replaces the pendulum-first scope in the [October proposal](ESE3990_Final_P
 | Required | Reproducible presentation | Saved checkpoints/configs, raw summaries, figure commands, and a presentation ready for Dec 3 |
 | Gated extension | Upwind sailing | Same evaluation pipeline; implement only after the reaching comparison works for all three methods. Scheduled as M4U (§6), with a labeled expert-data arm |
 | Post-hoc extension | M4X: critic-stability arm and value-tail planner | Labeled exploratory everywhere; starts after M4U's report; whatever is unfinished on Nov 28 is presented as planned work (§6) |
+| Post-hoc extension | M4P: exploration probe, no learning | Labeled exploratory everywhere; starts after M4X's report; whatever is unfinished on Nov 28 is presented as planned work (§6) |
 | Future work (after Dec 3) | Learned dynamics and BPTT-WM | Moved out of the course schedule on 2026-11-14 (§6 M4X, §9) |
 | Deferred | Further algorithms and infrastructure | No TD3/Dreamer sweep, recurrent policy, full-course racing, or new browser dashboard |
 | Not scheduled (2026-11-14) | Harder tasks and observation | Multi-gate or trajectory-following tasks, random/gusty wind, deliberate partial observation; reasons in §6 M4X |
@@ -376,9 +377,9 @@ Normalization was checked on 2026-11-14 and needs no amendment. Against seed-0 U
 - [x] MPC on U validation: H=40 and H=160, three search seeds each. Selection is predeclared as in M3 (most finishes, then lower p50 latency). Only the selected setting goes to held-out sets; H=160 is labeled offline if selected. *H=40 0/60 (59 truncated, 1 out of bounds), H=160 60/60. H=160 selected and labeled offline; `configs/M4U_mpc_freeze.json`.*
 - [x] Write `configs/M4U_train_freeze.json` (arms, settings, seeds, demonstration hash) **before** the 12 main learner runs. Queue the runs and retain failed ones. *Written, then all 12 launched concurrently 2026-11-14 00:43 (+08:00) under `runs/ese3990/M4U/main/`.*
 - [x] Write the held-out freeze before opening test/shift, as in M4. Evaluate every predeclared checkpoint, the selected MPC and RuleSailor on nominal/test/shift, then run the exact-replay audit. *76 groups, 5,396 episodes; all replay exactly (`runs/ese3990/M4U/heldout/replay_audit.json`). Selected test finishes: PPO, PPO + BC, BC only, SAC 0/150 each; SAC + demonstrations 5/150; MPC H=160 150/150 test, 60/60 shift; RuleSailor 38/50, 2/20.*
-- [ ] U diagnostics from replay, with thresholds frozen before held-out results: tacks completed, time in irons, mark misses, out-of-bounds exits, and final distance for timeouts.
+- [x] U diagnostics from replay, with thresholds frozen before held-out results: tacks completed, time in irons, mark misses, out-of-bounds exits, and final distance for timeouts. *All 5,396 held-out episodes ([M4U_diagnostics.md](M4U_diagnostics.md)), plus the validation sweep ([M4U_mpc_sweep_diagnostics.json](M4U_mpc_sweep_diagnostics.json)). Episodes with a tack (selected arms, 213 each): SAC + demonstrations 87, PPO 49, PPO + BC 22, SAC 1, BC only 0. MPC H=40 never attempts a tack (0/60).*
 - [x] Optional, if the binding exposes RuleSailor's mode: predict that mode from the 17 learner features on the demonstration episodes. This tests whether its memory adds information the learners lack. *[M4U_mode_check.json](M4U_mode_check.json): a 2×64 MLP reaches 0.82 balanced accuracy on held-out demonstration episodes (linear 0.38, majority 0.14). The features carry most of the mode.*
-- [ ] `M4U_report.md`, claim-index entries, and handoff `docs/handoffs/ese3990-m4u.md`.
+- [x] `M4U_report.md`, claim-index entries, and handoff `docs/handoffs/ese3990-m4u.md`. *[M4U report](M4U_report.md), [M4U_claims.json](M4U_claims.json). Readings: the horizon-bound reading applies; demonstrations removed the tack-discovery bottleneck only in part (5/150 finishes, decayed to 0 by 4M); RL did not improve on RuleSailor. The 2,882 R/viz_demo episodes still replay exactly.*
 
 **Schedule.**
 
@@ -432,13 +433,15 @@ Added 2026-11-14, after M4U's training runs and MPC sweep and before any M4X run
 
 **Thresholds declared before results.** A critic is *bounded* if its max \|Q\| stays ≤ 250 (10× R's largest) and its mean Q never exceeds +20 during the run. *Real time* means p50 < 50 ms, with 50 ms deadline misses reported as in M3/M4. X2 records predicted versus executed return, so a planner exploiting V's errors is visible.
 
-- [ ] Critic-scale figure for all 9 SAC main runs (3 R, 6 U): max \|Q\| and mean Q against decisions, with the feasible return range marked. Existing logs only.
-- [ ] Optional critic LayerNorm in `sac.py`, default off, so every existing config and checkpoint reloads unchanged. Unit test; the existing experiment tests still pass.
-- [ ] Optional terminal value in `mpc.py`, default off, so the frozen planners are unchanged. Unit test: the tail is added only to candidates still running at H; the existing MPC tests still pass.
-- [ ] V check on RuleSailor's 20 U validation episodes (never used in fitting): returns-to-go error versus a constant predictor. Reported either way; V is not refitted on planner outcomes.
-- [ ] Write `configs/M4X_freeze.json` (arms, seeds, V checkpoint hashes, the thresholds above) **before** any X run.
-- [ ] Run X1 (X1b if time) and X2 on U validation; select learner checkpoints by M4U's rule. Then evaluate on U test/shift, labeled exploratory, and run the exact-replay audit.
-- [ ] `M4X_report.md`, claim-index entries and handoff `docs/handoffs/ese3990-m4x.md`.
+*Amended 2026-11-17, before any X run (user decision):* SAC's critic estimates a soft value, which includes the discounted entropy term α·H·γ/(1−γ). At γ = 0.99975, with H at its −2 target, an accurate critic reads about task return − 8000·α, so the rule above cannot tell a blow-up from a large α. The freeze keeps that rule and adds an **entropy-adjusted** one, which the readings use. Its final form is freeze amendment 1, written before any X1 run and before any M4X result was read: subtracting the current window's o = α·H·γ/(1−γ) called a lagging critic a blow-up. Each window's o is now computed from 400k decisions on. A critic is bounded if Q stays within 250 (max/min) and +20 (mean) of the interval [min(0, o), max(0, o)] spanned by those offsets. New runs log per-window max and min Q for it. [`configs/M4X_freeze.json`](../../experiments/ese3990/configs/M4X_freeze.json), [`M4X_freeze_amendment1.json`](../../experiments/ese3990/configs/M4X_freeze_amendment1.json)
+
+- [ ] *Skipped 2026-11-17 (M4X closed early, user decision; see [M4X report](M4X_report.md#not-done-skipped-2026-11-17)):* the figure file was not generated; the numbers for all 15 SAC runs are in the M4X report. Critic-scale figure for all 9 SAC main runs (3 R, 6 U): max \|Q\| and mean Q against decisions, with the feasible return range marked. Existing logs only.
+- [x] Optional critic LayerNorm in `sac.py`, default off, so every existing config and checkpoint reloads unchanged. Unit test; the existing experiment tests still pass.
+- [x] Optional terminal value in `mpc.py`, default off, so the frozen planners are unchanged. Unit test: the tail is added only to candidates still running at H; the existing MPC tests still pass.
+- [x] V check on RuleSailor's 20 U validation episodes (never used in fitting): returns-to-go error versus a constant predictor. Reported either way; V is not refitted on planner outcomes.
+- [x] Write `configs/M4X_freeze.json` (arms, seeds, V checkpoint hashes, the thresholds above) **before** any X run.
+- [ ] Validation and selection done for X1, X1b and X2. *Skipped 2026-11-17 (M4X closed early, user decision; see [M4X report](M4X_report.md#not-done-skipped-2026-11-17)):* the held-out stage was stopped at 2,763 of 2,769 episodes, and the replay audit was not run. Run X1 (X1b if time) and X2 on U validation; select learner checkpoints by M4U's rule. Then evaluate on U test/shift, labeled exploratory, and run the exact-replay audit.
+- [ ] `M4X_report.md` (closed, with a not-done list) and the handoff are written. *Skipped 2026-11-17 (M4X closed early, user decision; see [M4X report](M4X_report.md#not-done-skipped-2026-11-17)):* claim-index entries and the generated report files. `M4X_report.md`, claim-index entries and handoff `docs/handoffs/ese3990-m4x.md`.
 
 Compute is small: three concurrent SAC runs take ≈100 min; X2 on validation takes about an hour. **Cut order:** X1b, then X2's held-out evaluation (keep validation), then X1's held-out evaluation.
 
@@ -466,6 +469,63 @@ Compute is small: three concurrent SAC runs take ≈100 min; X2 on validation ta
 
 **Exit:** every M4X arm that ran has a validation result, labeled exploratory; held-out results, if run, replay exactly; the report states which reading applies.
 
+### M4P · Nov 18–28 · Exploration probe: can undirected noise find a tack? · 3–5 h
+
+Added 2026-11-17, after M4X's training runs and before any probe episode. **No learning.** M4P measures whether the kind of exploration a learner starts with could ever produce the behaviour U needs. Sparse-outcome RL mostly amplifies successes its own sampling already produces. If random exploration never tacks, choosing a better learner is not the next step. Every row is post-hoc and labeled exploratory. No task, reward, condition manifest, controller or M4/M4U/M4X freeze changes. Probe code goes in new files only, so `baselines.py` and the other M4X hash-frozen sources stay untouched. **Start gate:** M4X's report is done, and its held-out stage no longer uses the CPU. *(2026-11-17: met by closing M4X early; its held-out stage was stopped at 10:58.)* **Stop rule:** as for M4X, M5's dates do not move.
+
+**Evidence that motivates M4P**, from existing results and the literature:
+
+| Observation | Source |
+|---|---|
+| U decides at 20 Hz, so 3,600 decisions per episode. A tack pays off 2–8 s later, i.e. after 40–160 decisions: MPC never tacks at H=40 and always finishes at H=160 | [M0 report](M0_report.md); M4U MPC sweep |
+| The learners explore with independent per-decision noise on rudder and sheet *rates*. White Gaussian rate noise resampled at 20 Hz "mostly averages out in the actuators" | [M1 report](M1_report.md) §4 |
+| PPO from scratch crosses head to wind in 40/150 test episodes, but its furthest upwind progress is 8.2 m of 40. SAC from scratch tacks in 1/213 | [M4U report](M4U_report.md) |
+| The planner that finishes holds each action for 0.5 s | M3/M4U planner settings |
+| On MountainCar with an action cost, a "do nothing" trap like U's timeout, the noise process alone turns DDPG/TD3/SAC from failure into success (Hollenstein et al., 2022). Pink noise is the recommended default for off-policy learners (Eberhard et al., 2023) | Literature |
+
+**Probe grid**, frozen in `configs/M4P_freeze.json` before any probe episode:
+
+| Factor | Levels |
+|---|---|
+| Noise colour (power spectrum ∝ 1/f^β per action dimension, drawn per episode) | white β = 0 (the learners' per-decision noise), pink β = 1, red β = 2 |
+| Hold (sample-and-hold interval) | 0.05 s (every decision), 0.5 s, 1 s, 2 s, i.e. 1, 10, 20, 40 decisions |
+| Scale σ (rates then clipped to [−1, 1]) | 0.3, 0.6, 1.0 |
+| Reference cell | M1's calibration controller, `SmoothRandom(hold=10)`: uniform rates held for 0.5 s |
+
+- **Episodes:** 36 cells plus the reference cell, 100 episodes each. Conditions come from `make_conditions.TrainingSampler` with probe seeds; no validation, test or shift conditions are used. That is at most 13.3M decisions. Time one cell before the full run.
+- **Recording:** every action passes through `ActionAdapter`, and every episode is stored and replays exactly.
+- **Measures per cell,** from `u_diagnostics` with the frozen M4U thresholds:
+  - episodes with a settled tack;
+  - failed tacks and time in irons;
+  - mean maximum y, and the share of episodes reaching y ≥ 20 m;
+  - outcomes: finish, out of bounds, capsize, mark missed, timeout.
+
+**Threshold declared before results.** A process *reaches* if ≥ 10% of its episodes contain a settled tack and ≤ 10% end in a failure (out of bounds, capsize or mark missed).
+
+**Readings declared before results.**
+
+| Observation | Reading |
+|---|---|
+| White noise at a 0.05 s hold already reaches | Exploration noise is not U's bottleneck. The next arm targets the critic and the decision horizon: entropy kept out of the critic target, 0.5 s action blocks |
+| White noise at 0.05 s does not reach, but a correlated or held process does | Per-decision white noise is a cause. That process (colour, hold, scale) is the exploration setting for the next RL arm |
+| Tacks appear only together with more than 10% failures | Coherent exploration runs into terminal states. Start-state curricula or resets come before noise changes |
+| No cell reaches 10% tacks | Undirected exploration cannot find the tack. The next step is reset-based discovery (a reverse-start curriculum, Go-Explore), labeled as using simulator resets |
+| Any random finish | Reported with its process. It is the success rate a sparse-outcome learner would start from |
+
+- [x] *(No tack, failure or irons in the 9 calibration episodes; mean max y 4.5 m.)* First look, at zero cost: `u_diagnostics` on the M4U learners' stored calibration episodes (`SmoothRandom(hold=10)`, 10,000 decisions per run). Did any contain a tack?
+- [x] New `probe.py`: power-law noise via FFT (numpy only), sample-and-hold, runner and episode stores. Unit tests:
+  - spectral slope within ±0.2 of β;
+  - actions constant within each hold window;
+  - same seed, same actions;
+  - a short probe episode replays exactly.
+- [x] Write `configs/M4P_freeze.json` (grid, seeds, episodes, threshold, readings, source hashes) **before** any probe episode. *(2026-11-17 03:05 UTC.)*
+- [x] Run the grid and the replay audit. *(3,700 episodes in 85 s on 12 cores; all replay exactly. One cell was rerun after a pilot collision; see the report.)*
+- [x] [`M4P_report.md`](M4P_report.md) (tack and failure rates over hold × colour for each scale, and which reading applies), claim-index entries ([`M4P_claims.json`](M4P_claims.json)) and handoff `docs/handoffs/ese3990-m4p.md`.
+
+**Not in M4P:** any training run, reward or task change, noise processes outside the grid, or reset-based exploration. Those are candidates for later work after Dec 3, chosen by M4P's reading.
+
+**Exit:** every cell has a stored, replayed result, labeled exploratory; the report states which reading applies.
+
 ### M5 · Nov 29–Dec 3 · Freeze, explain and present · 7–10 h
 
 - [ ] Nov 29–30: freeze checkpoints/results and regenerate all core figures/tables from saved data.
@@ -475,7 +535,7 @@ Compute is small: three concurrent SAC runs take ≈100 min; X2 on validation ta
 - [ ] Rehearse PPO versus SAC data use, SAC entropy/targets, MPC foresight/compute and all known-model fairness limitations.
 - [ ] Dec 1–2: reproduce a report, rehearse Q&A and confirm final logistics; Dec 3: present measured findings.
 
-Suggested presentation: boat/question (1 min), task/information contract (1), three controller mechanisms (3), outcomes and learning cost (2), MPC horizon/latency and failures (2), limitations (1). Upwind can replace part of the failure discussion if completed. M4X's critic-scale figure and value-tail result, labeled exploratory, belong in the failure and horizon slots. BPTT is not attempted before Dec 3 (§9).
+Suggested presentation: boat/question (1 min), task/information contract (1), three controller mechanisms (3), outcomes and learning cost (2), MPC horizon/latency and failures (2), limitations (1). Upwind can replace part of the failure discussion if completed. M4X's critic-scale figure and value-tail result, and M4P's tack-rate grid, all labeled exploratory, belong in the failure and horizon slots. BPTT is not attempted before Dec 3 (§9).
 
 ## 7. Implementation footprint and verification
 
@@ -523,8 +583,8 @@ Run focused numerical and integration tests, affected Rust package tests, and `s
 | SAC/PPO implementation error | Numerical checks, Q/entropy/ratio diagnostics | Debug on SailGym; optionally cross-check a public implementation on the same task |
 | Information/model advantage hidden | State/context audit | Match learner inputs and disclose richer planner state plus exact model access |
 | Reward exploits or misleading times | Rust outcomes, failed episodes and controls | Freeze geometry/evaluator first; report success and failures alongside conditional times |
-| Scope or compute exceeds deadline | Milestone exits and measured pilots | Cut M4X first (its own cut order), then U and five-seed expansion; reduce common budgets before dropping independent seeds. BPTT is already outside the schedule |
-| Post-hoc arm read as confirmatory | An M4X row without its exploratory label, or merged into an M4/M4U table | Label M4X rows everywhere; report them separately |
+| Scope or compute exceeds deadline | Milestone exits and measured pilots | Cut M4P first, then M4X (its own cut order), then U and five-seed expansion; reduce common budgets before dropping independent seeds. BPTT is already outside the schedule |
+| Post-hoc arm read as confirmatory | An M4X or M4P row without its exploratory label, or merged into an M4/M4U table | Label M4X and M4P rows everywhere; report them separately |
 | Planner exploits a learned value | X2's predicted versus executed return | Report the gap; do not refit V on planner outcomes |
 | Visualization consumes core time | Hours spent against the §10 estimates | Cut the browser export first, then the grid layout, then mp4 (keep gif and static figures). Keep the episode store and replay, because the analysis depends on them |
 

@@ -1,0 +1,11 @@
+{
+ "amends": "experiments/ese3990/configs/M4X_freeze.json",
+ "amends_sha256": "a699f158af14c4140affce823198bb0e9660ce1cd38299852a3be1eb592f6001",
+ "written_utc": "2026-11-16T21:12:19+00:00",
+ "status": "written before any X1/X1b run was launched and before any M4X result was read (X2 validation was running; it is unaffected)",
+ "replaces": "thresholds.bounded_entropy_adjusted.rule (used for the readings); thresholds.bounded_as_declared is unchanged",
+ "rule": "From the 400k-decision checkpoint on, at every logged window t: let o_s = α_s·H_s·γ/(1−γ) and [lo_t, hi_t] = [min(0, min_s o_s), max(0, max_s o_s)] over the windows s from 400k decisions to t. The critic is bounded if q_max − hi_t ≤ 250, lo_t − q_min ≤ 250 and mean Q − hi_t ≤ +20 at every such window.",
+ "burn_in_decisions": 400000,
+ "why": "Subtracting the current window's offset assumes the critic already tracks the soft value of the current α and H. It does not: at the start α = 0.2 and H ≈ +1.3 give o ≈ +1,000 while a fresh critic reads ≈ 0, and when α rises the critic lags (M4U sac_demo_U_s0 at 1M decisions: o = −3,782, mean Q = −1,175), so the superseded rule calls lag a blow-up. The amended rule admits any value between 0 and the offsets observed since 400k, so only values that no observed α·H can justify fail. Entropy reaches its −2 target within about 150k decisions in every M4/M4U SAC run, so 400k (the first checkpoint after the initial one) excludes the start-up transient.",
+ "check_on_existing_runs": "R SAC (3 runs) bounded; U SAC from scratch and SAC + demonstrations (6 runs) unbounded, as under the declared rule. Computed by m4x_report.py; runs before M4X lack per-window extremes, so their spread verdict uses max|Q| and can be 'undecided'."
+}

@@ -1,0 +1,553 @@
+[
+  {
+    "id": "controllers_nominal",
+    "title": "U: validation-selected controllers, BC only and references",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d3000080",
+        "query": {
+          "group": "ppo_s0_d3000080",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d3000080"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d4000000",
+        "query": {
+          "group": "sac_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d4000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d1000000",
+        "query": {
+          "group": "sac_demo_s0_d1000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d1000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d4000000",
+        "query": {
+          "group": "ppo_bc_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d4000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d0093462",
+        "query": {
+          "group": "ppo_bc_s0_d0093462",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d0093462 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/mpc_search0",
+        "query": {
+          "group": "mpc_search0",
+          "condition": "nominal"
+        },
+        "label": "mpc_search0"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/rule_sailor",
+        "query": {
+          "group": "rule_sailor",
+          "condition": "nominal"
+        },
+        "label": "rule_sailor"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "ppo_checkpoints",
+    "title": "U: PPO seed 0, predeclared checkpoints",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d0010000",
+        "query": {
+          "group": "ppo_s0_d0010000",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d0010000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d0401168",
+        "query": {
+          "group": "ppo_s0_d0401168",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d0401168"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d1001232",
+        "query": {
+          "group": "ppo_s0_d1001232",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d1001232"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d2000656",
+        "query": {
+          "group": "ppo_s0_d2000656",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d2000656"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d3000080",
+        "query": {
+          "group": "ppo_s0_d3000080",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d3000080"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d4000000",
+        "query": {
+          "group": "ppo_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d4000000"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "ppo_seeds",
+    "title": "U: PPO, validation-selected training seeds",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d3000080",
+        "query": {
+          "group": "ppo_s0_d3000080",
+          "condition": "nominal"
+        },
+        "label": "ppo_s0_d3000080"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s1_d4000000",
+        "query": {
+          "group": "ppo_s1_d4000000",
+          "condition": "nominal"
+        },
+        "label": "ppo_s1_d4000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s2_d1001232",
+        "query": {
+          "group": "ppo_s2_d1001232",
+          "condition": "nominal"
+        },
+        "label": "ppo_s2_d1001232"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "sac_checkpoints",
+    "title": "U: SAC seed 0, predeclared checkpoints",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d0010000",
+        "query": {
+          "group": "sac_s0_d0010000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d0010000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d0400000",
+        "query": {
+          "group": "sac_s0_d0400000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d0400000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d1000000",
+        "query": {
+          "group": "sac_s0_d1000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d1000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d2000000",
+        "query": {
+          "group": "sac_s0_d2000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d2000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d3000000",
+        "query": {
+          "group": "sac_s0_d3000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d3000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d4000000",
+        "query": {
+          "group": "sac_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d4000000"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "sac_seeds",
+    "title": "U: SAC, validation-selected training seeds",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d4000000",
+        "query": {
+          "group": "sac_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s0_d4000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s1_d4000000",
+        "query": {
+          "group": "sac_s1_d4000000",
+          "condition": "nominal"
+        },
+        "label": "sac_s1_d4000000"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s2_d0400000",
+        "query": {
+          "group": "sac_s2_d0400000",
+          "condition": "nominal"
+        },
+        "label": "sac_s2_d0400000"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "sac_demo_checkpoints",
+    "title": "U: SAC + demonstrations (expert data) seed 0, predeclared checkpoints",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d0093462",
+        "query": {
+          "group": "sac_demo_s0_d0093462",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d0093462 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d0400000",
+        "query": {
+          "group": "sac_demo_s0_d0400000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d0400000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d1000000",
+        "query": {
+          "group": "sac_demo_s0_d1000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d1000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d2000000",
+        "query": {
+          "group": "sac_demo_s0_d2000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d2000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d3000000",
+        "query": {
+          "group": "sac_demo_s0_d3000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d3000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d4000000",
+        "query": {
+          "group": "sac_demo_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d4000000 [expert data]"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "sac_demo_seeds",
+    "title": "U: SAC + demonstrations (expert data), validation-selected training seeds",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d1000000",
+        "query": {
+          "group": "sac_demo_s0_d1000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s0_d1000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s1_d0400000",
+        "query": {
+          "group": "sac_demo_s1_d0400000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s1_d0400000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s2_d2000000",
+        "query": {
+          "group": "sac_demo_s2_d2000000",
+          "condition": "nominal"
+        },
+        "label": "sac_demo_s2_d2000000 [expert data]"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "ppo_bc_checkpoints",
+    "title": "U: PPO + BC (expert data) seed 0, predeclared checkpoints",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d0093462",
+        "query": {
+          "group": "ppo_bc_s0_d0093462",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d0093462 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d0400662",
+        "query": {
+          "group": "ppo_bc_s0_d0400662",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d0400662 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d1000726",
+        "query": {
+          "group": "ppo_bc_s0_d1000726",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d1000726 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d2000150",
+        "query": {
+          "group": "ppo_bc_s0_d2000150",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d2000150 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d3001622",
+        "query": {
+          "group": "ppo_bc_s0_d3001622",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d3001622 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d4000000",
+        "query": {
+          "group": "ppo_bc_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d4000000 [expert data]"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "ppo_bc_seeds",
+    "title": "U: PPO + BC (expert data), validation-selected training seeds",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d4000000",
+        "query": {
+          "group": "ppo_bc_s0_d4000000",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s0_d4000000 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s1_d3001622",
+        "query": {
+          "group": "ppo_bc_s1_d3001622",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s1_d3001622 [expert data]"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s2_d2000150",
+        "query": {
+          "group": "ppo_bc_s2_d2000150",
+          "condition": "nominal"
+        },
+        "label": "ppo_bc_s2_d2000150 [expert data]"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "mpc_search_seeds",
+    "title": "U: MPC optimizer repetitions (not training seeds)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/mpc_search0",
+        "query": {
+          "group": "mpc_search0",
+          "condition": "nominal"
+        },
+        "label": "mpc_search0"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/mpc_search1",
+        "query": {
+          "group": "mpc_search1",
+          "condition": "nominal"
+        },
+        "label": "mpc_search1"
+      },
+      {
+        "store": "runs/ese3990/M4U/heldout/store/mpc_search2",
+        "query": {
+          "group": "mpc_search2",
+          "condition": "nominal"
+        },
+        "label": "mpc_search2"
+      }
+    ],
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "ppo_first_failure",
+    "title": "U: PPO first failure (shift-000)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_s0_d3000080",
+        "query": {
+          "group": "ppo_s0_d3000080",
+          "condition": "shift-000"
+        },
+        "label": "ppo_s0_d3000080"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "sac_first_failure",
+    "title": "U: SAC first failure (shift-000)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_s0_d4000000",
+        "query": {
+          "group": "sac_s0_d4000000",
+          "condition": "shift-000"
+        },
+        "label": "sac_s0_d4000000"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "sac_demo_first_failure",
+    "title": "U: SAC + demonstrations (expert data) first failure (shift-000)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/sac_demo_s0_d1000000",
+        "query": {
+          "group": "sac_demo_s0_d1000000",
+          "condition": "shift-000"
+        },
+        "label": "sac_demo_s0_d1000000 [expert data]"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "ppo_bc_first_failure",
+    "title": "U: PPO + BC (expert data) first failure (shift-000)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d4000000",
+        "query": {
+          "group": "ppo_bc_s0_d4000000",
+          "condition": "shift-000"
+        },
+        "label": "ppo_bc_s0_d4000000 [expert data]"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "bc_only_first_failure",
+    "title": "U: BC only (expert data) first failure (shift-000)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/ppo_bc_s0_d0093462",
+        "query": {
+          "group": "ppo_bc_s0_d0093462",
+          "condition": "shift-000"
+        },
+        "label": "ppo_bc_s0_d0093462 [expert data]"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  },
+  {
+    "id": "rule_sailor_first_failure",
+    "title": "U: RuleSailor first failure (shift-000)",
+    "episodes": [
+      {
+        "store": "runs/ese3990/M4U/heldout/store/rule_sailor",
+        "query": {
+          "group": "rule_sailor",
+          "condition": "shift-000"
+        },
+        "label": "rule_sailor"
+      }
+    ],
+    "timeseries": true,
+    "fps": 10,
+    "speed": 6
+  }
+]

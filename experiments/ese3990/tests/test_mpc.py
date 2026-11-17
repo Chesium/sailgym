@@ -190,3 +190,46 @@ def test_malformed_candidates_are_rejected(rates):
     env.reset()
     with pytest.raises(ValueError):
         env.rollout(rates)
+
+
+def test_value_tail_only_for_candidates_still_running_at_h():
+    """M4X X2: score = Σ γ^t r_t + γ^H·V(s_H) when the candidate is still
+    running after H decisions; no tail after a finish, a failure or the time
+    limit. Default (tail=None) adds nothing, as test_discounted_ranking shows."""
+    gamma, h = 0.5, 2
+    env = SimpleNamespace(
+        task=SimpleNamespace(decision_dt=0.05),
+        outcome="running",
+        reward_fn=SimpleNamespace(gamma=gamma),
+        research_state=lambda: np.zeros(20),
+    )
+    # Candidates: 0 running, 1 finished, 2 failed, 3 truncated (time limit).
+    code = np.array([[0, 0], [1, 1], [2, 2], [0, 3]])
+    steps = np.array([[10, 10], [4, 0], [10, 0], [10, 10]])
+    rewards = np.array([[1.0, 1.0], [5.0, 0.0], [-10.0, 0.0], [1.0, 1.0]])
+    final = np.zeros((4, h, 20))
+    final[:, -1, 0] = [100.0, 200.0, 300.0, 400.0]  # V reads this marker
+    env.rollout = lambda rates: (final, code, steps, rewards)
+
+    seen = []
+
+    class Tail:
+        def __call__(self, rs):
+            seen.append(rs.copy())
+            return rs[:, 0]
+
+        def identity(self):
+            return {"value": "test"}
+
+    ctrl = CEMMPC(
+        0, CEMConfig(horizon=h, candidates=4, iterations=1, block_s=0.05), Tail()
+    )
+    ctrl.reset(env)
+    ctrl.rng = SimpleNamespace(normal=lambda *a: np.arange(16.0).reshape(4, 2, 2) / 16)
+    ctrl.act(env)
+    np.testing.assert_array_equal(seen[0][:, 0], final[:, -1, 0])
+    # Running candidate 0: 1 + 0.5·1 + 0.5²·100 = 26.5 beats finished 5.
+    assert ctrl.predicted == [26.5]
+    assert ctrl.identity()["tail_value"] == {"value": "test"}
+    assert ctrl.tail_s > 0
+    assert CEMMPC(0).identity()["tail_value"] == 0

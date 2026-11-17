@@ -1,0 +1,53 @@
+{
+ "task": "U (contract 2, gamma = 0.99975), 20 Hz",
+ "label": "M4P exploration probe: post-hoc, exploratory, no learning; never merged into M4/M4U/M4X tables",
+ "repetition_types": "37 cells x 100 episodes on the same 100 training conditions (paired); no training or search seeds; no episode-level confidence intervals",
+ "artifacts": [
+  {
+   "artifact": "M4P tack grid and per-cell results",
+   "source_sha256": {
+    "experiments/ese3990/probe.py": "10ee44e9bcbeb22022c3425ae352b9458f16cab3c479291bbf592fff96f76222",
+    "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+    "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+    "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab",
+    "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+    "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea",
+    "experiments/ese3990/viz/episode_store.py": "f64bc6f29675f05bb521ad8e639a027ef4fc47c8867faf6ec64f9426426d87d8",
+    "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf"
+   },
+   "inputs": [
+    "experiments/ese3990/configs/M4P_freeze.json",
+    "experiments/ese3990/configs/M4U_diagnostics.json",
+    "runs/ese3990/M4P/store/",
+    "runs/ese3990/M4P/episodes/"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/probe.py freeze",
+    "env -u PYTHONPATH RAYON_NUM_THREADS=1 uv run --frozen --no-sync python experiments/ese3990/probe.py run --out runs/ese3990/M4P --jobs 12",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/probe.py report --run runs/ese3990/M4P --out docs/ese3990 --jobs 12"
+   ],
+   "outputs": {
+    "docs/ese3990/M4P_results.json": "ce1c6a8949dcc0ddc44c6eb022d9b79c4cd62b1f8e0c133c2659eb32b0f41d3a",
+    "docs/ese3990/figs/M4P_tack_grid.png": "a6a959a0b4e2003dcd3e3934675f0446c8c8ddf94a69a9e958feda39f72c59fa"
+   },
+   "supported_claim": "Per-decision white rate noise (the learners' exploration) never tacks on U (0/300 episodes over sigma 0.3/0.6/1.0) and never gains upwind ground; 11 of 37 cells reach the declared threshold, with 11-25% tacks and <= 7% failures: pink at sigma 0.3 at every hold, red at sigma 0.3 with holds >= 0.5 s and at sigma 0.6 with holds <= 0.5 s, and white at sigma 0.3 with 1-2 s holds. No cell makes upwind progress (mean max y <= 5.6 m; <= 2% of episodes reach y = 20 m) and no episode finishes (0/3,700). Declared reading: per-decision white noise is a cause."
+  },
+  {
+   "artifact": "M4P replay audit",
+   "source_sha256": {
+    "experiments/ese3990/replay_audit.py": "cbda81f7bab7622a8e783265bf4e7cb467025fd9a90543923188bd1600cce803",
+    "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf"
+   },
+   "inputs": [
+    "runs/ese3990/M4P/store/"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_audit.py runs/ese3990/M4P/store/* --out docs/ese3990/M4P_replay_audit.json --jobs 12"
+   ],
+   "outputs": {
+    "docs/ese3990/M4P_replay_audit.json": "90d4e5223e86acefa934209b548a24f64d70fbb65342b6777d59b73a6869983a"
+   },
+   "supported_claim": "All 3,700 M4P episodes (13.3M decisions) replay exactly."
+  }
+ ]
+}

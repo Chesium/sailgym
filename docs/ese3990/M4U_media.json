@@ -1,0 +1,777 @@
+{
+  "spec_sha256": "42227441bf368e907325ad1e222c3030dc83840a1be00b444f76772a051b8277",
+  "renderer_sha256": {
+    "compose.py": "7ee37041d80f7886d2b5e2e0e85fa3dbed8adfb5ab911442070b21954472a7c8",
+    "render.py": "07981f46403f93709bbd36b979c42f2c37d429f8ebdd90dc3d7fef773fafd076"
+  },
+  "videos": [
+    {
+      "id": "controllers_nominal",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d3000080",
+          "final_checksum": "4b57cd50fb2fb466",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d4000000",
+          "final_checksum": "09276d6bed60b6ac",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d1000000 [expert data]",
+          "final_checksum": "82870c791764bbfb",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d4000000 [expert data]",
+          "final_checksum": "86f462a8027f6108",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d0093462 [expert data]",
+          "final_checksum": "a845b85e0994211b",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "mpc_search0",
+          "final_checksum": "d859d6a9f75438c1",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "finished"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "rule_sailor",
+          "final_checksum": "a7d9ab4d65c9453c",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "finished"
+        }
+      ]
+    },
+    {
+      "id": "ppo_checkpoints",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d0010000",
+          "final_checksum": "9467193f47c68848",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d0401168",
+          "final_checksum": "399f01671c8d067c",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d1001232",
+          "final_checksum": "ea6eed5214388ab3",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d2000656",
+          "final_checksum": "d9aeaf1df41b9ea3",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d3000080",
+          "final_checksum": "4b57cd50fb2fb466",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d4000000",
+          "final_checksum": "13fa211b80b207af",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "ppo_seeds",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s0_d3000080",
+          "final_checksum": "4b57cd50fb2fb466",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s1_d4000000",
+          "final_checksum": "b8138e9acc2da05b",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_s2_d1001232",
+          "final_checksum": "a404d252eb145272",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "sac_checkpoints",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d0010000",
+          "final_checksum": "04eb106ec4a13315",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d0400000",
+          "final_checksum": "56317a327e70be57",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d1000000",
+          "final_checksum": "baa55a095bd420cf",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d2000000",
+          "final_checksum": "194d910f1aa8055e",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d3000000",
+          "final_checksum": "766148fb40f2a17a",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d4000000",
+          "final_checksum": "09276d6bed60b6ac",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "sac_seeds",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s0_d4000000",
+          "final_checksum": "09276d6bed60b6ac",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s1_d4000000",
+          "final_checksum": "0c4102b95e192dcf",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_s2_d0400000",
+          "final_checksum": "cde9039a6baa9cf8",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "sac_demo_checkpoints",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d0093462 [expert data]",
+          "final_checksum": "04eb106ec4a13315",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d0400000 [expert data]",
+          "final_checksum": "847e97e88c23b1b3",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "terminated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d1000000 [expert data]",
+          "final_checksum": "82870c791764bbfb",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d2000000 [expert data]",
+          "final_checksum": "ed236b16f63cdc75",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d3000000 [expert data]",
+          "final_checksum": "b66a5bb15433a595",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d4000000 [expert data]",
+          "final_checksum": "c1cf5060e6662770",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "sac_demo_seeds",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s0_d1000000 [expert data]",
+          "final_checksum": "82870c791764bbfb",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s1_d0400000 [expert data]",
+          "final_checksum": "8d0b7f7887732850",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "terminated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "sac_demo_s2_d2000000 [expert data]",
+          "final_checksum": "9d1456ab29895347",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "ppo_bc_checkpoints",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d0093462 [expert data]",
+          "final_checksum": "a845b85e0994211b",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d0400662 [expert data]",
+          "final_checksum": "7b9abd04a8a2406a",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d1000726 [expert data]",
+          "final_checksum": "c495f92af133c046",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "terminated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d2000150 [expert data]",
+          "final_checksum": "d94136599d181133",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "terminated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d3001622 [expert data]",
+          "final_checksum": "0a9bb5ea0f460005",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "terminated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d4000000 [expert data]",
+          "final_checksum": "86f462a8027f6108",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "ppo_bc_seeds",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s0_d4000000 [expert data]",
+          "final_checksum": "86f462a8027f6108",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s1_d3001622 [expert data]",
+          "final_checksum": "f52175f24add707a",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "ppo_bc_s2_d2000150 [expert data]",
+          "final_checksum": "3ec1ce188705eee1",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "mpc_search_seeds",
+      "frames": {
+        "gif": 85,
+        "mp4": 85
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000000",
+          "label": "mpc_search0",
+          "final_checksum": "d859d6a9f75438c1",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "finished"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "mpc_search1",
+          "final_checksum": "3c7a292627a9e35b",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "finished"
+        },
+        {
+          "episode_id": "ep0000000",
+          "label": "mpc_search2",
+          "final_checksum": "92c4c0ce0b295ab9",
+          "condition": {
+            "heading_deg": 90.0,
+            "id": "nominal",
+            "wind_bearing_deg": 0.0,
+            "wind_speed": 5.0
+          },
+          "outcome": "finished"
+        }
+      ]
+    },
+    {
+      "id": "ppo_first_failure",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000051",
+          "label": "ppo_s0_d3000080",
+          "final_checksum": "b31b35905a4d8af6",
+          "condition": {
+            "heading_deg": 113.63,
+            "id": "shift-000",
+            "wind_bearing_deg": 3.86,
+            "wind_speed": 4.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "sac_first_failure",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000051",
+          "label": "sac_s0_d4000000",
+          "final_checksum": "a820918931fb2c63",
+          "condition": {
+            "heading_deg": 113.63,
+            "id": "shift-000",
+            "wind_bearing_deg": 3.86,
+            "wind_speed": 4.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "sac_demo_first_failure",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000051",
+          "label": "sac_demo_s0_d1000000 [expert data]",
+          "final_checksum": "5e9b22dc94ad3c92",
+          "condition": {
+            "heading_deg": 113.63,
+            "id": "shift-000",
+            "wind_bearing_deg": 3.86,
+            "wind_speed": 4.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "ppo_bc_first_failure",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000051",
+          "label": "ppo_bc_s0_d4000000 [expert data]",
+          "final_checksum": "33d7d9b90feeb96c",
+          "condition": {
+            "heading_deg": 113.63,
+            "id": "shift-000",
+            "wind_bearing_deg": 3.86,
+            "wind_speed": 4.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "bc_only_first_failure",
+      "frames": {
+        "gif": 302,
+        "mp4": 302
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000051",
+          "label": "ppo_bc_s0_d0093462 [expert data]",
+          "final_checksum": "dee49234e04f6e82",
+          "condition": {
+            "heading_deg": 113.63,
+            "id": "shift-000",
+            "wind_bearing_deg": 3.86,
+            "wind_speed": 4.0
+          },
+          "outcome": "truncated"
+        }
+      ]
+    },
+    {
+      "id": "rule_sailor_first_failure",
+      "frames": {
+        "gif": 126,
+        "mp4": 126
+      },
+      "episodes": [
+        {
+          "episode_id": "ep0000051",
+          "label": "rule_sailor",
+          "final_checksum": "3a8feac938e04f31",
+          "condition": {
+            "heading_deg": 113.63,
+            "id": "shift-000",
+            "wind_bearing_deg": 3.86,
+            "wind_speed": 4.0
+          },
+          "outcome": "terminated"
+        }
+      ]
+    }
+  ]
+}

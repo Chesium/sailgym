@@ -1,0 +1,14 @@
+{
+  "stores": [
+    "runs/ese3990/M4/store",
+    "runs/ese3990/viz_demo/store_R",
+    "runs/ese3990/viz_demo/store_U"
+  ],
+  "episodes": 2882,
+  "exact_replays": 2882,
+  "replay_decisions": 2153541,
+  "replay_physics_steps": 21531242,
+  "failures": [],
+  "wall_s": 12.84880288199929,
+  "jobs": 12
+}

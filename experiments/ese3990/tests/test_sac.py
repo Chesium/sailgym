@@ -251,3 +251,59 @@ def test_every_stored_run_episode_replays_exactly(two_runs):
     assert sum(e["decisions"] for e in s.query(kind="training")) == 900
     for e in s.index:
         replay(s.load(e), s.identity)  # raises on any mismatch
+
+
+# ---------------------------------------------------------------------------
+# M4X X1: critic LayerNorm, default off
+# ---------------------------------------------------------------------------
+
+
+def test_critic_layernorm_is_off_by_default_and_adds_parameters_only():
+    """Off: the M2/M4U parameter tree, and critic == ppo.mlp. On: the same
+    random draws plus a unit scale and zero offset per critic hidden layer."""
+    off = sac.init(jax.random.PRNGKey(11), OBS)
+    on = sac.init(jax.random.PRNGKey(11), OBS, layernorm=True)
+    assert all(set(layer) == {"w", "b"} for qk in off["q"] for layer in qk)
+    for qk_off, qk_on in zip(off["q"], on["q"], strict=True):
+        for a, b in zip(qk_off, qk_on, strict=True):
+            np.testing.assert_array_equal(a["w"], b["w"])
+        assert "ln_scale" not in qk_on[-1]  # no LayerNorm on the output layer
+    x = np.random.default_rng(0).normal(size=(4, OBS + 2)).astype(np.float32)
+    np.testing.assert_array_equal(sac.critic(off["q"][0], x), sac.mlp(off["q"][0], x))
+
+
+def test_critic_layernorm_normalizes_each_hidden_preactivation():
+    """LayerNorm makes a hidden layer invariant to a positive rescaling and a
+    uniform shift of its pre-activations; the plain critic is not."""
+    x = np.random.default_rng(1).normal(size=(4, OBS + 2)).astype(np.float32)
+    for layernorm, invariant in ((True, True), (False, False)):
+        qk = sac.init(jax.random.PRNGKey(12), OBS, layernorm=layernorm)["q"][0]
+        moved = [dict(layer) for layer in qk]
+        moved[0]["w"], moved[0]["b"] = 3.0 * qk[0]["w"], 3.0 * qk[0]["b"] + 0.7
+        same = np.allclose(sac.critic(qk, x), sac.critic(moved, x), atol=1e-5)
+        assert same == invariant
+
+
+def test_layernorm_gradients_polyak_and_checkpoint_reload(tmp_path):
+    params = sac.init(jax.random.PRNGKey(13), OBS, layernorm=True)
+    params["actor"][-1]["w"] = params["actor"][-1]["w"] * 100
+    b, key = batch(), jax.random.PRNGKey(4)
+    g = jax.grad(lambda p: sac.critic_loss(p, p["q"], b, key, 0.99)[0])(params)
+    assert nonzero(g["q"][0][0]["ln_scale"]) and not nonzero(g["actor"])
+    g = jax.grad(lambda p: sac.actor_loss(p, b, key)[0])(params)
+    assert not nonzero(g["q"])  # critics, LayerNorm included, frozen for the actor
+    target = sac.polyak(jax.tree.map(jnp.zeros_like, params["q"]), params["q"], 0.1)
+    np.testing.assert_allclose(target[1][0]["ln_scale"], 0.1)  # targets carry it too
+    cfg = {**train.U_SAC_CONFIG, "critic_layernorm": True}
+    sac.save(tmp_path / "c", params, {"obs_dim": OBS, "config": cfg})
+    loaded, _ = sac.load(tmp_path / "c")
+    for a, c in zip(jax.tree.leaves(loaded), jax.tree.leaves(params), strict=True):
+        np.testing.assert_array_equal(a, c)
+    assert jax.tree.structure(loaded) == jax.tree.structure(params)
+
+
+def test_layernorm_flag_is_the_m4x_sac_on_u_arm_only(tmp_path):
+    with pytest.raises(SystemExit):
+        train.main(["--learner", "ppo", "--task", "U", "--critic-layernorm",
+                    "--out", str(tmp_path / "x")])  # fmt: skip
+    assert not (tmp_path / "x").exists()

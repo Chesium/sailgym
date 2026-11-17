@@ -1,0 +1,466 @@
+{
+ "label": "M4P exploration probe (post-hoc, exploratory; no learning)",
+ "created_utc": "2026-11-17T03:05:26Z",
+ "task": "U",
+ "contract_version": 2,
+ "contract_amendment_sha256": {
+  "2": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac"
+ },
+ "identity": {
+  "model": {
+   "model_version": 2,
+   "source": {
+    "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+    "state": "dirty"
+   }
+  },
+  "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+  "research_state_version": 1,
+  "feature_version": 1,
+  "reward_version": 1
+ },
+ "cells": [
+  {
+   "id": "smooth_random_hold10",
+   "controller": "smooth_random",
+   "hold": 10,
+   "index": 0
+  },
+  {
+   "id": "beta0_hold01_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 1,
+   "sigma": 0.3,
+   "index": 1
+  },
+  {
+   "id": "beta0_hold01_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 1,
+   "sigma": 0.6,
+   "index": 2
+  },
+  {
+   "id": "beta0_hold01_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 1,
+   "sigma": 1.0,
+   "index": 3
+  },
+  {
+   "id": "beta0_hold10_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 10,
+   "sigma": 0.3,
+   "index": 4
+  },
+  {
+   "id": "beta0_hold10_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 10,
+   "sigma": 0.6,
+   "index": 5
+  },
+  {
+   "id": "beta0_hold10_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 10,
+   "sigma": 1.0,
+   "index": 6
+  },
+  {
+   "id": "beta0_hold20_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 20,
+   "sigma": 0.3,
+   "index": 7
+  },
+  {
+   "id": "beta0_hold20_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 20,
+   "sigma": 0.6,
+   "index": 8
+  },
+  {
+   "id": "beta0_hold20_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 20,
+   "sigma": 1.0,
+   "index": 9
+  },
+  {
+   "id": "beta0_hold40_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 40,
+   "sigma": 0.3,
+   "index": 10
+  },
+  {
+   "id": "beta0_hold40_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 40,
+   "sigma": 0.6,
+   "index": 11
+  },
+  {
+   "id": "beta0_hold40_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 0,
+   "hold": 40,
+   "sigma": 1.0,
+   "index": 12
+  },
+  {
+   "id": "beta1_hold01_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 1,
+   "sigma": 0.3,
+   "index": 13
+  },
+  {
+   "id": "beta1_hold01_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 1,
+   "sigma": 0.6,
+   "index": 14
+  },
+  {
+   "id": "beta1_hold01_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 1,
+   "sigma": 1.0,
+   "index": 15
+  },
+  {
+   "id": "beta1_hold10_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 10,
+   "sigma": 0.3,
+   "index": 16
+  },
+  {
+   "id": "beta1_hold10_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 10,
+   "sigma": 0.6,
+   "index": 17
+  },
+  {
+   "id": "beta1_hold10_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 10,
+   "sigma": 1.0,
+   "index": 18
+  },
+  {
+   "id": "beta1_hold20_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 20,
+   "sigma": 0.3,
+   "index": 19
+  },
+  {
+   "id": "beta1_hold20_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 20,
+   "sigma": 0.6,
+   "index": 20
+  },
+  {
+   "id": "beta1_hold20_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 20,
+   "sigma": 1.0,
+   "index": 21
+  },
+  {
+   "id": "beta1_hold40_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 40,
+   "sigma": 0.3,
+   "index": 22
+  },
+  {
+   "id": "beta1_hold40_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 40,
+   "sigma": 0.6,
+   "index": 23
+  },
+  {
+   "id": "beta1_hold40_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 1,
+   "hold": 40,
+   "sigma": 1.0,
+   "index": 24
+  },
+  {
+   "id": "beta2_hold01_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 1,
+   "sigma": 0.3,
+   "index": 25
+  },
+  {
+   "id": "beta2_hold01_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 1,
+   "sigma": 0.6,
+   "index": 26
+  },
+  {
+   "id": "beta2_hold01_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 1,
+   "sigma": 1.0,
+   "index": 27
+  },
+  {
+   "id": "beta2_hold10_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 10,
+   "sigma": 0.3,
+   "index": 28
+  },
+  {
+   "id": "beta2_hold10_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 10,
+   "sigma": 0.6,
+   "index": 29
+  },
+  {
+   "id": "beta2_hold10_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 10,
+   "sigma": 1.0,
+   "index": 30
+  },
+  {
+   "id": "beta2_hold20_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 20,
+   "sigma": 0.3,
+   "index": 31
+  },
+  {
+   "id": "beta2_hold20_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 20,
+   "sigma": 0.6,
+   "index": 32
+  },
+  {
+   "id": "beta2_hold20_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 20,
+   "sigma": 1.0,
+   "index": 33
+  },
+  {
+   "id": "beta2_hold40_sigma0.3",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 40,
+   "sigma": 0.3,
+   "index": 34
+  },
+  {
+   "id": "beta2_hold40_sigma0.6",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 40,
+   "sigma": 0.6,
+   "index": 35
+  },
+  {
+   "id": "beta2_hold40_sigma1.0",
+   "controller": "noise_probe",
+   "beta": 2,
+   "hold": 40,
+   "sigma": 1.0,
+   "index": 36
+  }
+ ],
+ "episodes_per_cell": 100,
+ "conditions": {
+  "sampler": "make_conditions.TrainingSampler",
+  "seed": 100,
+  "ids": [
+   "train-s100-000000",
+   "train-s100-000001",
+   "train-s100-000002",
+   "train-s100-000003",
+   "train-s100-000004",
+   "train-s100-000005",
+   "train-s100-000006",
+   "train-s100-000007",
+   "train-s100-000008",
+   "train-s100-000009",
+   "train-s100-000010",
+   "train-s100-000011",
+   "train-s100-000012",
+   "train-s100-000013",
+   "train-s100-000014",
+   "train-s100-000015",
+   "train-s100-000016",
+   "train-s100-000017",
+   "train-s100-000018",
+   "train-s100-000019",
+   "train-s100-000020",
+   "train-s100-000021",
+   "train-s100-000022",
+   "train-s100-000023",
+   "train-s100-000024",
+   "train-s100-000025",
+   "train-s100-000026",
+   "train-s100-000027",
+   "train-s100-000028",
+   "train-s100-000029",
+   "train-s100-000030",
+   "train-s100-000031",
+   "train-s100-000032",
+   "train-s100-000033",
+   "train-s100-000034",
+   "train-s100-000035",
+   "train-s100-000036",
+   "train-s100-000037",
+   "train-s100-000038",
+   "train-s100-000039",
+   "train-s100-000040",
+   "train-s100-000041",
+   "train-s100-000042",
+   "train-s100-000043",
+   "train-s100-000044",
+   "train-s100-000045",
+   "train-s100-000046",
+   "train-s100-000047",
+   "train-s100-000048",
+   "train-s100-000049",
+   "train-s100-000050",
+   "train-s100-000051",
+   "train-s100-000052",
+   "train-s100-000053",
+   "train-s100-000054",
+   "train-s100-000055",
+   "train-s100-000056",
+   "train-s100-000057",
+   "train-s100-000058",
+   "train-s100-000059",
+   "train-s100-000060",
+   "train-s100-000061",
+   "train-s100-000062",
+   "train-s100-000063",
+   "train-s100-000064",
+   "train-s100-000065",
+   "train-s100-000066",
+   "train-s100-000067",
+   "train-s100-000068",
+   "train-s100-000069",
+   "train-s100-000070",
+   "train-s100-000071",
+   "train-s100-000072",
+   "train-s100-000073",
+   "train-s100-000074",
+   "train-s100-000075",
+   "train-s100-000076",
+   "train-s100-000077",
+   "train-s100-000078",
+   "train-s100-000079",
+   "train-s100-000080",
+   "train-s100-000081",
+   "train-s100-000082",
+   "train-s100-000083",
+   "train-s100-000084",
+   "train-s100-000085",
+   "train-s100-000086",
+   "train-s100-000087",
+   "train-s100-000088",
+   "train-s100-000089",
+   "train-s100-000090",
+   "train-s100-000091",
+   "train-s100-000092",
+   "train-s100-000093",
+   "train-s100-000094",
+   "train-s100-000095",
+   "train-s100-000096",
+   "train-s100-000097",
+   "train-s100-000098",
+   "train-s100-000099"
+  ]
+ },
+ "seeds": "controller 1e6\u00b7100 + 1e3\u00b7cell + episode; environment seed = episode index (paired across cells)",
+ "threshold": {
+  "reaches": "\u2265 10% of episodes with a settled tack and \u2264 10% ending in a failure (out of bounds, capsize, mark missed)",
+  "tack_min": 0.1,
+  "failure_max": 0.1
+ },
+ "readings": [
+  [
+   "White noise at a 0.05 s hold already reaches",
+   "Exploration noise is not U's bottleneck; the next arm targets the critic and the decision horizon"
+  ],
+  [
+   "White at 0.05 s does not reach, but a correlated or held process does",
+   "Per-decision white noise is a cause; that process is the exploration setting for the next RL arm"
+  ],
+  [
+   "Tacks appear only together with more than 10% failures",
+   "Coherent exploration runs into terminal states; start-state curricula or resets come before noise changes"
+  ],
+  [
+   "No cell reaches 10% tacks",
+   "Undirected exploration cannot find the tack; next is reset-based discovery (reverse-start curriculum, Go-Explore)"
+  ],
+  [
+   "Any random finish",
+   "Reported with its process: the success rate a sparse-outcome learner would start from"
+  ]
+ ],
+ "diagnostics_thresholds": {
+  "experiments/ese3990/configs/M4U_diagnostics.json": "33e6e9286da091c9235844dc38cebcd92c4d905fc35bf89f996e6b0a15ce980f"
+ },
+ "source_sha256": {
+  "experiments/ese3990/probe.py": "10ee44e9bcbeb22022c3425ae352b9458f16cab3c479291bbf592fff96f76222",
+  "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+  "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+  "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab",
+  "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+  "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea",
+  "experiments/ese3990/viz/episode_store.py": "f64bc6f29675f05bb521ad8e639a027ef4fc47c8867faf6ec64f9426426d87d8",
+  "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf"
+ }
+}

@@ -111,7 +111,12 @@ def symmetric_sample(
 
 
 def init(
-    key: jax.Array, obs_dim: int, act_dim: int = 2, hidden: int = 64, alpha0=0.2
+    key: jax.Array,
+    obs_dim: int,
+    act_dim: int = 2,
+    hidden: int = 64,
+    alpha0=0.2,
+    layernorm: bool = False,
 ) -> dict[str, Any]:
     """Actor π_θ, critics Q_{w1}, Q_{w2}, and log α — "Init w1, w2, θ, α" [A p.158].
 
@@ -119,11 +124,19 @@ def init(
     state, as in the reparameterised policy N(μ_θ(s), σ_θ(s)) of [A p.153].
     The two critics have different random initialisations; that is all that
     decorrelates them [A p.137]. α is learned as log α so it stays positive.
+
+    ``layernorm`` (M4X arm X1, default off): each critic hidden layer gets a
+    LayerNorm with a learned scale and offset, as in RLPD (Ball et al. 2023).
+    It adds parameters only; every random draw, and so the actor and critic
+    weights for a given key, is the same as without it.
     """
     ka, k1, k2 = jax.random.split(key, 3)
     actor = mlp_init(ka, [obs_dim, hidden, hidden, 2 * act_dim])
     actor[-1]["w"] = actor[-1]["w"] * 0.01  # as PPO: start at μ ≈ 0, σ ≈ 1
     q = [mlp_init(k, [obs_dim + act_dim, hidden, hidden, 1]) for k in (k1, k2)]
+    if layernorm:
+        for layer in (layer for qk in q for layer in qk[:-1]):
+            layer["ln_scale"], layer["ln_bias"] = jnp.ones(hidden), jnp.zeros(hidden)
     return {"actor": actor, "q": q, "log_alpha": jnp.log(jnp.asarray(alpha0))}
 
 
@@ -145,10 +158,27 @@ def sample_action(actor, obs: jax.Array, key: jax.Array) -> tuple[jax.Array, jax
     return jnp.tanh(u), gaussian_log_prob(u, mu, log_std) - tanh_log_det(u)
 
 
+LN_EPS = 1e-6  # flax.linen.LayerNorm's default, which RLPD uses
+
+
+def critic(qk, x: jax.Array) -> jax.Array:
+    """``ppo.mlp``, with RLPD's order Dense → LayerNorm → activation in every
+    hidden layer that carries LayerNorm parameters (M4X X1)."""
+    if "ln_scale" not in qk[0]:
+        return mlp(qk, x)
+    for layer in qk[:-1]:
+        h = x @ layer["w"] + layer["b"]
+        h = (h - h.mean(-1, keepdims=True)) / jnp.sqrt(
+            h.var(-1, keepdims=True) + LN_EPS
+        )
+        x = jnp.tanh(h * layer["ln_scale"] + layer["ln_bias"])
+    return x @ qk[-1]["w"] + qk[-1]["b"]
+
+
 def q_values(q, obs: jax.Array, act: jax.Array) -> jax.Array:
     """(Q_1(s, a), Q_2(s, a)), shape (2, batch)."""
     x = jnp.concatenate([obs, act], axis=-1)
-    return jnp.stack([mlp(qk, x)[..., 0] for qk in q])
+    return jnp.stack([critic(qk, x)[..., 0] for qk in q])
 
 
 def mean_action(params: dict[str, Any], obs: jax.Array) -> jax.Array:
@@ -190,7 +220,9 @@ def critic_loss(params, target_q, batch, key, gamma: float):
     q = q_values(params["q"], batch["obs"], batch["act"])
     per_q = jnp.mean((q - y) ** 2, axis=1)
     stats = {"q1_loss": per_q[0], "q2_loss": per_q[1]}
-    return per_q.sum(), {**stats, "q_mean": q.mean(), "q_abs_max": jnp.abs(q).max()}
+    # q_max/q_min: logged since M4X for its entropy-adjusted critic-scale test.
+    scale = {"q_mean": q.mean(), "q_abs_max": jnp.abs(q).max()}
+    return per_q.sum(), {**stats, **scale, "q_max": q.max(), "q_min": q.min()}
 
 
 def actor_loss(params, batch, key):
@@ -285,7 +317,11 @@ def make_update(cfg: dict[str, Any], gamma: float):
 def load(path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     """Inverse of ``ppo.save`` for an SAC parameter tree (target Q not saved)."""
     meta = json.loads(path.with_suffix(".json").read_text())
-    template = init(jax.random.PRNGKey(0), meta["obs_dim"], 2, meta["config"]["hidden"])
+    cfg = meta["config"]
+    layernorm = cfg.get("critic_layernorm", False)  # absent before M4X: off
+    template = init(
+        jax.random.PRNGKey(0), meta["obs_dim"], 2, cfg["hidden"], 0.2, layernorm
+    )
     with np.load(path.with_suffix(".npz")) as z:
         leaves = [jnp.asarray(z[f"arr_{i}"]) for i in range(len(z.files))]
     for a, b in zip(leaves, jax.tree.leaves(template), strict=True):

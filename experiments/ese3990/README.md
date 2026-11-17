@@ -40,6 +40,9 @@ Physics, gate passage, capsize, bounds and time limits are Rust decisions
 | `m4u_compare.py` | M4U held-out freeze and parallel, resumable nominal/test/shift evaluation of every arm's predeclared checkpoints, the selected U MPC and RuleSailor |
 | `m4u_report.py` | Verify M4U frozen inputs; outcome, diagnostics and cost tables; learning curves; video specs |
 | `u_diagnostics.py` | U behaviour from exact replay: tacks, failed tacks, irons, sternway, failure flags, timeout distance |
+| `m4x.py` | M4X (post-hoc, exploratory): V check of X2's value on held-out RuleSailor episodes, the freeze (`configs/M4X_freeze.json`, amended by `M4X_freeze_amendment1.json`), and the X2 / held-out evaluation driver (`ValueTail` = PPO + BC's initial critic) |
+| `m4x_report.py` | M4X critic scale (all SAC runs, raw and entropy-adjusted), X1/X1b validation curves, X2 outcomes/latency/predicted-vs-executed return, held-out rows |
+| `probe.py` | M4P (post-hoc, exploratory, no learning): random rate noise of three colours × four holds × three scales on 100 paired U training conditions, plus `SmoothRandom(hold=10)`. Freeze, runner, and a report that replays every episode exactly and counts tacks with `u_diagnostics` |
 | `mode_check.py` | Is RuleSailor's manoeuvre mode predictable from the 17 learner features? |
 | `replay_audit.py` | Replay every episode of one or more stores exactly, in parallel |
 | `viz/compose.py` | Batch static/GIF/MP4 overlays from exact stored-episode selectors; rejects mixed conditions |
@@ -121,6 +124,33 @@ env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_au
     runs/ese3990/M4U/heldout/store/* --out runs/ese3990/M4U/heldout/replay_audit.json
 env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
     experiments/ese3990/m4u_report.py runs/ese3990/M4U/heldout --out docs/ese3990
+
+# M4X (post-hoc, exploratory): V check and freeze before any X run, then X2 on
+# validation alone (latency), X1/X1b training, held-out, audit and report.
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m4x.py vcheck \
+    --out docs/ese3990/M4X_vcheck.json
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m4x.py freeze \
+    --vcheck docs/ese3990/M4X_vcheck.json
+env -u PYTHONPATH RAYON_NUM_THREADS=4 XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync \
+    python experiments/ese3990/m4x.py run --stage validation --out runs/ese3990/M4X/x2_validation --jobs 3
+runs/ese3990/M4X/main/launch.sh   # X1 and X1b: train.py --critic-layernorm, 3 seeds each
+env -u PYTHONPATH RAYON_NUM_THREADS=4 XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync \
+    python experiments/ese3990/m4x.py run --stage heldout --out runs/ese3990/M4X/heldout --jobs 3
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_audit.py \
+    runs/ese3990/M4X/x2_validation/store/* runs/ese3990/M4X/heldout/store/* \
+    --out runs/ese3990/M4X/replay_audit.json
+env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
+    experiments/ese3990/m4x_report.py --out docs/ese3990
+
+# M4P (post-hoc, exploratory, no learning): freeze before any probe episode, then
+# the grid (about 90 s on 12 cores), the replay audit and the report.
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/probe.py freeze
+env -u PYTHONPATH RAYON_NUM_THREADS=1 uv run --frozen --no-sync \
+    python experiments/ese3990/probe.py run --out runs/ese3990/M4P --jobs 12
+env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_audit.py \
+    runs/ese3990/M4P/store/* --out docs/ese3990/M4P_replay_audit.json --jobs 12
+env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python \
+    experiments/ese3990/probe.py report --run runs/ese3990/M4P --out docs/ese3990 --jobs 12
 
 # PPO: a 100k pilot, then evaluate a checkpoint and plot the curve
 uv run --frozen --no-sync python experiments/ese3990/train.py --seed 0 --decisions 100000 \

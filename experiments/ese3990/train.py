@@ -426,7 +426,14 @@ def train_sac(
         decisions += len(demo["reward"])
 
     key = jax.random.PRNGKey(seed)
-    params = sac.init(key, len(norm["mean"]), 2, cfg["hidden"], cfg["alpha0"])
+    params = sac.init(
+        key,
+        len(norm["mean"]),
+        2,
+        cfg["hidden"],
+        cfg["alpha0"],
+        cfg.get("critic_layernorm", False),  # M4X X1; absent from every M2/M4U config
+    )
     init_opt, update = sac.make_update(cfg, gamma)
     state = {
         "params": params,
@@ -506,6 +513,8 @@ def train_sac(
                     "replay_size": replay.size,
                     **{k: float(np.mean([s[k] for s in stats])) for k in stats[0]},
                     "q_abs_max": float(np.max([s["q_abs_max"] for s in stats])),
+                    "q_max": float(np.max([s["q_max"] for s in stats])),
+                    "q_min": float(np.min([s["q_min"] for s in stats])),
                     **timing,
                 },
             )
@@ -530,6 +539,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--task", choices=["R", "U"], default="R")
     ap.add_argument("--demos", type=Path, help="expert-data arm: a demos.py store")
     ap.add_argument("--demos-sha256", help="that store's frozen hash, verified")
+    ap.add_argument(
+        "--critic-layernorm",
+        action="store_true",
+        help="M4X X1/X1b: LayerNorm in SAC's critics; the arm name gains '_ln'",
+    )
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--decisions", type=int)
     ap.add_argument("--checkpoints", help="comma-separated decision counts")
@@ -565,6 +579,10 @@ def main(argv: list[str] | None = None) -> int:
             "sha256": args.demos_sha256,
             "decisions": len(demo["reward"]),
         }
+    if args.critic_layernorm:
+        if args.learner != "sac" or args.task != "U":
+            raise SystemExit("--critic-layernorm is the M4X SAC-on-U arm only")
+        cfg.update(critic_layernorm=True, arm=cfg["arm"] + "_ln")
     (train_sac if args.learner == "sac" else train)(args.seed, args.out, cfg, demo)
     return 0
 

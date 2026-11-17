@@ -69,8 +69,13 @@ def store_sha256(store: Path) -> str:
     return h.hexdigest()
 
 
-def load(store: Path, sha256: str, task: Task) -> dict[str, np.ndarray]:
+def load(
+    store: Path, sha256: str, task: Task, kind: str = "demo"
+) -> dict[str, np.ndarray]:
     """Every demonstration transition, by exact replay, in store order.
+
+    ``kind="evaluation"`` reads an evaluation store the same way (M4X's V
+    check on RuleSailor's validation episodes).
 
     Keys: ``rs``, ``action`` (the executed two rates), ``reward``, ``next_rs``,
     ``bootstrap``, ``cont`` (as ``Collector.run``) and ``return_to_go``. The
@@ -84,8 +89,8 @@ def load(store: Path, sha256: str, task: Task) -> dict[str, np.ndarray]:
     parts: dict[str, list[np.ndarray]] = {k: [] for k in keys}
     for e in s.index:
         got = (e["kind"], e["task"], e.get("contract_version", 1))
-        if got != ("demo", task.name, task.contract_version):
-            raise ValueError(f"{e['episode_id']}: {got} is not a demo of this task")
+        if got != (kind, task.name, task.contract_version):
+            raise ValueError(f"{e['episode_id']}: {got} is not a {kind} of this task")
         # replay checks outcome, physics steps, return and final checksum.
         traj = replay(s.load(e), s.identity, task)
         n = e["decisions"]

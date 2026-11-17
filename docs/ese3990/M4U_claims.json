@@ -1,0 +1,165 @@
+{
+ "task": "U (contract 2, gamma = 0.99975)",
+ "training_seeds": [
+  0,
+  1,
+  2
+ ],
+ "mpc_optimizer_seeds": [
+  0,
+  1,
+  2
+ ],
+ "repetition_types": "Training seeds, MPC optimizer seeds and condition repetitions are distinct; no episode-level confidence intervals. Expert-data arms (SAC + demonstrations, PPO + BC, BC only) are labeled in every row and never replace the from-scratch rows.",
+ "artifacts": [
+  {
+   "artifact": "U learning curves",
+   "source_sha256": {
+    "experiments/ese3990/m4u_report.py": "64199b5e0dbb91b73132d585d63e818cb3b353546cbffec99163b0ab81ce09a8",
+    "experiments/ese3990/train.py": "760c2ed64c8b067555e7c9a9ada9e4db72e6b6b708b507fc1fb1df05a300a503",
+    "experiments/ese3990/sac.py": "6d43b6a1157436dab2edcdc9b400e706d14ca3ae512182830b4219c5a35c21f6",
+    "experiments/ese3990/ppo.py": "b383dc76fd3c280e04d3588c9cb8fe27839ed1b7dbea0f0c7a723e9417a093f2",
+    "experiments/ese3990/demos.py": "670e611f7751189abf23a25668ed190929762504617669419c3d8d08b3f4e204"
+   },
+   "inputs": [
+    "experiments/ese3990/configs/M4U_train_freeze.json",
+    "runs/ese3990/M4U/heldout/freeze.json",
+    "runs/ese3990/M4U/heldout/episodes/"
+   ],
+   "commands": [
+    "runs/ese3990/M4U/main/launch.sh",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m4u_report.py runs/ese3990/M4U/heldout --out docs/ese3990"
+   ],
+   "outputs": [
+    "docs/ese3990/figs/M4U_learning.png",
+    "docs/ese3990/M4U_main_audit.json"
+   ],
+   "supported_claim": "Held-out test success of every predeclared checkpoint of the four learner arms (3 training seeds each), after a validation-only selection freeze; MPC/RuleSailor drawn as fixed references, not learning curves."
+  },
+  {
+   "artifact": "U controller outcomes and behaviour diagnostics",
+   "source_sha256": {
+    "experiments/ese3990/m4u_compare.py": "ce8161c1d6a2ad0b15f5656584c4f3fa3a759b3696c28d8d49c93429c02e11f4",
+    "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+    "experiments/ese3990/m4u_report.py": "64199b5e0dbb91b73132d585d63e818cb3b353546cbffec99163b0ab81ce09a8",
+    "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea",
+    "experiments/ese3990/replay_audit.py": "cbda81f7bab7622a8e783265bf4e7cb467025fd9a90543923188bd1600cce803"
+   },
+   "inputs": [
+    "experiments/ese3990/configs/M4U_train_freeze.json",
+    "experiments/ese3990/configs/M4U_mpc_freeze.json",
+    "experiments/ese3990/configs/M4U_diagnostics.json",
+    "runs/ese3990/M4U/heldout/freeze.json"
+   ],
+   "commands": [
+    "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false RAYON_NUM_THREADS=6 uv run --frozen --no-sync python experiments/ese3990/m4u_compare.py --out runs/ese3990/M4U/heldout --jobs 6 --thresholds experiments/ese3990/configs/M4U_diagnostics.json",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_audit.py runs/ese3990/M4U/heldout/store/* --out runs/ese3990/M4U/heldout/replay_audit.json",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m4u_report.py runs/ese3990/M4U/heldout --out docs/ese3990"
+   ],
+   "outputs": [
+    "docs/ese3990/M4U_outcomes.md",
+    "docs/ese3990/M4U_diagnostics.md",
+    "docs/ese3990/M4U_results.json",
+    "docs/ese3990/M4U_replay_audit.json"
+   ],
+   "supported_claim": "Finite-set U outcomes (nominal, 50 test, 20 shift) of validation-selected and final learner checkpoints, BC only, the selected MPC and RuleSailor, with every failure, conditional finish times and replay-derived tack/irons/miss/bounds/timeout-distance diagnostics under thresholds frozen before held-out results."
+  },
+  {
+   "artifact": "U MPC horizon study and latency",
+   "source_sha256": {
+    "experiments/ese3990/mpc.py": "d988e65d1ca852596721c3a02d5538c5508f600b3697999972c9b4b26995f8ef",
+    "experiments/ese3990/mpc_study.py": "9f6cfc0979f7a0fbd8d3c665317db22208237c0214aa46df68d7231c9f287e34",
+    "experiments/ese3990/mpc_figures.py": "533175b2f5698224da1750cf65e2fcebf7fd580b9dea2b2f5d6f759bd1a9ce05",
+    "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea"
+   },
+   "inputs": [
+    "experiments/ese3990/configs/M4U_mpc_freeze.json",
+    "runs/ese3990/M4U/mpc/summary.json",
+    "runs/ese3990/M4U/mpc/groups/"
+   ],
+   "commands": [
+    "env -u PYTHONPATH RAYON_NUM_THREADS=4 uv run --frozen --no-sync python experiments/ese3990/mpc_study.py --task U --jobs 3 --out runs/ese3990/M4U/mpc",
+    "env -u PYTHONPATH RAYON_NUM_THREADS=8 uv run --frozen --no-sync python experiments/ese3990/mpc_study.py --out runs/ese3990/M4U/mpc --probes",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/mpc_figures.py runs/ese3990/M4U/mpc --out docs/ese3990/figs",
+    "for g in H40_K32_s{0,1,2} H160_K32_s{0,1,2}: env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/u_diagnostics.py runs/ese3990/M4U/mpc/groups/$g/episodes --out <scratch>/$g.json; summaries collected into docs/ese3990/M4U_mpc_sweep_diagnostics.json"
+   ],
+   "outputs": [
+    "experiments/ese3990/configs/M4U_mpc_freeze.json",
+    "docs/ese3990/figs/M4U_mpc_cost.png",
+    "docs/ese3990/figs/M4U_mpc_prediction.png",
+    "docs/ese3990/M4U_mpc_sweep_diagnostics.json"
+   ],
+   "supported_claim": "On U validation, H=40 (2 s) finishes 0/60 and never crosses head to wind; H=160 (8 s) finishes 60/60 at ~193 ms p50 per decision and is labeled offline/non-real-time. Selected H=160 then finishes 150/150 test and 60/60 shift."
+  },
+  {
+   "artifact": "U trajectories and media",
+   "source_sha256": {
+    "experiments/ese3990/viz/compose.py": "7ee37041d80f7886d2b5e2e0e85fa3dbed8adfb5ab911442070b21954472a7c8",
+    "experiments/ese3990/viz/render.py": "07981f46403f93709bbd36b979c42f2c37d429f8ebdd90dc3d7fef773fafd076",
+    "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf",
+    "experiments/ese3990/m4u_report.py": "64199b5e0dbb91b73132d585d63e818cb3b353546cbffec99163b0ab81ce09a8"
+   },
+   "inputs": [
+    "docs/ese3990/M4U_videos.json",
+    "runs/ese3990/M4U/heldout/store/"
+   ],
+   "commands": [
+    "env -u PYTHONPATH MPLCONFIGDIR=/tmp/ese3990-mpl uv run --frozen --no-sync python experiments/ese3990/viz/compose.py docs/ese3990/M4U_videos.json --out runs/ese3990/M4U/heldout/videos"
+   ],
+   "outputs": [
+    "runs/ese3990/M4U/heldout/videos/",
+    "docs/ese3990/M4U_media.json"
+   ],
+   "supported_claim": "Exact-replay overlays of stored held-out episodes only: nominal controllers, checkpoints and seeds per arm, MPC optimizer repetitions, and the first failure (by condition ID) per controller."
+  },
+  {
+   "artifact": "Expert-data inputs and mode check",
+   "source_sha256": {
+    "experiments/ese3990/demos.py": "670e611f7751189abf23a25668ed190929762504617669419c3d8d08b3f4e204",
+    "experiments/ese3990/mode_check.py": "c1559498a183fd00d2a40a3916cfaba4250ec41a09e491fc9f6d94c261ce3ee6"
+   },
+   "inputs": [
+    "runs/ese3990/M4U/demos/store (sha256 69575c914fdee66e0abac8fc1e1fca0c5fbbe56f0465d2e554f8d2a47a26b85b)"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/demos.py --out runs/ese3990/M4U/demos/store",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/mode_check.py runs/ese3990/M4U/demos/store --out runs/ese3990/M4U/diag_dev/mode_check_demos.json (copied to docs/ese3990/M4U_mode_check.json)"
+   ],
+   "outputs": [
+    "docs/ese3990/M4U_mode_check.json"
+   ],
+   "supported_claim": "50 RuleSailor U demonstrations on training-distribution conditions (83,462 decisions; 37 finished, 7 mark missed, 6 truncated), charged to every expert-data run; RuleSailor's maneuver mode is largely recoverable from the 17 learner features (0.82 balanced accuracy, held-out demonstration episodes)."
+  },
+  {
+   "artifact": "R evidence unchanged by contract 2",
+   "source_sha256": {
+    "experiments/ese3990/replay_audit.py": "cbda81f7bab7622a8e783265bf4e7cb467025fd9a90543923188bd1600cce803",
+    "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+    "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf"
+   },
+   "inputs": [
+    "runs/ese3990/M4/store",
+    "runs/ese3990/viz_demo/store_R",
+    "runs/ese3990/viz_demo/store_U"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/replay_audit.py runs/ese3990/M4/store runs/ese3990/viz_demo/store_R runs/ese3990/viz_demo/store_U --out docs/ese3990/M4U_R_replay_check.json --jobs 12"
+   ],
+   "outputs": [
+    "docs/ese3990/M4U_R_replay_check.json"
+   ],
+   "supported_claim": "All 2,840 M4 episodes and 42 viz_demo episodes (21 U under contract 1) still replay exactly after the U contract-2 amendment."
+  }
+ ],
+ "command_environment": "Run from repository root with env -u PYTHONPATH; uv run --frozen --no-sync; XLA_FLAGS=--xla_cpu_multi_thread_eigen=false for learner evaluation; MPLCONFIGDIR=/tmp/ese3990-mpl for rendering. Full invocation in experiments/ese3990/README.md.",
+ "unsupported_or_pending_claims": [
+  "General algorithm ranking or an isolated algorithmic mechanism",
+  "That on-policy learning cannot use expert data in general (one BC-initialization protocol tested)",
+  "That RL improved on its expert (no expert-data arm approaches RuleSailor)",
+  "Real-time U planning: the selected H=160 planner is offline",
+  "MPC as a zero-sample learner or guaranteed upper bound",
+  "Equal prior tuning resources; RuleSailor's tack recipe is uncounted human prior work",
+  "Broad statistical confidence from three seeds",
+  "Any M4X (post-hoc, exploratory) result"
+ ]
+}
