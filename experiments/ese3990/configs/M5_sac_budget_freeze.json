@@ -1,0 +1,161 @@
+{
+  "label": "M5 exploratory SAC decision-budget extension on U, frozen-start blocked SAC",
+  "frozen_at_utc": "2026-11-17T20:31:36.689316+00:00",
+  "task": "U",
+  "contract_version": 2,
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "training_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "decision_budget": 40000000,
+  "configs": {
+    "sac_B_extended": {
+      "task": "U",
+      "decisions": 40000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000,
+        10000000,
+        20000000,
+        30000000,
+        40000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 400000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048,
+      "arm": "sac",
+      "m5": {
+        "cell": "B",
+        "hold": 10,
+        "starts": false,
+        "box": [
+          -10.0,
+          10.0,
+          25.0,
+          39.0
+        ],
+        "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+        "short_final_minibatch": "min(configured size, final rollout)"
+      }
+    }
+  },
+  "threshold": {
+    "seeds_finishing": 3,
+    "seeds": 5,
+    "val_finishes_per_seed": 1,
+    "val_episodes": 20
+  },
+  "q_feasible_band": [
+    -22.3,
+    15.7
+  ],
+  "selection": "most validation finishes, highest mean return, earliest checkpoint",
+  "evaluation": "frozen start/20 Hz/U gamma; B actions held for 10 decisions; test/shift only after held-out freeze",
+  "baseline": "M5 main SAC B 4M raw decisions, paired by the five training seeds",
+  "checkpoints": "The M5 trainer saves at the first completed block at or beyond the target; initial evaluation follows the 10k calibration. Final budget is exact.",
+  "prefix_check": "Require identical validation and learned parameters at the common calibration/0.4M/1M/2M/3M checkpoints. Report any longer run crossing 4M in a full block in place of the baseline final partial block.",
+  "outcomes": "Primary: number of seeds with >=1 of 20 selected validation finishes. Report held-out test/shift separately. Report fixed 4M and 40M final and selected checkpoints because selection opportunities differ.",
+  "diagnostics": [
+    "validation tack episodes",
+    "mean maximum upwind progress",
+    "mean closest approach to gate center",
+    "rudder travel",
+    "training finishes",
+    "Q range and final alpha"
+  ],
+  "interpretation": [
+    "If at least 3/5 seeds qualify, report that the extended budget meets the validation criterion on this configuration, and quantify held-out transfer.",
+    "If 1\u20132 seeds qualify, report seed-specific evidence below threshold. If none qualify, state no evidence of reliable finishes at 40M. Describe diagnostic changes separately."
+  ],
+  "schedule": "One parallel CPU batch of five fresh runs. About three hours is the training wall-time estimate, not a per-seed CPU-hour sum or a hard cutoff. Audit and held-out work follow. Retain failed runs.",
+  "execution": "Original CPU JAX and Rust simulator. One update per learner block, no demonstrations, no random starts, unchanged features/reward/discount. All raw decisions including the initial 10,000 count.",
+  "sources": {
+    "experiments/ese3990/configs/M5_freeze.json": "82cc283ad7dabd327043661083562b2fb86f03843aab293285f1839b37cfea3a",
+    "experiments/ese3990/m5_sac_budget.py": "9dc7bab46202fd1be80881a49badcfc5e0b90927c3d422c260e35e34ed56214d",
+    "experiments/ese3990/m5_sac_budget_evaluate.py": "b4c6bdf959cdc38885ec18d97b2d2bc091fa2d596a858396fdf7f5c8bb2fa114",
+    "experiments/ese3990/m5_followup.py": "95b80d16ed6a971be37d4ca98d559fe3914aaba4c572499befd8c4d990117d04",
+    "experiments/ese3990/m5_compare.py": "c630b10b58ca2f09e1f82c9832fcb73d5fdfac3d93c831b57b3c1d9ba7503b08",
+    "experiments/ese3990/m5_report.py": "eefed2a0d853d387c89e67743d665bc106fe7629ead6246ca2853e326bec2642",
+    "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea"
+  },
+  "baseline_digests": {
+    "docs/ese3990/M5_results.json": "478256db1235dbd32fe6a80a21504c408da1cbfdb120109fc78bd26a1e6d2057",
+    "runs/ese3990/M5/main_audit.json": "a78b65131477cce9d62d92651d984931021287380b6bd024ea683b93ebdc8628",
+    "runs/ese3990/M5/main/sac_B_s0/config.json": "0638d400b615830bbcaa8db7e0f47f7b1e9732bd2f903eea7f4a08dec10de11d",
+    "runs/ese3990/M5/main/sac_B_s0/curve.jsonl": "538f996dc23b55dc2b58402eebb23d3d6155125306f527c1f91733056f42c883",
+    "runs/ese3990/M5/main/sac_B_s0/summary.json": "24e697a8e356cdc120b20160bd63aa4e560488d83b8f26f36b35a397c1ee238d",
+    "runs/ese3990/M5/main/sac_B_s0/ckpt/0010000.npz": "36c43641f8242961a3ccfba8782d6fa025900169c166805e569f38e78f4892d0",
+    "runs/ese3990/M5/main/sac_B_s0/ckpt/0400005.npz": "c02387cda487e49cba0f3e07e1294975e752f3447e1be50ca60bd78e02b95df7",
+    "runs/ese3990/M5/main/sac_B_s0/ckpt/1000009.npz": "c519351d3161e4389cf83f64c90ec3c88a59104d63eb81749a22e5c47950db9a",
+    "runs/ese3990/M5/main/sac_B_s0/ckpt/2000005.npz": "ce24fbefef4de5979434ef62045646cad12cb0c81a4585661d2dfe3c9735ffce",
+    "runs/ese3990/M5/main/sac_B_s0/ckpt/3000002.npz": "1c4f84b2372a4e63f7d32bb8ff80157c1f67d3a21b8c895f13965922e1ffa0d1",
+    "runs/ese3990/M5/main/sac_B_s0/ckpt/4000000.npz": "e8f682cc08f4672b2c0c71ca54e3ff3ffd276085f2f121af3cb89990fc055f34",
+    "runs/ese3990/M5/main/sac_B_s1/config.json": "88eeca9a897198147644327aaab7de88defb5ad4bdbb1c2a2108ef081d918bda",
+    "runs/ese3990/M5/main/sac_B_s1/curve.jsonl": "f5316a6d3159f004f4492d72820b33fb9fe93a2dec5d64c13ec8eb9673452805",
+    "runs/ese3990/M5/main/sac_B_s1/summary.json": "d393577a47e2d0161eeea1ad31873fe159b5c610aa24af782c320441c359d50c",
+    "runs/ese3990/M5/main/sac_B_s1/ckpt/0010000.npz": "1abd1fd6bcc39650a4577455c4ef1b31bbbd92379bcd900b68110333c4245124",
+    "runs/ese3990/M5/main/sac_B_s1/ckpt/0400007.npz": "62b0a2eb6c1359fb38f699dbe314b68a868be8a46c695017f88be9a8789e984a",
+    "runs/ese3990/M5/main/sac_B_s1/ckpt/1000005.npz": "aee7e3920846bcac9c76bdd787cd611e3d03bf0d6cdee79f9bc378b68c85baa1",
+    "runs/ese3990/M5/main/sac_B_s1/ckpt/2000007.npz": "cbb61a83a0c7ac8d82db9371ab1fdcc2f6bf29679a8a4f57129f0cfcfa1a7692",
+    "runs/ese3990/M5/main/sac_B_s1/ckpt/3000001.npz": "b22a0bbd52b32d9fd30d3a5eedf135c39c6ace6f0460737ba7651fa48cdb7de9",
+    "runs/ese3990/M5/main/sac_B_s1/ckpt/4000000.npz": "7a53257e222ad3731b17f1182ae8ca69528fd8ac697db3ad4a8e95b5452a1510",
+    "runs/ese3990/M5/main/sac_B_s2/config.json": "5984781250e62f96380056126e08b8bd1a542cd927fc134eb7cfc4491165d452",
+    "runs/ese3990/M5/main/sac_B_s2/curve.jsonl": "0e64619ba1386be0bd2f5c8d1f566f661d9f6869a843179fac4d99d9350afa35",
+    "runs/ese3990/M5/main/sac_B_s2/summary.json": "83ca39f49c785b879f67fa84db011de96d12a3d40bcdf8afa71dd3d80be0127d",
+    "runs/ese3990/M5/main/sac_B_s2/ckpt/0010000.npz": "ad8b195539542d1c96e6938e74c56156f085a1d75467af79ed45b8670f89bc86",
+    "runs/ese3990/M5/main/sac_B_s2/ckpt/0400001.npz": "a9e6baa70a6c547ad4c9a92472442562fa10e543c313370a99bf6567447ecfcd",
+    "runs/ese3990/M5/main/sac_B_s2/ckpt/1000008.npz": "e4cec4c6227c71ed9183b880365300b0eae4b9ff34f175f4fb152818cdf3da05",
+    "runs/ese3990/M5/main/sac_B_s2/ckpt/2000000.npz": "483bd6b7bad9cbc761f25c30fa4559b262bc58976823dd27b7f0c68eb20bec2a",
+    "runs/ese3990/M5/main/sac_B_s2/ckpt/3000003.npz": "2b23e68fd8f465a922555bd846998f3153f1418feaccff1a281e7cbbfeb4be62",
+    "runs/ese3990/M5/main/sac_B_s2/ckpt/4000000.npz": "336c2e03436947ae768294787f6eab8628bb6f682ca96b582e2cbc376fad28af",
+    "runs/ese3990/M5/main/sac_B_s3/config.json": "b9c1197d7eca8fdce61d265042222a7291f17bed2dd898ff06443057c22f62eb",
+    "runs/ese3990/M5/main/sac_B_s3/curve.jsonl": "6b35c892abb9e4e8fe8c33b7736e37fe1db160c7ebf0c35faec0497ce4dda1e6",
+    "runs/ese3990/M5/main/sac_B_s3/summary.json": "3df31f5c9324769e78909443250d9cca5d4e117f06e345408f4a0fad91baf4ff",
+    "runs/ese3990/M5/main/sac_B_s3/ckpt/0010000.npz": "8a284a328cfd11bd3845e951ffbcd564c2a2581ccb5a2cd9e42ef2cae67b7228",
+    "runs/ese3990/M5/main/sac_B_s3/ckpt/0400004.npz": "16e3916bf3dd510301754a80db372330260440509a667c84c8cab45281a571ec",
+    "runs/ese3990/M5/main/sac_B_s3/ckpt/1000009.npz": "85dd447533052aff879ddb6c8f3243e4a057ad95dad781a06e3799719b97d40a",
+    "runs/ese3990/M5/main/sac_B_s3/ckpt/2000009.npz": "c04c199a980db83e5210c126623c3ee67fd9232c36db99adfa7b1d076babcf8e",
+    "runs/ese3990/M5/main/sac_B_s3/ckpt/3000009.npz": "fd13d65028b73730f8d46beab301c14287e77ad7fdd077f2cae626abbe2cf58e",
+    "runs/ese3990/M5/main/sac_B_s3/ckpt/4000000.npz": "6ec765098ed193d04b9d1cb4617eef6cf992aba12c0d30e15ed9b1761fd104f0",
+    "runs/ese3990/M5/main/sac_B_s4/config.json": "aaac8fd02d64c8c4a2f3fb4ddfc76281ef336974c935bbb514f32eba169b4312",
+    "runs/ese3990/M5/main/sac_B_s4/curve.jsonl": "578403435abccef0e00c04380c5b83bb236c1a145fe1f4da95307f5b512e309b",
+    "runs/ese3990/M5/main/sac_B_s4/summary.json": "6f83d99ced8eb0195d5d8bb1c6bbe43e042964256ee7b3b01b08f36c987f2218",
+    "runs/ese3990/M5/main/sac_B_s4/ckpt/0010000.npz": "a43dfb93200c4cf043616e0bed5f7295a91d056d7eab836292ecb8212370de7a",
+    "runs/ese3990/M5/main/sac_B_s4/ckpt/0400000.npz": "07b24034cb54d5f63600d25c8733976213eaa4edfc3c0490aa2f4132dd850f95",
+    "runs/ese3990/M5/main/sac_B_s4/ckpt/1000000.npz": "82d7bc075ec8dc19b3084e3c94294fe103f7f6f781d7968d4252a63c7d69876d",
+    "runs/ese3990/M5/main/sac_B_s4/ckpt/2000006.npz": "124582f7c608e6f99dfc0aac9c368613c1f362bf05cfb272b5917c9b203efa48",
+    "runs/ese3990/M5/main/sac_B_s4/ckpt/3000006.npz": "c3a58e4f3c86d1a97223332442246d697e34bccf805eb87cb2afeca6f5f1d45c",
+    "runs/ese3990/M5/main/sac_B_s4/ckpt/4000000.npz": "04d8c88aeb1c72dc4a42967c3a11a1715fa3dcfd17b0b6e2d771a6f8600b4c8d"
+  }
+}

@@ -1,0 +1,26 @@
+{
+ "label": "M5 follow-up automation (post-hoc, exploratory)",
+ "tests": {
+  "command": "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync pytest experiments/ese3990/tests",
+  "passed": 158,
+  "added_followup_cases": 12
+ },
+ "preflight": {
+  "run": "runs/ese3990/M5/followup_preflight",
+  "conditions": "nominal plus first two validation conditions; test/shift not opened",
+  "policies": [
+   "PPO B",
+   "SAC B"
+  ],
+  "episodes": 6,
+  "exact_replays": 6
+ },
+ "sources": {
+  "experiments/ese3990/configs/M5_freeze.json": "82cc283ad7dabd327043661083562b2fb86f03843aab293285f1839b37cfea3a",
+  "experiments/ese3990/m5_followup.py": "95b80d16ed6a971be37d4ca98d559fe3914aaba4c572499befd8c4d990117d04",
+  "experiments/ese3990/m5_compare.py": "c630b10b58ca2f09e1f82c9832fcb73d5fdfac3d93c831b57b3c1d9ba7503b08",
+  "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea"
+ },
+ "protocol": "runs/ese3990/M5/followup_plan.json",
+ "protocol_sha256": "cc348dadc79bfaf6dddcc0eaf7d7195429c225fb812c2d9192a2cbafacc982e8"
+}

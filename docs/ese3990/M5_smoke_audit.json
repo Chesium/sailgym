@@ -1,0 +1,204 @@
+{
+ "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+ "stage": "smoke (plumbing/timing only; excluded from readings)",
+ "source_audit": "runs/ese3990/M5/smoke_audit.json",
+ "source_audit_sha256": "364414cc117c6a0fc095b6e89856e14ebabdd3543ca766b8b1440a79fb5ba90c",
+ "sources": {
+  "experiments/ese3990/m5.py": "4221c0098461c8530e325347a2e115bfbdf89f68bf101bc12ab9263e8a02181d",
+  "experiments/ese3990/m5_train.py": "395f816da9078009caf51119170021f783deb0af059a1879b7effb4bacf527b2",
+  "experiments/ese3990/m5_study.py": "6102806e17be6393c198f39993aa93e88748a80c2e14c9464d49b33345ebe795",
+  "experiments/ese3990/train.py": "2dedf2904f04888057f1ef8b65cbd89de445aeea17bc4e676faa704d0de0570c",
+  "experiments/ese3990/ppo.py": "b383dc76fd3c280e04d3588c9cb8fe27839ed1b7dbea0f0c7a723e9417a093f2",
+  "experiments/ese3990/sac.py": "470dddb9a70b836a6d04f8b620dfeae9175297e6b1c1dd96ba7adf2f43712447",
+  "experiments/ese3990/probe.py": "10ee44e9bcbeb22022c3425ae352b9458f16cab3c479291bbf592fff96f76222",
+  "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+  "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+  "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+  "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab",
+  "experiments/ese3990/compare.py": "03281277d68d374dad2e6a1f3660c10c4668e844fed9a0c3178f47d532e2ac72",
+  "experiments/ese3990/viz/episode_store.py": "f64bc6f29675f05bb521ad8e639a027ef4fc47c8867faf6ec64f9426426d87d8",
+  "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf",
+  "experiments/ese3990/configs/tasks.json": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+  "experiments/ese3990/configs/tasks_v2.json": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac",
+  "experiments/ese3990/configs/M4U_train_freeze.json": "a5baa2682e6bab3a2e330d9e121f01130e6b049068d645bbee2432cd3b7c56f8",
+  "experiments/ese3990/configs/M4U_diagnostics.json": "33e6e9286da091c9235844dc38cebcd92c4d905fc35bf89f996e6b0a15ce980f",
+  "experiments/ese3990/configs/conditions/training.json": "ddca6afd52b94b5d35c98af0ffa6e1d52be5191c2a6b5b1a96fd0b89b8963df3",
+  "experiments/ese3990/configs/conditions/validation.json": "3efcb45ff580c0c8abfbd1bc94ccfcd2381b58826c43a118fc22064a2f4bc965",
+  "experiments/ese3990/configs/conditions/test.json": "88c4e38aea3e4030025e631d2b04ceae8f524dd4639a2228d7af253c5c45d825",
+  "experiments/ese3990/configs/conditions/shift.json": "f4a3e0efac5e9e2ea29ed79fac83c082b09f12d12e30813cb302eb43354a2f2a"
+ },
+ "runs": [
+  {
+   "run": "runs/ese3990/M5/smoke/ppo_neither_s100",
+   "summary": {
+    "decisions": 100000,
+    "wall_s": 28.791556447991752,
+    "collect_s": 11.331966087978799,
+    "update_s": 1.6064943170495098,
+    "eval_s": 14.046360920008738,
+    "training_episodes": 25
+   },
+   "exact_replays": 71,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 43094,
+    "validation": 107954,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/ppo_B_s100",
+   "summary": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "decisions": 100000,
+    "blocks": 9000,
+    "updates": 5,
+    "training_episodes": 25,
+    "wall_s": 18.281156725002802,
+    "collect_s": 5.144666812993819,
+    "update_s": 1.3146486980112968,
+    "eval_s": 9.809693655988667
+   },
+   "exact_replays": 71,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 43200,
+    "validation": 108000,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/ppo_S_s100",
+   "summary": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "decisions": 100000,
+    "blocks": 90000,
+    "updates": 44,
+    "training_episodes": 25,
+    "wall_s": 27.443330031004734,
+    "collect_s": 10.486119124019751,
+    "update_s": 2.0903913320216816,
+    "eval_s": 12.945727954996983
+   },
+   "exact_replays": 72,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 43200,
+    "validation": 108000,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/ppo_BS_s100",
+   "summary": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "decisions": 100000,
+    "blocks": 9001,
+    "updates": 5,
+    "training_episodes": 25,
+    "wall_s": 20.015881000988884,
+    "collect_s": 7.359147367998958,
+    "update_s": 1.3257445490016835,
+    "eval_s": 9.675179677011329
+   },
+   "exact_replays": 72,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 43200,
+    "validation": 108000,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/sac_neither_s100",
+   "summary": {
+    "decisions": 100000,
+    "wall_s": 127.73850228100491,
+    "collect_s": 68.16206379389041,
+    "update_s": 29.533219167220523,
+    "eval_s": 13.646156649978366,
+    "training_episodes": 25
+   },
+   "exact_replays": 72,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 41570,
+    "validation": 107198,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/sac_B_s100",
+   "summary": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "decisions": 100000,
+    "blocks": 9000,
+    "updates": 9000,
+    "training_episodes": 25,
+    "wall_s": 33.16162865200022,
+    "collect_s": 15.10585865630128,
+    "update_s": 6.338777123804903,
+    "eval_s": 7.566743899995345
+   },
+   "exact_replays": 71,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 43130,
+    "validation": 107177,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/sac_S_s100",
+   "summary": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "decisions": 100000,
+    "blocks": 90000,
+    "updates": 90000,
+    "training_episodes": 25,
+    "wall_s": 141.89223460599896,
+    "collect_s": 65.28142299795581,
+    "update_s": 38.48754476530303,
+    "eval_s": 12.575311214008252
+   },
+   "exact_replays": 72,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 41500,
+    "validation": 102173,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  },
+  {
+   "run": "runs/ese3990/M5/smoke/sac_BS_s100",
+   "summary": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "decisions": 100000,
+    "blocks": 9000,
+    "updates": 9000,
+    "training_episodes": 25,
+    "wall_s": 33.590083903996856,
+    "collect_s": 14.96874235215364,
+    "update_s": 6.550643427253817,
+    "eval_s": 8.107030504004797
+   },
+   "exact_replays": 71,
+   "raw_decisions_by_kind": {
+    "calibration": 10000,
+    "probe": 43130,
+    "validation": 107177,
+    "training": 90000
+   },
+   "nominal_reloads_verified": true
+  }
+ ],
+ "exact_replays": 572,
+ "verification": "Budgets, finite metrics, all validation aggregates, selected/final saved-policy nominal reloads, and all stored episodes checked."
+}

@@ -1,0 +1,123 @@
+{
+ "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+ "status": "Stage 1 complete 2026-11-17. Declared reading 'No cell finishes -> run the second stage' applies for PPO and SAC. Second stage drafted in the plan for review; not frozen or run.",
+ "artifacts": [
+  {
+   "artifact": "M5 start-box feasibility check",
+   "inputs": [
+    "runs/ese3990/M5/start_box_draft/",
+    "runs/ese3990/M5/start_box_near_gate/"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m5.py start-box --out runs/ese3990/M5/start_box_draft",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m5.py start-box --box -10 10 25 39 --out runs/ese3990/M5/start_box_near_gate"
+   ],
+   "supported_claim": "Draft: 0/100 finishes. Amended near-gate box: 2/100. All 200 episodes replay exactly. No learning."
+  },
+  {
+   "artifact": "M5 pilot plumbing audit",
+   "inputs": [
+    "runs/ese3990/M5/smoke/",
+    "runs/ese3990/M5/smoke_audit.json"
+   ],
+   "commands": [
+    "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync python experiments/ese3990/m5_study.py run --stage smoke --jobs 8",
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m5_study.py audit --stage smoke"
+   ],
+   "supported_claim": "Eight 100k pilots on seed 100 completed; 572 exact replays, correct decision budgets, finite metrics, matching validation aggregates and saved-policy nominal reloads. Pilot control outcomes excluded from readings."
+  },
+  {
+   "artifact": "M5 training freeze",
+   "inputs": [
+    "docs/ese3990/ESE3990_SailGym_Project_Plan.md",
+    "runs/ese3990/M5/start_box_near_gate/results.json",
+    "runs/ese3990/M5/smoke_audit.json"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m5_study.py freeze --box-check runs/ese3990/M5/start_box_near_gate"
+   ],
+   "supported_claim": "Freeze (03:53:58 UTC) preceded every main run (queue start 03:54:12 UTC). 34 new 4M runs plus six reused M4U rows; 10 extended 40M PPO runs as a separate stage. All finished with no failed run."
+  },
+  {
+   "artifact": "M5 automatic follow-on pipeline",
+   "sources": {
+    "experiments/ese3990/configs/M5_freeze.json": "82cc283ad7dabd327043661083562b2fb86f03843aab293285f1839b37cfea3a",
+    "experiments/ese3990/m5_followup.py": "95b80d16ed6a971be37d4ca98d559fe3914aaba4c572499befd8c4d990117d04",
+    "experiments/ese3990/m5_compare.py": "c630b10b58ca2f09e1f82c9832fcb73d5fdfac3d93c831b57b3c1d9ba7503b08",
+    "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea"
+   },
+   "inputs": [
+    "experiments/ese3990/configs/M5_freeze.json",
+    "runs/ese3990/M5/followup_plan.json"
+   ],
+   "commands": [
+    "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync python experiments/ese3990/m5_followup.py run --jobs 6"
+   ],
+   "supported_claim": "Completed 2026-11-17 at 10:20 UTC with no failed stage: ten extended 40M PPO runs, main/extended replay audits including six reused M4U rows, selected/final held-out freeze before any test/shift episode, held-out evaluation and exact diagnostics replay. No second-stage tuning launched."
+  },
+  {
+   "artifact": "M5 main/extended training and replay audits",
+   "inputs": [
+    "runs/ese3990/M5/main/",
+    "runs/ese3990/M5/extended/",
+    "runs/ese3990/M4U/main/{ppo,sac}_U_s{0,1,2}"
+   ],
+   "commands": [
+    "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync python experiments/ese3990/m5_study.py run --stage main --jobs 6",
+    "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync python experiments/ese3990/m5_followup.py run --jobs 6"
+   ],
+   "outputs": {
+    "runs/ese3990/M5/main_audit.json": "a78b65131477cce9d62d92651d984931021287380b6bd024ea683b93ebdc8628",
+    "runs/ese3990/M5/extended_audit.json": "f79c6a8a6c5df06a9769f1f50b8b6a0d1b084a24797f7a6ccae744be2e52b2ec"
+   },
+   "supported_claim": "40 main rows (34 new 4M, six reused M4U) and 10 extended 40M PPO rows: 49,982 and 113,285 stored episodes replay exactly; budgets, validation aggregates and selected/final nominal reloads verified. Extended rows match their 4M rows exactly at every shared checkpoint (10/10)."
+  },
+  {
+   "artifact": "M5 held-out evaluation",
+   "inputs": [
+    "runs/ese3990/M5/heldout/store/",
+    "runs/ese3990/M5/heldout/diagnostics/"
+   ],
+   "commands": [
+    "env -u PYTHONPATH XLA_FLAGS=--xla_cpu_multi_thread_eigen=false uv run --frozen --no-sync python experiments/ese3990/m5_followup.py run --jobs 6"
+   ],
+   "outputs": {
+    "runs/ese3990/M5/heldout/freeze.json": "1ef2d5d7b839d1c3b6a41db37491419e20b1e5c44dd533529e4068cfa3226422",
+    "runs/ese3990/M5/heldout/complete.json": "b31881ce244768f0dd068361324c93a8a3a9b8b0d02a0a97e1f8d0bb9fa66ab3",
+    "runs/ese3990/M5/heldout/replay_audit.json": "dcceaf27670f9e9e2609ea51bfb47f2f7add77838f1a11431befb0bf9d8a4ef5"
+   },
+   "supported_claim": "89 selected/final checkpoint groups sealed before any test/shift episode; 6,319 nominal/test/shift episodes (B/BS actions held for 10 decisions), all replayed exactly; 0 finishes."
+  },
+  {
+   "artifact": "M5 results and declared readings",
+   "source_sha256": {
+    "experiments/ese3990/m5_report.py": "eefed2a0d853d387c89e67743d665bc106fe7629ead6246ca2853e326bec2642"
+   },
+   "inputs": [
+    "experiments/ese3990/configs/M5_freeze.json",
+    "runs/ese3990/M5/main_audit.json",
+    "runs/ese3990/M5/extended_audit.json",
+    "runs/ese3990/M5/heldout/freeze.json",
+    "runs/ese3990/M5/heldout/complete.json",
+    "runs/ese3990/M5/heldout/replay_audit.json"
+   ],
+   "commands": [
+    "env -u PYTHONPATH uv run --frozen --no-sync python experiments/ese3990/m5_report.py"
+   ],
+   "outputs": {
+    "docs/ese3990/M5_results.json": "478256db1235dbd32fe6a80a21504c408da1cbfdb120109fc78bd26a1e6d2057"
+   },
+   "supported_claim": "Post-hoc, exploratory. No cell of either learner meets the threshold (0/5 seeds each; 0/1,000 selected validation and 0/6,319 held-out episodes finish), so 'No cell finishes' applies for PPO and SAC and '40M-only finish' does not. SAC B/BS keep Q inside [-22.3, 15.7] (10/10 seeds, max |Q| 7.5-11.3, final alpha <= 0.0006); SAC neither/S leave it (max |Q| 2,223-6,614). S/BS training saw 25 random-start finishes (0.2% of 11,249 random-start episodes); extended PPO B seed 0 has the only frozen-start training finish. PPO B tacks in 0/100 selected validation episodes at 4M and 18/100 at 40M."
+  }
+ ],
+ "outputs": {
+  "experiments/ese3990/configs/M5_freeze.json": "82cc283ad7dabd327043661083562b2fb86f03843aab293285f1839b37cfea3a",
+  "docs/ese3990/M5_start_box.json": "5151bd163f60095e52f3c48b94dd984dcb102945286b7c993e6363b861ed98cd",
+  "docs/ese3990/M5_smoke_audit.json": "bf13064f15e958e04931f6c837170e0dfede1610cbb847d756df489081626f10",
+  "docs/ese3990/M5_followup_validation.json": "4285832685b418d90573da96d812f12159527ab9a974c9adebc9aaaf19053a13",
+  "runs/ese3990/M5/followup_plan.json": "cc348dadc79bfaf6dddcc0eaf7d7195429c225fb812c2d9192a2cbafacc982e8",
+  "docs/ese3990/M5_results.json": "478256db1235dbd32fe6a80a21504c408da1cbfdb120109fc78bd26a1e6d2057"
+ },
+ "task": "U (contract 2, gamma = 0.99975), 20 Hz, frozen start for calibration and every evaluation",
+ "repetition_types": "5 training seeds per learner x cell (seeds 0-2 of 'neither' reused from M4U); 20 validation episodes per checkpoint; 71 held-out episodes (1 nominal, 50 test, 20 shift) per selected/final checkpoint; no confidence intervals"
+}

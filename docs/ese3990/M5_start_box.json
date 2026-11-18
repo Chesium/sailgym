@@ -1,0 +1,94 @@
+{
+ "label": "M5 (post-hoc, exploratory; no learning)",
+ "amendment": "Draft box failed the predeclared 1% gate. Move training-only random starts nearer the unchanged gate before the main freeze.",
+ "checks": [
+  {
+   "run": "runs/ese3990/M5/start_box_draft",
+   "results_sha256": "4d3788bb31afcba7b92718c8ab2930c1fbc9fe94823eb66079177c4be3ea7d9c",
+   "protocol": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "box": [
+     -25.0,
+     25.0,
+     0.0,
+     35.0
+    ],
+    "episodes": 100,
+    "seed": 100,
+    "beta": 1,
+    "hold": 10,
+    "sigma": 0.3,
+    "sources": {
+     "experiments/ese3990/m5.py": "054aec536d1ad237c175a4ccc89abe0b6cffe9c39a10a8db8e417606d3494dec",
+     "experiments/ese3990/probe.py": "10ee44e9bcbeb22022c3425ae352b9458f16cab3c479291bbf592fff96f76222",
+     "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+     "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+     "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab"
+    }
+   },
+   "summary": {
+    "episodes": 100,
+    "finished": 0,
+    "success_rate": 0.0,
+    "outcome_counts": {
+     "truncated": 97,
+     "out_of_bounds": 3
+    },
+    "finish_time_s_given_success": {
+     "mean": null,
+     "min": null,
+     "max": null
+    },
+    "peak_heel_deg_max": 41.99250043422596,
+    "release_requests_overridden": 0
+   },
+   "exact_replays": 100,
+   "passes": false
+  },
+  {
+   "run": "runs/ese3990/M5/start_box_near_gate",
+   "results_sha256": "cbd5dbb67ef9109be4b9252b2cdbd19e14b13c6cee95cf888f5a61d952225d45",
+   "protocol": {
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "episodes": 100,
+    "seed": 100,
+    "beta": 1,
+    "hold": 10,
+    "sigma": 0.3,
+    "sources": {
+     "experiments/ese3990/m5.py": "054aec536d1ad237c175a4ccc89abe0b6cffe9c39a10a8db8e417606d3494dec",
+     "experiments/ese3990/probe.py": "10ee44e9bcbeb22022c3425ae352b9458f16cab3c479291bbf592fff96f76222",
+     "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+     "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+     "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab"
+    }
+   },
+   "summary": {
+    "episodes": 100,
+    "finished": 2,
+    "success_rate": 0.02,
+    "outcome_counts": {
+     "truncated": 96,
+     "finished": 2,
+     "out_of_bounds": 1,
+     "mark_missed": 1
+    },
+    "finish_time_s_given_success": {
+     "mean": 15.917500000000558,
+     "min": 12.85500000000061,
+     "max": 18.98000000000051
+    },
+    "peak_heel_deg_max": 41.99250043422596,
+    "release_requests_overridden": 0
+   },
+   "exact_replays": 100,
+   "passes": true
+  }
+ ]
+}

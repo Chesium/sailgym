@@ -1,0 +1,5503 @@
+{
+ "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+ "task": "U (contract 2, gamma = 0.99975), 20 Hz, frozen start",
+ "inputs": {
+  "experiments/ese3990/configs/M5_freeze.json": "82cc283ad7dabd327043661083562b2fb86f03843aab293285f1839b37cfea3a",
+  "runs/ese3990/M5/main_audit.json": "a78b65131477cce9d62d92651d984931021287380b6bd024ea683b93ebdc8628",
+  "runs/ese3990/M5/extended_audit.json": "f79c6a8a6c5df06a9769f1f50b8b6a0d1b084a24797f7a6ccae744be2e52b2ec",
+  "runs/ese3990/M5/heldout/freeze.json": "1ef2d5d7b839d1c3b6a41db37491419e20b1e5c44dd533529e4068cfa3226422",
+  "runs/ese3990/M5/heldout/replay_audit.json": "dcceaf27670f9e9e2609ea51bfb47f2f7add77838f1a11431befb0bf9d8a4ef5"
+ },
+ "threshold": {
+  "seeds_finishing": 3,
+  "seeds": 5,
+  "val_finishes_per_seed": 1,
+  "val_episodes": 20
+ },
+ "q_feasible_band": [
+  -22.3,
+  15.7
+ ],
+ "exact_replays": {
+  "main": 49982,
+  "extended": 113285,
+  "heldout": 6319,
+  "heldout_groups": 89
+ },
+ "readings": [
+  {
+   "observation": "B finishes, S does not",
+   "reading": "The decision interval was the bottleneck",
+   "applies": {
+    "ppo": false,
+    "sac": false
+   }
+  },
+  {
+   "observation": "S finishes, B does not",
+   "reading": "Discovering a first finish was the bottleneck",
+   "applies": {
+    "ppo": false,
+    "sac": false
+   }
+  },
+  {
+   "observation": "Only B + S finishes",
+   "reading": "Both are needed, as in Bink's setup",
+   "applies": {
+    "ppo": false,
+    "sac": false
+   }
+  },
+  {
+   "observation": "No cell finishes",
+   "reading": "Neither change is sufficient; run the second stage",
+   "applies": {
+    "ppo": true,
+    "sac": true
+   }
+  },
+  {
+   "observation": "A PPO cell finishes only at 40M",
+   "reading": "PPO's B result is update-bound, not decision-interval-bound",
+   "applies": false
+  },
+  {
+   "observation": "One learner finishes where the other does not",
+   "reading": "Report Q band and tack diagnostics; no ranking claim beyond these seeds",
+   "applies": false
+  }
+ ],
+ "extended_replicates_main": {
+  "extended_ppo_B_s0": {
+   "shared_checkpoints": [
+    10000,
+    419530,
+    1013394,
+    2016905,
+    3020425
+   ],
+   "identical": true
+  },
+  "extended_ppo_B_s1": {
+   "shared_checkpoints": [
+    10000,
+    419594,
+    1013498,
+    2017009,
+    3000049
+   ],
+   "identical": true
+  },
+  "extended_ppo_B_s2": {
+   "shared_checkpoints": [
+    10000,
+    419587,
+    1013507,
+    2017027,
+    3000067
+   ],
+   "identical": true
+  },
+  "extended_ppo_B_s3": {
+   "shared_checkpoints": [
+    10000,
+    419591,
+    1013489,
+    2017009,
+    3000045
+   ],
+   "identical": true
+  },
+  "extended_ppo_B_s4": {
+   "shared_checkpoints": [
+    10000,
+    419587,
+    1013480,
+    2016980,
+    3000016
+   ],
+   "identical": true
+  },
+  "extended_ppo_BS_s0": {
+   "shared_checkpoints": [
+    10000,
+    419569,
+    1013481,
+    2017001,
+    3000041
+   ],
+   "identical": true
+  },
+  "extended_ppo_BS_s1": {
+   "shared_checkpoints": [
+    10000,
+    419589,
+    1013508,
+    2016949,
+    3020469
+   ],
+   "identical": true
+  },
+  "extended_ppo_BS_s2": {
+   "shared_checkpoints": [
+    10000,
+    419561,
+    1013478,
+    2016982,
+    3000016
+   ],
+   "identical": true
+  },
+  "extended_ppo_BS_s3": {
+   "shared_checkpoints": [
+    10000,
+    419586,
+    1013450,
+    2016935,
+    3020430
+   ],
+   "identical": true
+  },
+  "extended_ppo_BS_s4": {
+   "shared_checkpoints": [
+    10000,
+    419566,
+    1013467,
+    2016952,
+    3020457
+   ],
+   "identical": true
+  }
+ },
+ "cells": {
+  "extended/ppo/B": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 18,
+   "selected_val_mean_return": -4.9468365963098915,
+   "selected_val_mean_max_y_m": 11.305452481189892,
+   "selected_at_calibration": 0,
+   "selected_val_rudder_travel_rad": [
+    0.6980000000000001,
+    48.88760001250536
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 1,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 27,
+     "failures": 0
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 17,
+     "failures": 0
+    }
+   },
+   "training": {
+    "episodes": 55564,
+    "random_starts": 0,
+    "finished": 1,
+    "finished_random_start": 0
+   },
+   "wall_min": [
+    37.2,
+    38.0,
+    37.4,
+    37.9,
+    38.2
+   ]
+  },
+  "extended/ppo/BS": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 0,
+   "selected_val_mean_return": -5.061399302640659,
+   "selected_val_mean_max_y_m": 0.15995572310715125,
+   "selected_at_calibration": 0,
+   "selected_val_rudder_travel_rad": [
+    3.306439990682563,
+    60.962906197403626
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    }
+   },
+   "training": {
+    "episodes": 55591,
+    "random_starts": 27794,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "wall_min": [
+    37.7,
+    31.0,
+    31.1,
+    30.8,
+    30.7
+   ]
+  },
+  "main/ppo/B": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 0,
+   "selected_val_mean_return": -5.339406345933219,
+   "selected_val_mean_max_y_m": 4.769095167112562,
+   "selected_at_calibration": 1,
+   "selected_val_rudder_travel_rad": [
+    0.6980000000000001,
+    23.956870405071324
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 3
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 11
+    }
+   },
+   "training": {
+    "episodes": 5557,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "wall_min": [
+    4.0,
+    4.2,
+    4.1,
+    4.0,
+    4.3
+   ]
+  },
+  "main/ppo/BS": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 2,
+   "selected_val_mean_return": -5.3177226582380355,
+   "selected_val_mean_max_y_m": 0.42314699258618144,
+   "selected_at_calibration": 2,
+   "selected_val_rudder_travel_rad": [
+    0.7010626022781979,
+    9.503147028452307
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 10,
+     "failures": 0
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 3,
+     "failures": 0
+    }
+   },
+   "training": {
+    "episodes": 5580,
+    "random_starts": 2788,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "wall_min": [
+    4.3,
+    4.1,
+    4.3,
+    4.2,
+    4.1
+   ]
+  },
+  "main/ppo/S": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 0,
+   "selected_val_mean_return": -5.19708090853459,
+   "selected_val_mean_max_y_m": 0.5690980052002166,
+   "selected_at_calibration": 0,
+   "selected_val_rudder_travel_rad": [
+    0.6980000000000001,
+    11.87666255060054
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    }
+   },
+   "training": {
+    "episodes": 5634,
+    "random_starts": 2816,
+    "finished": 11,
+    "finished_random_start": 11
+   },
+   "wall_min": [
+    8.4,
+    8.4,
+    8.6,
+    8.3,
+    8.2
+   ]
+  },
+  "main/ppo/neither": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 20,
+   "selected_val_mean_return": -5.1710525504176825,
+   "selected_val_mean_max_y_m": 10.121989263947919,
+   "selected_at_calibration": 0,
+   "selected_val_rudder_travel_rad": [
+    1.8898054241398115,
+    8.178197301894231
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 40,
+     "failures": 6
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 10,
+     "failures": 7
+    }
+   },
+   "training": {
+    "episodes": 5615,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "wall_min": [
+    18.2,
+    18.3,
+    18.1,
+    8.2,
+    8.2
+   ]
+  },
+  "main/sac/B": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 0,
+   "selected_val_mean_return": -5.187001188019763,
+   "selected_val_mean_max_y_m": 2.5874151983004126,
+   "selected_at_calibration": 0,
+   "selected_val_rudder_travel_rad": [
+    7.7856926041583465,
+    51.73914309480678
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 1
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 5,
+     "failures": 2
+    }
+   },
+   "training": {
+    "episodes": 5580,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "wall_min": [
+    17.8,
+    17.7,
+    17.7,
+    18.1,
+    18.1
+   ],
+   "q_in_band_seeds": 5,
+   "q_abs_max_range": [
+    7.487582206726074,
+    9.350746154785156
+   ],
+   "final_alpha_range": [
+    8.77792845130898e-05,
+    0.00033773339237086475
+   ]
+  },
+  "main/sac/BS": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 0,
+   "selected_val_mean_return": -5.268937922006424,
+   "selected_val_mean_max_y_m": 0.34907113086196595,
+   "selected_at_calibration": 1,
+   "selected_val_rudder_travel_rad": [
+    0.7020234778560204,
+    50.5348422643687
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    }
+   },
+   "training": {
+    "episodes": 5599,
+    "random_starts": 2798,
+    "finished": 2,
+    "finished_random_start": 2
+   },
+   "wall_min": [
+    17.6,
+    17.6,
+    15.7,
+    15.5,
+    15.5
+   ],
+   "q_in_band_seeds": 5,
+   "q_abs_max_range": [
+    8.714997291564941,
+    11.338520050048828
+   ],
+   "final_alpha_range": [
+    0.00020373488951008767,
+    0.0005562747828662395
+   ]
+  },
+  "main/sac/S": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 0,
+   "selected_val_mean_return": -5.31662167689159,
+   "selected_val_mean_max_y_m": 0.26004278968631755,
+   "selected_at_calibration": 2,
+   "selected_val_rudder_travel_rad": [
+    0.7030484847138401,
+    5.035052845916257
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 2
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 2,
+     "failures": 3
+    }
+   },
+   "training": {
+    "episodes": 5696,
+    "random_starts": 2847,
+    "finished": 11,
+    "finished_random_start": 11
+   },
+   "wall_min": [
+    136.4,
+    136.4,
+    136.4,
+    133.7,
+    94.2
+   ],
+   "q_in_band_seeds": 0,
+   "q_abs_max_range": [
+    3648.50537109375,
+    5717.2412109375
+   ],
+   "final_alpha_range": [
+    0.00018640341295395046,
+    0.008106036111712456
+   ]
+  },
+  "main/sac/neither": {
+   "seeds": 5,
+   "seeds_finishing": 0,
+   "finishes": false,
+   "selected_val_finishes": 0,
+   "selected_val_episodes": 100,
+   "selected_val_tack_episodes": 1,
+   "selected_val_mean_return": -5.188136541686983,
+   "selected_val_mean_max_y_m": 3.6746953200401107,
+   "selected_at_calibration": 1,
+   "selected_val_rudder_travel_rad": [
+    0.7030484847138401,
+    7.119011235661129
+   ],
+   "heldout_selected": {
+    "nominal": {
+     "episodes": 5,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0
+    },
+    "test": {
+     "episodes": 250,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 2
+    },
+    "shift": {
+     "episodes": 100,
+     "finished": 0,
+     "tack_episodes": 1,
+     "failures": 1
+    }
+   },
+   "training": {
+    "episodes": 5561,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "wall_min": [
+    194.5,
+    194.6,
+    194.4,
+    118.6,
+    118.7
+   ],
+   "q_in_band_seeds": 0,
+   "q_abs_max_range": [
+    2223.092041015625,
+    6613.77392578125
+   ],
+   "final_alpha_range": [
+    0.017545733600854874,
+    0.11673928797245026
+   ]
+  }
+ },
+ "rows": [
+  {
+   "run_id": "main_ppo_neither_s3",
+   "run": "runs/ese3990/M5/main/ppo_neither_s3",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 492.0078678919963,
+   "exact_replays": 1250,
+   "training": {
+    "episodes": 1121,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 2000656,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.079577951361613,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 27.8793436807694,
+     "mean_rudder_travel_rad": 6.9484871276699165
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 2.138169596991566
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 25.174762122398356,
+      "mean_rudder_travel_rad": 7.236703078112567
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 5,
+      "mean_max_y_m": 8.717159955987249,
+      "mean_rudder_travel_rad": 5.47675840541997
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 24.881336306374966,
+      "mean_rudder_travel_rad": 6.851265798367317
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.094
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.60039743484105
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.172783684628657
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_neither_s4",
+   "run": "runs/ese3990/M5/main/ppo_neither_s4",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 494.24816508500953,
+   "exact_replays": 1248,
+   "training": {
+    "episodes": 1119,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 3000080,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.292189214975042,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 1.8898054241398115
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.33438812592973316,
+     "mean_rudder_travel_rad": 0.7459376448113471
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.8653664495106792
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.346625810770417,
+      "mean_rudder_travel_rad": 2.0700047701039908
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.0361880055191737
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.4559113198132187,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.00865365142485991,
+      "mean_rudder_travel_rad": 1.0943460718221147
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.1658543445178597,
+      "mean_rudder_travel_rad": 0.8034594699314889
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_B_s0",
+   "run": "runs/ese3990/M5/main/ppo_B_s0",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 242.17434688301,
+   "exact_replays": 1242,
+   "training": {
+    "episodes": 1113,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 2016905,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.282920122693951,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 1.7122915870671356,
+     "mean_rudder_travel_rad": 0.6980000000000001
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.6980000000000001
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 7.981630317698814,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 6.059780261362464,
+      "mean_rudder_travel_rad": 0.698
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_B_s1",
+   "run": "runs/ese3990/M5/main/ppo_B_s1",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 249.23765023899614,
+   "exact_replays": 1240,
+   "training": {
+    "episodes": 1111,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 2017009,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.199368130376804,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 11.554103144405458
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 11.06765229965217
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 16.848820257896573
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 10,
+      "mean_max_y_m": 0.017191648721032786,
+      "mean_rudder_travel_rad": 14.68579056042123
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 12.418853300588538
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 12.190544175697493
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 14.237508831303412
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 12.892307889316978
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_B_s2",
+   "run": "runs/ese3990/M5/main/ppo_B_s2",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 248.00175163900713,
+   "exact_replays": 1238,
+   "training": {
+    "episodes": 1109,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.891083488704419,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 1,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7151694975139951
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 9,
+     "mean_max_y_m": 35.33125722844919,
+     "mean_rudder_travel_rad": 14.663199079909614
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.81630978786198
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7027864536246112
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 3,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.749132222144093
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 40.00047269015645,
+      "mean_rudder_travel_rad": 15.975250085072126
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 9,
+      "mean_max_y_m": 19.750197995962324,
+      "mean_rudder_travel_rad": 9.972615974467969
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 23,
+      "mean_max_y_m": 36.25235476187025,
+      "mean_rudder_travel_rad": 14.345171809342817
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_B_s3",
+   "run": "runs/ese3990/M5/main/ppo_B_s3",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 240.31033466600638,
+   "exact_replays": 1241,
+   "training": {
+    "episodes": 1112,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 419591,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.063891495687018,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 7.656108998646009,
+     "mean_rudder_travel_rad": 23.956870405071324
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 3.2959127273509017,
+     "mean_rudder_travel_rad": 16.73587709470243
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 2.8406112123671607,
+      "mean_rudder_travel_rad": 2.5894451970290424
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.5219589556789535,
+      "mean_rudder_travel_rad": 3.561574515198648
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.784876771717378,
+      "mean_rudder_travel_rad": 11.681097880246115
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 26.491746805548715
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.53131006749683,
+      "mean_rudder_travel_rad": 13.62685138418308
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.6686911372754059,
+      "mean_rudder_travel_rad": 21.442149817424752
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_B_s4",
+   "run": "runs/ese3990/M5/main/ppo_B_s4",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 258.5448254799994,
+   "exact_replays": 1241,
+   "training": {
+    "episodes": 1112,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 3000016,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.259768492203906,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 14.477075249849662,
+     "mean_rudder_travel_rad": 4.947786916970271
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.5545351086405157,
+     "mean_rudder_travel_rad": 2.5005970234386607
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 15.021427439333152,
+      "mean_rudder_travel_rad": 3.6910433720247804
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 12.482361091416369,
+      "mean_rudder_travel_rad": 4.585808664645838
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 8.884884064926473,
+      "mean_rudder_travel_rad": 9.243636842442974
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.36781640389561
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 1,
+      "mean_max_y_m": 7.2595461059019115,
+      "mean_rudder_travel_rad": 2.3806563752433356
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.10788603750753661,
+      "mean_rudder_travel_rad": 2.5087052916572667
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_S_s0",
+   "run": "runs/ese3990/M5/main/ppo_S_s0",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "S",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 504.6369349529996,
+   "exact_replays": 1280,
+   "training": {
+    "episodes": 1151,
+    "random_starts": 575,
+    "finished": 5,
+    "finished_random_start": 5
+   },
+   "selected_decisions": 2000656,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -4.972510271609175,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.6609855957543808,
+     "mean_rudder_travel_rad": 0.6980000000000001
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 3,
+     "mean_max_y_m": 19.18439909162617,
+     "mean_rudder_travel_rad": 0.7017202665413963
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.5338668131261683,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.668941259212078,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.3965382672586945,
+      "mean_rudder_travel_rad": 0.698
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 30.626440038557313,
+      "mean_rudder_travel_rad": 0.70401108586602
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 11.028382302455473,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 17.05335330355459,
+      "mean_rudder_travel_rad": 0.7015746224797377
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_S_s1",
+   "run": "runs/ese3990/M5/main/ppo_S_s1",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "S",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 504.1389852889988,
+   "exact_replays": 1259,
+   "training": {
+    "episodes": 1130,
+    "random_starts": 565,
+    "finished": 4,
+    "finished_random_start": 4
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.286877037292852,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.6980000000000001
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.6980000000000001
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_S_s2",
+   "run": "runs/ese3990/M5/main/ppo_S_s2",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "S",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 516.3859873590118,
+   "exact_replays": 1245,
+   "training": {
+    "episodes": 1116,
+    "random_starts": 558,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 1001232,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.268707351322912,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.12160879667766862,
+     "mean_rudder_travel_rad": 11.87666255060054
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 4,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 2.7898747360320764
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.793910415747664
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.17154783646401123,
+      "mean_rudder_travel_rad": 10.67347150550555
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.3555718514558737,
+      "mean_rudder_travel_rad": 34.234123014596484
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.540981702104209
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 5,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.7976487426400647
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 5,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.762445009366287
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_S_s3",
+   "run": "runs/ese3990/M5/main/ppo_S_s3",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "S",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 496.55061559598835,
+   "exact_replays": 1249,
+   "training": {
+    "episodes": 1120,
+    "random_starts": 560,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 401168,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.157523742581594,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 2.0628956335690334,
+     "mean_rudder_travel_rad": 5.1821800891246825
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.9491339067331979
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.4856313819523876,
+      "mean_rudder_travel_rad": 22.459260640068628
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.0203885127685157,
+      "mean_rudder_travel_rad": 4.919244430663423
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 6.822378642863578,
+      "mean_rudder_travel_rad": 13.974276061428942
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.971939735369757
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.8291231560562456
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.964149800467747
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_S_s4",
+   "run": "runs/ese3990/M5/main/ppo_S_s4",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "S",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 492.5581926409941,
+   "exact_replays": 1246,
+   "training": {
+    "episodes": 1117,
+    "random_starts": 558,
+    "finished": 2,
+    "finished_random_start": 2
+   },
+   "selected_decisions": 2000656,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.299786139866421,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 1.9244675543127463
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 12,
+     "mean_max_y_m": 0.009228850834395338,
+     "mean_rudder_travel_rad": 2.0680403554342544
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.8463092096615576
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.35458670597708336,
+      "mean_rudder_travel_rad": 3.7629264943461025
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.2970968743360847
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.2616270464229138
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 9,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.5107548908513633
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 37,
+      "mean_max_y_m": 0.001943445787161041,
+      "mean_rudder_travel_rad": 1.9070594795567741
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_BS_s0",
+   "run": "runs/ese3990/M5/main/ppo_BS_s0",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 259.0616206230043,
+   "exact_replays": 1242,
+   "training": {
+    "episodes": 1113,
+    "random_starts": 556,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.32528133628214,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7010626022781979
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 3,
+     "failures": 1,
+     "mean_max_y_m": 3.083381438034256,
+     "mean_rudder_travel_rad": 2.6797906442005184
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7002250204801093
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.707600648290976
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7037794664043746
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 9.232809938936963,
+      "mean_rudder_travel_rad": 2.468857608675958
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 7,
+      "failures": 7,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.473660262025684
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 8,
+      "failures": 1,
+      "mean_max_y_m": 2.8649780004697663,
+      "mean_rudder_travel_rad": 3.094390829510981
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_BS_s1",
+   "run": "runs/ese3990/M5/main/ppo_BS_s1",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 246.61332755399053,
+   "exact_replays": 1241,
+   "training": {
+    "episodes": 1112,
+    "random_starts": 556,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.2270709515195,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 9.503147028452307
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 9.503147028452307
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 11.088727947078656
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.006196042046156592,
+      "mean_rudder_travel_rad": 12.154933202472073
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 9.834663010980222
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 11.088727947078656
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.006196042046156592,
+      "mean_rudder_travel_rad": 12.154933202472073
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 9.834663010980222
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_BS_s2",
+   "run": "runs/ese3990/M5/main/ppo_BS_s2",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 255.61342871701345,
+   "exact_replays": 1242,
+   "training": {
+    "episodes": 1113,
+    "random_starts": 556,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.3561030760405215,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 5.3126515736901245
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 5.3126515736901245
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.645202913513428
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 13.600060046959564
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 7.0029995340692235
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.645202913513428
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 13.600060046959564
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 7.0029995340692235
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_BS_s3",
+   "run": "runs/ese3990/M5/main/ppo_BS_s3",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 252.2232341239869,
+   "exact_replays": 1248,
+   "training": {
+    "episodes": 1119,
+    "random_starts": 559,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.314495078922212,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7316021571907914
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0007267204792041525,
+     "mean_rudder_travel_rad": 9.977096175675728
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7275911674527438
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6807736450596397
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7273985800470397
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.553466009328908
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 10,
+      "mean_max_y_m": 0.44630334956151163,
+      "mean_rudder_travel_rad": 10.6893760948448
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.00227933606819572,
+      "mean_rudder_travel_rad": 7.462427705107665
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_BS_s4",
+   "run": "runs/ese3990/M5/main/ppo_BS_s4",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 245.61777934299607,
+   "exact_replays": 1252,
+   "training": {
+    "episodes": 1123,
+    "random_starts": 561,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "selected_decisions": 419566,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.365662848425808,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 2,
+     "failures": 0,
+     "mean_max_y_m": 2.1157349629309072,
+     "mean_rudder_travel_rad": 3.5361025586995254
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 20.249560228098794
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.0458506519843356
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 3,
+      "failures": 0,
+      "mean_max_y_m": 4.379793189693397,
+      "mean_rudder_travel_rad": 2.8590158638488843
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 10,
+      "failures": 0,
+      "mean_max_y_m": 2.9169135404142725,
+      "mean_rudder_travel_rad": 6.635992332996856
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 14.463309662561866
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.11427319817992758,
+      "mean_rudder_travel_rad": 6.777312761267457
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 17.79199418472232
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_sac_neither_s3",
+   "run": "runs/ese3990/M5/main/sac_neither_s3",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 7118.409863522,
+   "exact_replays": 1242,
+   "training": {
+    "episodes": 1113,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 1000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.15639795946405,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 2.772949795718448,
+     "mean_rudder_travel_rad": 1.907905601267883
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 2.0789746033642666,
+     "mean_rudder_travel_rad": 3.820829373928538
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.0047495983764523
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.4366993537972779,
+      "mean_rudder_travel_rad": 3.5778640975715867
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 2.4583118018058805,
+      "mean_rudder_travel_rad": 5.330272848511129
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 7.507842826455429,
+      "mean_rudder_travel_rad": 6.790239424352774
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 3,
+      "mean_max_y_m": 0.8912016418230604,
+      "mean_rudder_travel_rad": 17.355708421860466
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.1142132022286575,
+      "mean_rudder_travel_rad": 7.590830575576656
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 5596.314453125,
+    "q_min": -5596.314453125,
+    "q_max": 15.974480628967285,
+    "final_mean_q": -4828.4306640625,
+    "in_feasible_band": false,
+    "final_alpha": 0.11673928797245026
+   }
+  },
+  {
+   "run_id": "main_sac_neither_s4",
+   "run": "runs/ese3990/M5/main/sac_neither_s4",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 7120.337129879001,
+   "exact_replays": 1246,
+   "training": {
+    "episodes": 1117,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.322206280260528,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7030484847138401
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.762564879494385,
+     "mean_rudder_travel_rad": 10.631572768534323
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7029605358562221
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7097589519979817
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 2,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.715128308522188
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 37.83713810552039
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.4074639109757725,
+      "mean_rudder_travel_rad": 5.731166344013883
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.6877165458100347,
+      "mean_rudder_travel_rad": 12.866277945887484
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 6613.77392578125,
+    "q_min": -6613.77392578125,
+    "q_max": 153.2957763671875,
+    "final_mean_q": -4734.8544921875,
+    "in_feasible_band": false,
+    "final_alpha": 0.0218164324760437
+   }
+  },
+  {
+   "run_id": "main_sac_B_s0",
+   "run": "runs/ese3990/M5/main/sac_B_s0",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "B",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1066.6894020839973,
+   "exact_replays": 1245,
+   "training": {
+    "episodes": 1116,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 1000009,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.150874752117014,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.060739868733350175,
+     "mean_rudder_travel_rad": 14.087171767146604
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 1.1018098590105423,
+     "mean_rudder_travel_rad": 9.581046310805176
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.326379219947356
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.5857418748816967,
+      "mean_rudder_travel_rad": 14.799157997007114
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.030540468191472662,
+      "mean_rudder_travel_rad": 23.165660309244036
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.27969044098011686,
+      "mean_rudder_travel_rad": 5.092193340914496
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 6,
+      "mean_max_y_m": 0.7010570682467698,
+      "mean_rudder_travel_rad": 14.892175413311355
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.1915393948322583,
+      "mean_rudder_travel_rad": 9.086681818339573
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 8.705764770507812,
+    "q_min": -7.467906475067139,
+    "q_max": 8.705764770507812,
+    "final_mean_q": -5.274806499481201,
+    "in_feasible_band": true,
+    "final_alpha": 0.00033773339237086475
+   }
+  },
+  {
+   "run_id": "main_sac_B_s1",
+   "run": "runs/ese3990/M5/main/sac_B_s1",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "B",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1061.728471894996,
+   "exact_replays": 1242,
+   "training": {
+    "episodes": 1113,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 400007,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.238146293511608,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.09017775775227942,
+     "mean_rudder_travel_rad": 34.162212044933945
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.034562963925495814,
+     "mean_rudder_travel_rad": 4.055105304407979
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.7092684062960085,
+      "mean_rudder_travel_rad": 46.33852983338569
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.6873640035035248,
+      "mean_rudder_travel_rad": 22.99354581843455
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.20525078656001716,
+      "mean_rudder_travel_rad": 37.38219693167527
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.3912338061195342
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 6,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 23.975458744013153
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.46618436379834705,
+      "mean_rudder_travel_rad": 2.3037088089306326
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 8.984091758728027,
+    "q_min": -6.651905059814453,
+    "q_max": 8.984091758728027,
+    "final_mean_q": -5.0627312660217285,
+    "in_feasible_band": true,
+    "final_alpha": 0.00025153273600153625
+   }
+  },
+  {
+   "run_id": "main_sac_B_s2",
+   "run": "runs/ese3990/M5/main/sac_B_s2",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "B",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1064.3501171429962,
+   "exact_replays": 1240,
+   "training": {
+    "episodes": 1111,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 2000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.178871338946361,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 3.017442738165814,
+     "mean_rudder_travel_rad": 7.7856926041583465
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.1802637635504611,
+     "mean_rudder_travel_rad": 6.573872352680961
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 15.477313076226078
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 0,
+      "mean_max_y_m": 2.8449131435770205,
+      "mean_rudder_travel_rad": 11.476289257774916
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.9003911332968526,
+      "mean_rudder_travel_rad": 11.864786907805412
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.3902010600372217,
+      "mean_rudder_travel_rad": 7.351176602695
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.44808541146172476,
+      "mean_rudder_travel_rad": 4.914044849062081
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 9.350746154785156,
+    "q_min": -9.350746154785156,
+    "q_max": 3.7336716651916504,
+    "final_mean_q": -5.8247971534729,
+    "in_feasible_band": true,
+    "final_alpha": 0.00019567841081880033
+   }
+  },
+  {
+   "run_id": "main_sac_B_s3",
+   "run": "runs/ese3990/M5/main/sac_B_s3",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "B",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1086.6548333769897,
+   "exact_replays": 1254,
+   "training": {
+    "episodes": 1125,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 400004,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.446809996201667,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 32.935029837191614
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.17976834693947236,
+     "mean_rudder_travel_rad": 9.870463796475686
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.834805433375092
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 2.844031818729737,
+      "mean_rudder_travel_rad": 68.16273178305842
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.008000457487709759,
+      "mean_rudder_travel_rad": 45.42278475969579
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 6.985556640833618
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 3,
+      "mean_max_y_m": 4.190822974520475,
+      "mean_rudder_travel_rad": 42.35622638201435
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.009230254899733881,
+      "mean_rudder_travel_rad": 12.18580114700479
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 8.643106460571289,
+    "q_min": -8.643106460571289,
+    "q_max": 6.428278923034668,
+    "final_mean_q": -4.786341190338135,
+    "in_feasible_band": true,
+    "final_alpha": 0.00030466399039141834
+   }
+  },
+  {
+   "run_id": "main_sac_B_s4",
+   "run": "runs/ese3990/M5/main/sac_B_s4",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "B",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1084.6239594829967,
+   "exact_replays": 1244,
+   "training": {
+    "episodes": 1115,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 400000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -4.920303559322167,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 9.76871562685062,
+     "mean_rudder_travel_rad": 51.73914309480678
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 4.867070365187567,
+     "mean_rudder_travel_rad": 17.2250973365693
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 7.221680063623704,
+      "mean_rudder_travel_rad": 62.890955119826806
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 4,
+      "failures": 0,
+      "mean_max_y_m": 4.830259758154862,
+      "mean_rudder_travel_rad": 26.27774699979658
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 6.421809367085602,
+      "mean_rudder_travel_rad": 49.46685688316542
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.902056262223522,
+      "mean_rudder_travel_rad": 9.569609627053158
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.31971078958653176,
+      "mean_rudder_travel_rad": 9.38397901198788
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.060000796228003,
+      "mean_rudder_travel_rad": 17.672418739695825
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 7.487582206726074,
+    "q_min": -7.487582206726074,
+    "q_max": 3.39749813079834,
+    "final_mean_q": -5.636768817901611,
+    "in_feasible_band": true,
+    "final_alpha": 8.77792845130898e-05
+   }
+  },
+  {
+   "run_id": "main_sac_S_s0",
+   "run": "runs/ese3990/M5/main/sac_S_s0",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "S",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 8184.79597407901,
+   "exact_replays": 1269,
+   "training": {
+    "episodes": 1140,
+    "random_starts": 570,
+    "finished": 4,
+    "finished_random_start": 4
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.2827996084244635,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7034913198453941
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 5,
+     "mean_max_y_m": 1.2429885924293065,
+     "mean_rudder_travel_rad": 25.16628506296869
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6992007960037444
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6533259491380327
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.6804067122130532
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.377782696833834
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 8,
+      "mean_max_y_m": 1.3067911464854567,
+      "mean_rudder_travel_rad": 24.612268589518724
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 5,
+      "mean_max_y_m": 0.5163711900863798,
+      "mean_rudder_travel_rad": 24.828149841498462
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 3847.16943359375,
+    "q_min": -3847.16943359375,
+    "q_max": 1439.8077392578125,
+    "final_mean_q": -1149.703369140625,
+    "in_feasible_band": false,
+    "final_alpha": 0.006486951373517513
+   }
+  },
+  {
+   "run_id": "main_sac_S_s1",
+   "run": "runs/ese3990/M5/main/sac_S_s1",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "S",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 8186.372572249005,
+   "exact_replays": 1267,
+   "training": {
+    "episodes": 1138,
+    "random_starts": 569,
+    "finished": 2,
+    "finished_random_start": 2
+   },
+   "selected_decisions": 1000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.3245573325477435,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.15685193494027092,
+     "mean_rudder_travel_rad": 4.349777916982952
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 5,
+     "mean_max_y_m": 0.7316887148601532,
+     "mean_rudder_travel_rad": 22.81947331781026
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 5.54520846300146,
+      "mean_rudder_travel_rad": 12.231127857358345
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.9762361424487201,
+      "mean_rudder_travel_rad": 15.877525984603801
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.47306680404636803,
+      "mean_rudder_travel_rad": 2.365354197440494
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 11.559734523157205
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 4,
+      "mean_max_y_m": 2.792647816771203,
+      "mean_rudder_travel_rad": 26.748317086349868
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 11,
+      "mean_max_y_m": 1.511238048594195,
+      "mean_rudder_travel_rad": 33.68744406393078
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 4042.861328125,
+    "q_min": -4042.861328125,
+    "q_max": 11.239429473876953,
+    "final_mean_q": -1119.9197998046875,
+    "in_feasible_band": false,
+    "final_alpha": 0.0020184919703751802
+   }
+  },
+  {
+   "run_id": "main_sac_S_s2",
+   "run": "runs/ese3990/M5/main/sac_S_s2",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "S",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 8183.834146502006,
+   "exact_replays": 1269,
+   "training": {
+    "episodes": 1140,
+    "random_starts": 570,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "selected_decisions": 400000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.296182017203965,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.379525033540253,
+     "mean_rudder_travel_rad": 3.4372889425544186
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 3,
+     "mean_max_y_m": 2.0649050715674315,
+     "mean_rudder_travel_rad": 9.430399765382333
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.24285955093102
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 2.4742674435071037,
+      "mean_rudder_travel_rad": 3.1207570037879155
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.5456837446843715,
+      "mean_rudder_travel_rad": 3.1884561777165046
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 28.0953680552349
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 3,
+      "mean_max_y_m": 2.1138718608371283,
+      "mean_rudder_travel_rad": 17.479138533427967
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 9,
+      "mean_max_y_m": 0.45145804796490296,
+      "mean_rudder_travel_rad": 12.029738902363356
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 5717.2412109375,
+    "q_min": -5717.2412109375,
+    "q_max": 419.1231384277344,
+    "final_mean_q": -1225.5028076171875,
+    "in_feasible_band": false,
+    "final_alpha": 0.0006745668360963464
+   }
+  },
+  {
+   "run_id": "main_sac_S_s3",
+   "run": "runs/ese3990/M5/main/sac_S_s3",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "S",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 8021.318910246002,
+   "exact_replays": 1264,
+   "training": {
+    "episodes": 1135,
+    "random_starts": 567,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 2000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.357363146021253,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.7638369799510638,
+     "mean_rudder_travel_rad": 5.035052845916257
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 2,
+     "failures": 2,
+     "mean_max_y_m": 2.2086699268954817,
+     "mean_rudder_travel_rad": 26.416311180907847
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.3235689873686043
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 2,
+      "failures": 3,
+      "mean_max_y_m": 7.409035624263224,
+      "mean_rudder_travel_rad": 15.399204326766915
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.13363155409635413,
+      "mean_rudder_travel_rad": 3.808295932329845
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 9.515863320314796
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 7,
+      "mean_max_y_m": 1.2891374192482854,
+      "mean_rudder_travel_rad": 15.91759745101066
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 2,
+      "failures": 4,
+      "mean_max_y_m": 0.885778898780407,
+      "mean_rudder_travel_rad": 26.68021852875202
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 3648.50537109375,
+    "q_min": -3648.50537109375,
+    "q_max": 1059.3297119140625,
+    "final_mean_q": -1595.3299560546875,
+    "in_feasible_band": false,
+    "final_alpha": 0.008106036111712456
+   }
+  },
+  {
+   "run_id": "main_sac_S_s4",
+   "run": "runs/ese3990/M5/main/sac_S_s4",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "S",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 5650.761925918996,
+   "exact_replays": 1272,
+   "training": {
+    "episodes": 1143,
+    "random_starts": 571,
+    "finished": 4,
+    "finished_random_start": 4
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.322206280260528,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7030484847138401
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 3,
+     "mean_max_y_m": 0.6834335355710239,
+     "mean_rudder_travel_rad": 35.73904099285279
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7029605358562221
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.7097589519979817
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 2,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.715128308522188
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 36.709369237864436
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 3,
+      "mean_max_y_m": 0.4647250114639842,
+      "mean_rudder_travel_rad": 34.373880054839546
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 15,
+      "mean_max_y_m": 0.5527591265674495,
+      "mean_rudder_travel_rad": 41.99721254903069
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 4361.1806640625,
+    "q_min": -4361.1806640625,
+    "q_max": 75.09202575683594,
+    "final_mean_q": -486.58184814453125,
+    "in_feasible_band": false,
+    "final_alpha": 0.00018640341295395046
+   }
+  },
+  {
+   "run_id": "main_sac_BS_s0",
+   "run": "runs/ese3990/M5/main/sac_BS_s0",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "BS",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1056.9695893900061,
+   "exact_replays": 1250,
+   "training": {
+    "episodes": 1121,
+    "random_starts": 560,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "selected_decisions": 10000,
+   "selected_is_calibration": true,
+   "selected_val_mean_return": -5.284468148593207,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 0.7020234778560204
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 4.018755605913856
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.654234166833789
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.679063485941974
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.641315736282555
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.9049610353757398
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.07624975969626338,
+      "mean_rudder_travel_rad": 3.8805798261049373
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 8.80486011505127,
+    "q_min": -8.80486011505127,
+    "q_max": 4.759936809539795,
+    "final_mean_q": -5.825413227081299,
+    "in_feasible_band": true,
+    "final_alpha": 0.00039357884088531137
+   }
+  },
+  {
+   "run_id": "main_sac_BS_s1",
+   "run": "runs/ese3990/M5/main/sac_BS_s1",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "BS",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 1053.2110515490058,
+   "exact_replays": 1240,
+   "training": {
+    "episodes": 1111,
+    "random_starts": 555,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 3000001,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.204049632003878,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.04697794381975605,
+     "mean_rudder_travel_rad": 5.7879498196690715
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.009011249803624952,
+     "mean_rudder_travel_rad": 18.791563003901565
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 17.17057145516015
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.722898772227407
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.031172536205439503,
+      "mean_rudder_travel_rad": 9.144111730157222
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 8.458062496380247
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.09892480539519538,
+      "mean_rudder_travel_rad": 6.156442014103923
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 18.97710162331538
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 8.717659950256348,
+    "q_min": -7.960675239562988,
+    "q_max": 8.717659950256348,
+    "final_mean_q": -6.18211555480957,
+    "in_feasible_band": true,
+    "final_alpha": 0.00020373488951008767
+   }
+  },
+  {
+   "run_id": "main_sac_BS_s2",
+   "run": "runs/ese3990/M5/main/sac_BS_s2",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "BS",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 941.3481334490061,
+   "exact_replays": 1254,
+   "training": {
+    "episodes": 1125,
+    "random_starts": 562,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.314815592937512,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 4.259222926626577
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 4.259222926626577
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 6.2380390709797116
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.11708948869650108,
+      "mean_rudder_travel_rad": 1.4156182299408477
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.05977709553953704,
+      "mean_rudder_travel_rad": 3.798717712412108
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 6.2380390709797116
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.11708948869650108,
+      "mean_rudder_travel_rad": 1.4156182299408477
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.05977709553953704,
+      "mean_rudder_travel_rad": 3.798717712412108
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 11.103374481201172,
+    "q_min": -11.103374481201172,
+    "q_max": 9.335464477539062,
+    "final_mean_q": -7.906993865966797,
+    "in_feasible_band": true,
+    "final_alpha": 0.0005562747828662395
+   }
+  },
+  {
+   "run_id": "main_sac_BS_s3",
+   "run": "runs/ese3990/M5/main/sac_BS_s3",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "BS",
+   "seed": 3,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 929.7211119959975,
+   "exact_replays": 1245,
+   "training": {
+    "episodes": 1116,
+    "random_starts": 558,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 400000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.250027458050412,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 1.6932822910151089,
+     "mean_rudder_travel_rad": 50.5348422643687
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 2.8321020122784324
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.258792998032528,
+      "mean_rudder_travel_rad": 61.093739424519235
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.2037676740402695,
+      "mean_rudder_travel_rad": 68.27231820424159
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 2.2698152808441665,
+      "mean_rudder_travel_rad": 59.77306744973472
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.999295785792172
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.798751310316636
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.850578221089581
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 8.714997291564941,
+    "q_min": -8.714997291564941,
+    "q_max": 5.062532424926758,
+    "final_mean_q": -5.452114582061768,
+    "in_feasible_band": true,
+    "final_alpha": 0.00037639099173247814
+   }
+  },
+  {
+   "run_id": "main_sac_BS_s4",
+   "run": "runs/ese3990/M5/main/sac_BS_s4",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "BS",
+   "seed": 4,
+   "budget": 4000000,
+   "reused_m4u": false,
+   "wall_s": 930.5140379669901,
+   "exact_replays": 1255,
+   "training": {
+    "episodes": 1126,
+    "random_starts": 563,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.291328778447112,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.005095419474964911,
+     "mean_rudder_travel_rad": 2.237970791414909
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.005095419474964911,
+     "mean_rudder_travel_rad": 2.237970791414909
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 5.326092605250315,
+      "mean_rudder_travel_rad": 8.478156199821587
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.680450415617764,
+      "mean_rudder_travel_rad": 6.816606416634833
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 5.326092605250315,
+      "mean_rudder_travel_rad": 8.478156199821587
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.680450415617764,
+      "mean_rudder_travel_rad": 6.816606416634833
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 11.338520050048828,
+    "q_min": -11.338520050048828,
+    "q_max": 10.939826965332031,
+    "final_mean_q": -7.253575325012207,
+    "in_feasible_band": true,
+    "final_alpha": 0.0004490934661589563
+   }
+  },
+  {
+   "run_id": "main_ppo_neither_s0",
+   "run": "runs/ese3990/M4U/main/ppo_U_s0",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": true,
+   "wall_s": 1094.8828025308903,
+   "exact_replays": 1255,
+   "training": {
+    "episodes": 1126,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 3000080,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.316526447856517,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 3.151307036096573
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 5,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 8.28258614388975
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 1.9000849257558619
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.3124161046565907,
+      "mean_rudder_travel_rad": 2.6784057452921983
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.146214958687978
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 8.005228752402122
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.3032383600734954,
+      "mean_rudder_travel_rad": 3.2396390359158644
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 5,
+      "mean_max_y_m": 0.0012590706114894929,
+      "mean_rudder_travel_rad": 9.253172259730778
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_neither_s1",
+   "run": "runs/ese3990/M4U/main/ppo_U_s1",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": true,
+   "wall_s": 1095.2619087561034,
+   "exact_replays": 1253,
+   "training": {
+    "episodes": 1124,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.341523041571692,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 3,
+     "failures": 0,
+     "mean_max_y_m": 4.211078248909017,
+     "mean_rudder_travel_rad": 5.030448572411636
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 3,
+     "failures": 0,
+     "mean_max_y_m": 4.211078248909017,
+     "mean_rudder_travel_rad": 5.030448572411636
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.8593115548947579,
+      "mean_rudder_travel_rad": 3.6274774974971082
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 2,
+      "failures": 1,
+      "mean_max_y_m": 0.7107929671124402,
+      "mean_rudder_travel_rad": 7.334405479042621
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 10,
+      "failures": 2,
+      "mean_max_y_m": 6.895890839298115,
+      "mean_rudder_travel_rad": 4.671844703105202
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.8593115548947579,
+      "mean_rudder_travel_rad": 3.6274774974971082
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 2,
+      "failures": 1,
+      "mean_max_y_m": 0.7107929671124402,
+      "mean_rudder_travel_rad": 7.334405479042621
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 10,
+      "failures": 2,
+      "mean_max_y_m": 6.895890839298115,
+      "mean_rudder_travel_rad": 4.671844703105202
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_ppo_neither_s2",
+   "run": "runs/ese3990/M4U/main/ppo_U_s2",
+   "stage": "main",
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": true,
+   "wall_s": 1088.9631578559056,
+   "exact_replays": 1254,
+   "training": {
+    "episodes": 1125,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 1001232,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -4.82544609632355,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 17,
+     "failures": 0,
+     "mean_max_y_m": 18.51952439006118,
+     "mean_rudder_travel_rad": 8.178197301894231
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 1,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 3.0324732093460534
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 19.851821001566023,
+      "mean_rudder_travel_rad": 19.746984760389516
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 7,
+      "failures": 1,
+      "mean_max_y_m": 14.419633016756114,
+      "mean_rudder_travel_rad": 5.84182288289327
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 30,
+      "failures": 4,
+      "mean_max_y_m": 17.578490821477573,
+      "mean_rudder_travel_rad": 10.292710499262569
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.5994917120942826
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 2,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 2.574324704197835
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 5,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.180012695053768
+     }
+    }
+   }
+  },
+  {
+   "run_id": "main_sac_neither_s0",
+   "run": "runs/ese3990/M4U/main/sac_U_s0",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 0,
+   "budget": 4000000,
+   "reused_m4u": true,
+   "wall_s": 11672.545840496896,
+   "exact_replays": 1239,
+   "training": {
+    "episodes": 1110,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.149886832794386,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 5.47003099121857,
+     "mean_rudder_travel_rad": 3.546246812138775
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 5.47003099121857,
+     "mean_rudder_travel_rad": 3.546246812138775
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.892385272204325,
+      "mean_rudder_travel_rad": 9.001036804306253
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.4211301026856707,
+      "mean_rudder_travel_rad": 5.753791977764382
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 5.598900733710917,
+      "mean_rudder_travel_rad": 4.073744059404814
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.892385272204325,
+      "mean_rudder_travel_rad": 9.001036804306253
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.4211301026856707,
+      "mean_rudder_travel_rad": 5.753791977764382
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 5.598900733710917,
+      "mean_rudder_travel_rad": 4.073744059404814
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 4165.9521484375,
+    "q_min": null,
+    "q_max": null,
+    "final_mean_q": -3630.6865234375,
+    "in_feasible_band": false,
+    "final_alpha": 0.09607606381177902
+   }
+  },
+  {
+   "run_id": "main_sac_neither_s1",
+   "run": "runs/ese3990/M4U/main/sac_U_s1",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 1,
+   "budget": 4000000,
+   "reused_m4u": true,
+   "wall_s": 11673.54832760105,
+   "exact_replays": 1238,
+   "training": {
+    "episodes": 1109,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 4000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.126176705932413,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 4.03801245886673,
+     "mean_rudder_travel_rad": 2.048632604063054
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 4.03801245886673,
+     "mean_rudder_travel_rad": 2.048632604063054
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.603157931396475,
+      "mean_rudder_travel_rad": 3.4899999999999998
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.7714825646143169,
+      "mean_rudder_travel_rad": 4.165624006905029
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.1845679457677174,
+      "mean_rudder_travel_rad": 2.0968469358289665
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.603157931396475,
+      "mean_rudder_travel_rad": 3.4899999999999998
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.7714825646143169,
+      "mean_rudder_travel_rad": 4.165624006905029
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.1845679457677174,
+      "mean_rudder_travel_rad": 2.0968469358289665
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 2223.092041015625,
+    "q_min": null,
+    "q_max": null,
+    "final_mean_q": -1822.3173828125,
+    "in_feasible_band": false,
+    "final_alpha": 0.05468468368053436
+   }
+  },
+  {
+   "run_id": "main_sac_neither_s2",
+   "run": "runs/ese3990/M4U/main/sac_U_s2",
+   "stage": "main",
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 2,
+   "budget": 4000000,
+   "reused_m4u": true,
+   "wall_s": 11665.663097844925,
+   "exact_replays": 1241,
+   "training": {
+    "episodes": 1112,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 400000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.186014929983539,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 1,
+     "failures": 0,
+     "mean_max_y_m": 6.0924833543968075,
+     "mean_rudder_travel_rad": 7.119011235661129
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 1,
+     "failures": 3,
+     "mean_max_y_m": 1.127896616249305,
+     "mean_rudder_travel_rad": 10.182613342095726
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.811571966371881
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 1,
+      "mean_max_y_m": 3.5407109873959435,
+      "mean_rudder_travel_rad": 4.709913721796961
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 2.7301456349662074,
+      "mean_rudder_travel_rad": 3.924637039308132
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.7474993295224581,
+      "mean_rudder_travel_rad": 3.51189846792072
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.4175831262864208,
+      "mean_rudder_travel_rad": 5.159123231165127
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 3,
+      "mean_max_y_m": 0.9579509178216431,
+      "mean_rudder_travel_rad": 10.78453588718432
+     }
+    }
+   },
+   "sac": {
+    "q_abs_max": 5040.0927734375,
+    "q_min": null,
+    "q_max": null,
+    "final_mean_q": -3910.4052734375,
+    "in_feasible_band": false,
+    "final_alpha": 0.017545733600854874
+   }
+  },
+  {
+   "run_id": "extended_ppo_B_s0",
+   "run": "runs/ese3990/M5/extended/ppo_B_s0",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 0,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 2234.7304218200006,
+   "exact_replays": 11327,
+   "training": {
+    "episodes": 11114,
+    "random_starts": 0,
+    "finished": 1,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 2016905,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.282920122693951,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 1.7122915870671356,
+     "mean_rudder_travel_rad": 0.6980000000000001
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 3.158714328023791
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 0.698
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 7.981630317698814,
+      "mean_rudder_travel_rad": 0.6980000000000001
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 6.059780261362464,
+      "mean_rudder_travel_rad": 0.698
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.2395410724878317
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.093718582136767
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.1218855009794226
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_B_s1",
+   "run": "runs/ese3990/M5/extended/ppo_B_s1",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 1,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 2279.9799055309995,
+   "exact_replays": 11324,
+   "training": {
+    "episodes": 11111,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 40000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -4.87688454540227,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 3.7646125079385655,
+     "mean_rudder_travel_rad": 48.88760001250536
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 3.7646125079385655,
+     "mean_rudder_travel_rad": 48.88760001250536
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.6420950956888114,
+      "mean_rudder_travel_rad": 54.89688040625259
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 3,
+      "failures": 0,
+      "mean_max_y_m": 8.98302171321119,
+      "mean_rudder_travel_rad": 18.38245951941352
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.898471312708677,
+      "mean_rudder_travel_rad": 54.93590236162568
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.6420950956888114,
+      "mean_rudder_travel_rad": 54.89688040625259
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 3,
+      "failures": 0,
+      "mean_max_y_m": 8.98302171321119,
+      "mean_rudder_travel_rad": 18.38245951941352
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 3.898471312708677,
+      "mean_rudder_travel_rad": 54.93590236162568
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_B_s2",
+   "run": "runs/ese3990/M5/extended/ppo_B_s2",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 2,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 2245.816139578994,
+   "exact_replays": 11325,
+   "training": {
+    "episodes": 11112,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 30013066,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -4.899365128288922,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 16,
+     "failures": 0,
+     "mean_max_y_m": 21.939071512385052,
+     "mean_rudder_travel_rad": 16.04205287679212
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 19,
+     "failures": 0,
+     "mean_max_y_m": 4.787628097694588,
+     "mean_rudder_travel_rad": 4.631114717188106
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 0,
+      "mean_max_y_m": 12.915970509431078,
+      "mean_rudder_travel_rad": 26.450257761751793
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 12,
+      "failures": 0,
+      "mean_max_y_m": 17.537107958015,
+      "mean_rudder_travel_rad": 18.222297519581243
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 26,
+      "failures": 0,
+      "mean_max_y_m": 17.559293605872625,
+      "mean_rudder_travel_rad": 18.972672415739066
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 0,
+      "mean_max_y_m": 4.202925287818366,
+      "mean_rudder_travel_rad": 4.045135057026982
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 17,
+      "failures": 0,
+      "mean_max_y_m": 5.540378694947707,
+      "mean_rudder_travel_rad": 5.958891955756818
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 40,
+      "failures": 0,
+      "mean_max_y_m": 6.843173924576198,
+      "mean_rudder_travel_rad": 4.299451912077561
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_B_s3",
+   "run": "runs/ese3990/M5/extended/ppo_B_s3",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 3,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 2274.807428092012,
+   "exact_replays": 11328,
+   "training": {
+    "episodes": 11115,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 419591,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.063891495687018,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 7.656108998646009,
+     "mean_rudder_travel_rad": 23.956870405071324
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 20.887123057719958,
+     "mean_rudder_travel_rad": 26.713321369334075
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 2.8406112123671607,
+      "mean_rudder_travel_rad": 2.5894451970290424
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.5219589556789535,
+      "mean_rudder_travel_rad": 3.561574515198648
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 4.784876771717378,
+      "mean_rudder_travel_rad": 11.681097880246115
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 16.75994499812213,
+      "mean_rudder_travel_rad": 29.68152693665654
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 10,
+      "mean_max_y_m": 14.610129042899397,
+      "mean_rudder_travel_rad": 39.71296100281183
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 20.171689241402916,
+      "mean_rudder_travel_rad": 27.43773445236692
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_B_s4",
+   "run": "runs/ese3990/M5/extended/ppo_B_s4",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "B",
+   "seed": 4,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 2293.790365163004,
+   "exact_replays": 11325,
+   "training": {
+    "episodes": 11112,
+    "random_starts": 0,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 40000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -4.611121689477293,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 2,
+     "failures": 0,
+     "mean_max_y_m": 21.455177799912704,
+     "mean_rudder_travel_rad": 43.11257868875539
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 2,
+     "failures": 0,
+     "mean_max_y_m": 21.455177799912704,
+     "mean_rudder_travel_rad": 43.11257868875539
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 24.21720179271494,
+      "mean_rudder_travel_rad": 38.808818038969115
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 2,
+      "failures": 0,
+      "mean_max_y_m": 15.165288839584173,
+      "mean_rudder_travel_rad": 59.465433129408076
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 0,
+      "mean_max_y_m": 23.53901748681183,
+      "mean_rudder_travel_rad": 47.25545431215568
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 24.21720179271494,
+      "mean_rudder_travel_rad": 38.808818038969115
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 2,
+      "failures": 0,
+      "mean_max_y_m": 15.165288839584173,
+      "mean_rudder_travel_rad": 59.465433129408076
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 1,
+      "failures": 0,
+      "mean_max_y_m": 23.53901748681183,
+      "mean_rudder_travel_rad": 47.25545431215568
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_BS_s0",
+   "run": "runs/ese3990/M5/extended/ppo_BS_s0",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 0,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 2261.426608902999,
+   "exact_replays": 11328,
+   "training": {
+    "episodes": 11115,
+    "random_starts": 5557,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 30013126,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.063323330342124,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.5326164619376244,
+     "mean_rudder_travel_rad": 60.962906197403626
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 34.127101384605105
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 1.231843996525378,
+      "mean_rudder_travel_rad": 67.13197639807873
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.5152165725697762,
+      "mean_rudder_travel_rad": 36.71613953023967
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.19771384561991995,
+      "mean_rudder_travel_rad": 54.70854749355974
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 30.72574510591471
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.049713764011165326,
+      "mean_rudder_travel_rad": 21.333693868307765
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 31.275824938092146
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_BS_s1",
+   "run": "runs/ese3990/M5/extended/ppo_BS_s1",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 1,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 1860.4644747679995,
+   "exact_replays": 11327,
+   "training": {
+    "episodes": 11114,
+    "random_starts": 5557,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 10004149,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.1113516527000575,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 3.306439990682563
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.025761432831167073,
+     "mean_rudder_travel_rad": 4.375485570713318
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.4533253210559374
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 3.0287605816409338
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.3783894496720395
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 4.146703558467337
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.044321395761039876,
+      "mean_rudder_travel_rad": 6.724781955620754
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.003488295962102703,
+      "mean_rudder_travel_rad": 5.163982523293761
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_BS_s2",
+   "run": "runs/ese3990/M5/extended/ppo_BS_s2",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 2,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 1866.6774629919964,
+   "exact_replays": 11328,
+   "training": {
+    "episodes": 11115,
+    "random_starts": 5557,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 30013121,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.044715227480783,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.19672343037052295,
+     "mean_rudder_travel_rad": 51.41558276454231
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.2653076409387364,
+     "mean_rudder_travel_rad": 49.40518594106344
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 49.132157492354516
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.12693925724270316,
+      "mean_rudder_travel_rad": 31.331748822296
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.08831674516395609,
+      "mean_rudder_travel_rad": 61.96670228790569
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 62.34053034433256
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.13233570769988748,
+      "mean_rudder_travel_rad": 44.732618838883155
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.17905960875774896,
+      "mean_rudder_travel_rad": 68.54298612495232
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_BS_s3",
+   "run": "runs/ese3990/M5/extended/ppo_BS_s3",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 3,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 1845.3850716839952,
+   "exact_replays": 11333,
+   "training": {
+    "episodes": 11120,
+    "random_starts": 5560,
+    "finished": 0,
+    "finished_random_start": 0
+   },
+   "selected_decisions": 40000000,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.054177804597047,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.022278223120478925,
+     "mean_rudder_travel_rad": 22.126576028833746
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.022278223120478925,
+     "mean_rudder_travel_rad": 22.126576028833746
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 23.31440550033465
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 6.3626596933542485
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0718076274286961,
+      "mean_rudder_travel_rad": 19.688891947137
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 23.31440550033465
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 6.3626596933542485
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0718076274286961,
+      "mean_rudder_travel_rad": 19.688891947137
+     }
+    }
+   }
+  },
+  {
+   "run_id": "extended_ppo_BS_s4",
+   "run": "runs/ese3990/M5/extended/ppo_BS_s4",
+   "stage": "extended",
+   "learner": "ppo",
+   "cell": "BS",
+   "seed": 4,
+   "budget": 40000000,
+   "reused_m4u": false,
+   "wall_s": 1844.2570203710056,
+   "exact_replays": 11340,
+   "training": {
+    "episodes": 11127,
+    "random_starts": 5563,
+    "finished": 1,
+    "finished_random_start": 1
+   },
+   "selected_decisions": 30012933,
+   "selected_is_calibration": false,
+   "selected_val_mean_return": -5.033428498083287,
+   "validation": {
+    "selected": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.04816050010712998,
+     "mean_rudder_travel_rad": 6.616903879423785
+    },
+    "final": {
+     "episodes": 20,
+     "finished": 0,
+     "tack_episodes": 0,
+     "failures": 0,
+     "mean_max_y_m": 0.0,
+     "mean_rudder_travel_rad": 31.50641164238961
+    }
+   },
+   "heldout": {
+    "selected": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 6.392474299281827
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.09178598277786887,
+      "mean_rudder_travel_rad": 5.3675095768234025
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.018792164592710717,
+      "mean_rudder_travel_rad": 6.364544944241735
+     }
+    },
+    "final": {
+     "nominal": {
+      "episodes": 1,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0,
+      "mean_rudder_travel_rad": 15.237819762827307
+     },
+     "shift": {
+      "episodes": 20,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 1,
+      "mean_max_y_m": 0.9066550718941396,
+      "mean_rudder_travel_rad": 28.456852580264098
+     },
+     "test": {
+      "episodes": 50,
+      "finished": 0,
+      "tack_episodes": 0,
+      "failures": 0,
+      "mean_max_y_m": 0.0002281678641299819,
+      "mean_rudder_travel_rad": 31.82685044910262
+     }
+    }
+   }
+  }
+ ]
+}

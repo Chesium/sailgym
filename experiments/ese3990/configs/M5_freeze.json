@@ -1,0 +1,585 @@
+{
+ "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+ "frozen_at_utc": "2026-11-17T03:53:58.284458+00:00",
+ "task": "U",
+ "contract_version": 2,
+ "contract_amendment_sha256": {
+  "2": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac"
+ },
+ "identity": {
+  "model": {
+   "model_version": 2,
+   "source": {
+    "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+    "state": "dirty"
+   }
+  },
+  "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+  "research_state_version": 1,
+  "feature_version": 1,
+  "reward_version": 1
+ },
+ "training_seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "pilot_seed": 100,
+ "start_box": [
+  -10.0,
+  10.0,
+  25.0,
+  39.0
+ ],
+ "starts": "alternate frozen/random training episodes; uniform heading on random starts; calibration/evaluation frozen",
+ "cells": {
+  "neither": {
+   "hold": 1,
+   "randomized_starts": false
+  },
+  "B": {
+   "hold": 10,
+   "randomized_starts": false
+  },
+  "S": {
+   "hold": 1,
+   "randomized_starts": true
+  },
+  "BS": {
+   "hold": 10,
+   "randomized_starts": true
+  }
+ },
+ "configs": {
+  "ppo_neither": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "rollout": 2048,
+   "minibatch": 256,
+   "epochs": 4,
+   "clip": 0.2,
+   "lam": 0.95,
+   "lr": 0.0003,
+   "max_grad_norm": 1.0,
+   "vf_coef": 0.5,
+   "ent_coef": 0.001,
+   "log_std": -0.5,
+   "hidden": 64,
+   "arm": "ppo"
+  },
+  "ppo_B": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "rollout": 2048,
+   "minibatch": 256,
+   "epochs": 4,
+   "clip": 0.2,
+   "lam": 0.95,
+   "lr": 0.0003,
+   "max_grad_norm": 1.0,
+   "vf_coef": 0.5,
+   "ent_coef": 0.001,
+   "log_std": -0.5,
+   "hidden": 64,
+   "arm": "ppo",
+   "m5": {
+    "cell": "B",
+    "hold": 10,
+    "starts": false,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "ppo_S": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "rollout": 2048,
+   "minibatch": 256,
+   "epochs": 4,
+   "clip": 0.2,
+   "lam": 0.95,
+   "lr": 0.0003,
+   "max_grad_norm": 1.0,
+   "vf_coef": 0.5,
+   "ent_coef": 0.001,
+   "log_std": -0.5,
+   "hidden": 64,
+   "arm": "ppo",
+   "m5": {
+    "cell": "S",
+    "hold": 1,
+    "starts": true,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "ppo_BS": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "rollout": 2048,
+   "minibatch": 256,
+   "epochs": 4,
+   "clip": 0.2,
+   "lam": 0.95,
+   "lr": 0.0003,
+   "max_grad_norm": 1.0,
+   "vf_coef": 0.5,
+   "ent_coef": 0.001,
+   "log_std": -0.5,
+   "hidden": 64,
+   "arm": "ppo",
+   "m5": {
+    "cell": "BS",
+    "hold": 10,
+    "starts": true,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "sac_neither": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "lr": 0.0003,
+   "hidden": 64,
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "max_grad_norm": 1.0,
+   "replay": 400000,
+   "minibatch": 256,
+   "utd": 1,
+   "tau": 0.005,
+   "alpha0": 0.2,
+   "target_entropy": -2.0,
+   "log_every": 2048,
+   "arm": "sac"
+  },
+  "sac_B": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "lr": 0.0003,
+   "hidden": 64,
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "max_grad_norm": 1.0,
+   "replay": 400000,
+   "minibatch": 256,
+   "utd": 1,
+   "tau": 0.005,
+   "alpha0": 0.2,
+   "target_entropy": -2.0,
+   "log_every": 2048,
+   "arm": "sac",
+   "m5": {
+    "cell": "B",
+    "hold": 10,
+    "starts": false,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "sac_S": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "lr": 0.0003,
+   "hidden": 64,
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "max_grad_norm": 1.0,
+   "replay": 400000,
+   "minibatch": 256,
+   "utd": 1,
+   "tau": 0.005,
+   "alpha0": 0.2,
+   "target_entropy": -2.0,
+   "log_every": 2048,
+   "arm": "sac",
+   "m5": {
+    "cell": "S",
+    "hold": 1,
+    "starts": true,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "sac_BS": {
+   "task": "U",
+   "decisions": 4000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000
+   ],
+   "lr": 0.0003,
+   "hidden": 64,
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "max_grad_norm": 1.0,
+   "replay": 400000,
+   "minibatch": 256,
+   "utd": 1,
+   "tau": 0.005,
+   "alpha0": 0.2,
+   "target_entropy": -2.0,
+   "log_every": 2048,
+   "arm": "sac",
+   "m5": {
+    "cell": "BS",
+    "hold": 10,
+    "starts": true,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "ppo_B_extended": {
+   "task": "U",
+   "decisions": 40000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000,
+    10000000,
+    20000000,
+    30000000,
+    40000000
+   ],
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "rollout": 2048,
+   "minibatch": 256,
+   "epochs": 4,
+   "clip": 0.2,
+   "lam": 0.95,
+   "lr": 0.0003,
+   "max_grad_norm": 1.0,
+   "vf_coef": 0.5,
+   "ent_coef": 0.001,
+   "log_std": -0.5,
+   "hidden": 64,
+   "arm": "ppo",
+   "m5": {
+    "cell": "B",
+    "hold": 10,
+    "starts": false,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  },
+  "ppo_BS_extended": {
+   "task": "U",
+   "decisions": 40000000,
+   "checkpoints": [
+    0,
+    400000,
+    1000000,
+    2000000,
+    3000000,
+    4000000,
+    10000000,
+    20000000,
+    30000000,
+    40000000
+   ],
+   "calibration_decisions": 10000,
+   "calibration_hold": 10,
+   "norm_clip": 5.0,
+   "std_floor": 0.01,
+   "rollout": 2048,
+   "minibatch": 256,
+   "epochs": 4,
+   "clip": 0.2,
+   "lam": 0.95,
+   "lr": 0.0003,
+   "max_grad_norm": 1.0,
+   "vf_coef": 0.5,
+   "ent_coef": 0.001,
+   "log_std": -0.5,
+   "hidden": 64,
+   "arm": "ppo",
+   "m5": {
+    "cell": "BS",
+    "hold": 10,
+    "starts": true,
+    "box": [
+     -10.0,
+     10.0,
+     25.0,
+     39.0
+    ],
+    "label": "M5 upwind without demonstrations (post-hoc, exploratory)",
+    "short_final_minibatch": "min(configured size, final rollout)"
+   }
+  }
+ },
+ "reuse": [
+  {
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 0,
+   "run": "runs/ese3990/M4U/main/ppo_U_s0",
+   "hashes": {
+    "config.json": "c33a28b7fd1c574a47da5358749a8ae18e1f75ee370b229d659eff96842ac865",
+    "summary.json": "7a3f2f127e5d1471683037734b3aad3420ceac1520d4acbe0be415a23074e155",
+    "curve.jsonl": "cee46ca50cc062826fbe0f3d111c77d63a947c439dba0c1e2750145ed4056e2d"
+   }
+  },
+  {
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 1,
+   "run": "runs/ese3990/M4U/main/ppo_U_s1",
+   "hashes": {
+    "config.json": "22b205f2669771fa910e61f29b510144752857dc1a81849c652ed15bff4a9933",
+    "summary.json": "cd8b60c384710d943912d631f68c2ea21244c72291eea7e9600ac74b74dcac47",
+    "curve.jsonl": "b2cbca718d9c9534425c15788a705932e7ec9eb209ff16ee4d1a989cfb6b8e9f"
+   }
+  },
+  {
+   "learner": "ppo",
+   "cell": "neither",
+   "seed": 2,
+   "run": "runs/ese3990/M4U/main/ppo_U_s2",
+   "hashes": {
+    "config.json": "9875565b53a7682f28f51aa2afd0c33b27eca5f185b0f859addbf4d849aef5cd",
+    "summary.json": "199d6988d6378a61f95e1932ae9493172688ee34d7d9c05001c0412c65a7422f",
+    "curve.jsonl": "18c8615a1e0e7a39ed9e8c86d51bfc57e4c4b58f78ae1c76fd251fb20e4505aa"
+   }
+  },
+  {
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 0,
+   "run": "runs/ese3990/M4U/main/sac_U_s0",
+   "hashes": {
+    "config.json": "0719fa6c5a1ee1e3e68287328b84e03bc67f94d101f1ad6b52914a11bf029250",
+    "summary.json": "9fd0fc053b63a69aae25d04ca03658abe1edb9bad71565451674c1b51f233059",
+    "curve.jsonl": "39c76b2e86dd4e21b3424357f3cb5a7c081527ce75e35cc72a1e4db142953b04"
+   }
+  },
+  {
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 1,
+   "run": "runs/ese3990/M4U/main/sac_U_s1",
+   "hashes": {
+    "config.json": "e77a06ddadd72e0c56ff81218e2290f40700440415621c9629d13616c81d913f",
+    "summary.json": "c4e272575afcece8ca8c0ba74d5b0df621dcba276191f00914757161b5441dc5",
+    "curve.jsonl": "319a89d01975d518b82e6a97356fe6a06056a5c67effa57aac9f714d4b3495cf"
+   }
+  },
+  {
+   "learner": "sac",
+   "cell": "neither",
+   "seed": 2,
+   "run": "runs/ese3990/M4U/main/sac_U_s2",
+   "hashes": {
+    "config.json": "f653fb77d1b1ddd4064bba3cdc73e1623ef44053c422e191a0452b21e434e09b",
+    "summary.json": "310896449c6597743b71f92754ee5809b7b16721123ab508bca1c83f993b1fd5",
+    "curve.jsonl": "102a53d681b127b282c2e841f326e6c6c6b2abb504c23eae73b8d3bdfdeba6c2"
+   }
+  }
+ ],
+ "sources": {
+  "experiments/ese3990/m5.py": "4221c0098461c8530e325347a2e115bfbdf89f68bf101bc12ab9263e8a02181d",
+  "experiments/ese3990/m5_train.py": "395f816da9078009caf51119170021f783deb0af059a1879b7effb4bacf527b2",
+  "experiments/ese3990/m5_study.py": "6102806e17be6393c198f39993aa93e88748a80c2e14c9464d49b33345ebe795",
+  "experiments/ese3990/train.py": "2dedf2904f04888057f1ef8b65cbd89de445aeea17bc4e676faa704d0de0570c",
+  "experiments/ese3990/ppo.py": "b383dc76fd3c280e04d3588c9cb8fe27839ed1b7dbea0f0c7a723e9417a093f2",
+  "experiments/ese3990/sac.py": "470dddb9a70b836a6d04f8b620dfeae9175297e6b1c1dd96ba7adf2f43712447",
+  "experiments/ese3990/probe.py": "10ee44e9bcbeb22022c3425ae352b9458f16cab3c479291bbf592fff96f76222",
+  "experiments/ese3990/baselines.py": "4c68fc60ccf2a6046cccfd4f8c15fc9474216b6af2d73ab79e97f6b0bf275d13",
+  "experiments/ese3990/evaluate.py": "9c790e5ad0693db6fc27efd3dd27db8f516d9b92be4862fe5f03b2ed567401cc",
+  "experiments/ese3990/sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736",
+  "experiments/ese3990/make_conditions.py": "b0b31785b0995371ae15d749ad2d881edc454b5962cf0a8a4529ad9f5493abab",
+  "experiments/ese3990/compare.py": "03281277d68d374dad2e6a1f3660c10c4668e844fed9a0c3178f47d532e2ac72",
+  "experiments/ese3990/viz/episode_store.py": "f64bc6f29675f05bb521ad8e639a027ef4fc47c8867faf6ec64f9426426d87d8",
+  "experiments/ese3990/viz/replay.py": "927008b4199d515d3d8c91a176e130299d8857ed57ae6981c918f7b7f7cff8cf",
+  "experiments/ese3990/configs/tasks.json": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+  "experiments/ese3990/configs/tasks_v2.json": "fcd8f35bc991ac0f0f75814eca92da6631091366d8a31548e49220331eb4c8ac",
+  "experiments/ese3990/configs/M4U_train_freeze.json": "a5baa2682e6bab3a2e330d9e121f01130e6b049068d645bbee2432cd3b7c56f8",
+  "experiments/ese3990/configs/M4U_diagnostics.json": "33e6e9286da091c9235844dc38cebcd92c4d905fc35bf89f996e6b0a15ce980f",
+  "experiments/ese3990/configs/conditions/training.json": "ddca6afd52b94b5d35c98af0ffa6e1d52be5191c2a6b5b1a96fd0b89b8963df3",
+  "experiments/ese3990/configs/conditions/validation.json": "3efcb45ff580c0c8abfbd1bc94ccfcd2381b58826c43a118fc22064a2f4bc965",
+  "experiments/ese3990/configs/conditions/test.json": "88c4e38aea3e4030025e631d2b04ceae8f524dd4639a2228d7af253c5c45d825",
+  "experiments/ese3990/configs/conditions/shift.json": "f4a3e0efac5e9e2ea29ed79fac83c082b09f12d12e30813cb302eb43354a2f2a"
+ },
+ "evidence": {
+  "runs/ese3990/M5/start_box_near_gate/results.json": "cbd5dbb67ef9109be4b9252b2cdbd19e14b13c6cee95cf888f5a61d952225d45",
+  "runs/ese3990/M5/smoke_audit.json": "364414cc117c6a0fc095b6e89856e14ebabdd3543ca766b8b1440a79fb5ba90c",
+  "scenarios/free_sail.json": "fc909f1bcf2cb0df10943d155a1f79e149b6dc1b1ca5dab270222ddd0740b12f",
+  "pyproject.toml": "b8f50df7fb5873b886739c7dedfd835ff20bfdd68b03ddb73f084aa1ebb32d62",
+  "uv.lock": "0bdf29ce2a8c87806e4e5a1b85d5daa8c06e0454fd3e29942168bb6e87d17a5a"
+ },
+ "selection": "most validation finishes, highest mean return, earliest checkpoint",
+ "threshold": {
+  "seeds_finishing": 3,
+  "seeds": 5,
+  "val_finishes_per_seed": 1,
+  "val_episodes": 20
+ },
+ "q_feasible_band": [
+  -22.3,
+  15.7
+ ],
+ "readings": [
+  [
+   "B finishes, S does not",
+   "The decision interval was the bottleneck"
+  ],
+  [
+   "S finishes, B does not",
+   "Discovering a first finish was the bottleneck"
+  ],
+  [
+   "Only B + S finishes",
+   "Both are needed, as in Bink's setup"
+  ],
+  [
+   "No cell finishes",
+   "Neither change is sufficient; run the second stage"
+  ],
+  [
+   "A PPO cell finishes only at 40M",
+   "PPO's B result is update-bound, not decision-interval-bound"
+  ],
+  [
+   "One learner finishes where the other does not",
+   "Report Q band and tack diagnostics; no ranking claim beyond these seeds"
+  ]
+ ],
+ "evaluation": "frozen start/20 Hz/U gamma; B actions held for 10 decisions; test/shift only after held-out freeze",
+ "budget": "4M actual raw decisions including 10k calibration; PPO B/BS additional 40M rows separate",
+ "checkpoint_rule": "M4U targets evaluated at the next completed PPO rollout, as in M4U; final budget exact",
+ "second_stage": "only if called for by first-stage readings; separate freeze required"
+}

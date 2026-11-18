@@ -1,0 +1,185 @@
+{
+  "label": "M5b upwind without demonstrations (post-hoc, exploratory)",
+  "frozen_at_utc": "2026-11-18T15:20:07.955409+00:00",
+  "identity": {
+    "model": {
+      "model_version": 2,
+      "source": {
+        "tree": "701e3b17af1e6d25b2f8fd896ebd7967196f2439",
+        "state": "dirty"
+      }
+    },
+    "tasks_json_sha256": "3115e1bf8d5f7b035ae03aadc384b23ee1d1f79a6236b9990bbcc56185f1fac0",
+    "research_state_version": 1,
+    "feature_version": 1,
+    "reward_version": 1
+  },
+  "task": "U",
+  "training_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "pilot_seed": 100,
+  "decision_budget": 4000000,
+  "configs": {
+    "sac_SAC-E": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 400000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048,
+      "arm": "SAC-E",
+      "label": "M5b upwind without demonstrations (post-hoc, exploratory)"
+    },
+    "ppo_PPO-8": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "rollout": 2048,
+      "minibatch": 256,
+      "epochs": 4,
+      "clip": 0.2,
+      "lam": 0.95,
+      "lr": 0.0003,
+      "max_grad_norm": 1.0,
+      "vf_coef": 0.5,
+      "ent_coef": 0.001,
+      "log_std": -0.5,
+      "hidden": 64,
+      "arm": "PPO-8",
+      "label": "M5b upwind without demonstrations (post-hoc, exploratory)"
+    },
+    "sac_SAC-P": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "lr": 0.0003,
+      "hidden": 64,
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "max_grad_norm": 1.0,
+      "replay": 400000,
+      "minibatch": 256,
+      "utd": 1,
+      "tau": 0.005,
+      "alpha0": 0.2,
+      "target_entropy": -2.0,
+      "log_every": 2048,
+      "arm": "SAC-P",
+      "label": "M5b upwind without demonstrations (post-hoc, exploratory)"
+    },
+    "ppo_PPO-sigma": {
+      "task": "U",
+      "decisions": 4000000,
+      "checkpoints": [
+        0,
+        400000,
+        1000000,
+        2000000,
+        3000000,
+        4000000
+      ],
+      "calibration_decisions": 10000,
+      "calibration_hold": 10,
+      "norm_clip": 5.0,
+      "std_floor": 0.01,
+      "rollout": 2048,
+      "minibatch": 256,
+      "epochs": 4,
+      "clip": 0.2,
+      "lam": 0.95,
+      "lr": 0.0003,
+      "max_grad_norm": 1.0,
+      "vf_coef": 0.5,
+      "ent_coef": 0.001,
+      "log_std": -1.2039728043259361,
+      "hidden": 64,
+      "arm": "PPO-sigma",
+      "label": "M5b upwind without demonstrations (post-hoc, exploratory)"
+    }
+  },
+  "threshold": {
+    "seeds_finishing": 3,
+    "seeds": 5,
+    "val_finishes_per_seed": 1,
+    "val_episodes": 20
+  },
+  "q_feasible_band": [
+    -22.3,
+    15.7
+  ],
+  "baseline": "M5 4M neither rows on the same five seeds",
+  "best_cell_rule": "Qualifying seeds, settled-tack episodes, then mean maximum y on selected validation checkpoints",
+  "best_cells": {
+    "ppo": "neither",
+    "sac": "neither"
+  },
+  "treatments": {
+    "SAC-E": "Omit critic-target entropy; retain actor and temperature losses",
+    "PPO-8": "Eight persistent environments, 256 decisions each, shared condition stream and per-lane GAE boundaries",
+    "SAC-P": "clip(tanh(mu) + 0.3 * pink, -1, 1), independent beta=1 sequences per episode and action dimension",
+    "PPO-sigma": "Initial log_std=ln(0.3)"
+  },
+  "selection": "most validation finishes, highest mean return, earliest checkpoint",
+  "evaluation": "frozen start/20 Hz/U gamma; B actions held for 10 decisions; test/shift only after held-out freeze",
+  "readings": [
+    "If an arm qualifies, compare with its same-seed baseline and report test and shift transfer.",
+    "If SAC-E keeps Q inside the reference band without qualifying, correcting critic scale alone was insufficient.",
+    "If both arms of one learner qualify, report them separately.",
+    "If no arm qualifies, close M5 at these budgets. Reverse curricula, demonstrations and reset exploration are later work."
+  ],
+  "sources": {
+    "experiments/ese3990/configs/M5_freeze.json": "82cc283ad7dabd327043661083562b2fb86f03843aab293285f1839b37cfea3a",
+    "docs/ese3990/M5_results.json": "478256db1235dbd32fe6a80a21504c408da1cbfdb120109fc78bd26a1e6d2057",
+    "runs/ese3990/M5b/smoke_audit.json": "f51b528a9ad65679809c6af4ce18fbad2be65cb9f29c6d23ebcea730d7ec864c",
+    "experiments/ese3990/m5b.py": "274e947c3cdf1352b14bc842d40e1169ea7716cd938eb702f8de43a167faaac3",
+    "experiments/ese3990/m5b_study.py": "3c7761d1f264b3efb797c1717fd3f75191ebd7fece73cbe9afd91a37c14ccc1b",
+    "experiments/ese3990/m5_compare.py": "c630b10b58ca2f09e1f82c9832fcb73d5fdfac3d93c831b57b3c1d9ba7503b08",
+    "experiments/ese3990/m5_followup.py": "95b80d16ed6a971be37d4ca98d559fe3914aaba4c572499befd8c4d990117d04",
+    "experiments/ese3990/m5_report.py": "eefed2a0d853d387c89e67743d665bc106fe7629ead6246ca2853e326bec2642",
+    "experiments/ese3990/u_diagnostics.py": "1c4fed659d9fca856bf1239e37508fc50f17a16d2b4b0326ebb1d029a371e1ea",
+    "experiments/ese3990/tests/test_m5b.py": "7e5bb2924de352634521b876f5dc982b9322cefa629eaeef423364fde9b12f63"
+  }
+}
