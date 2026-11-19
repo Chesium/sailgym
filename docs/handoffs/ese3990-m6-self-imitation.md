@@ -1,0 +1,7 @@
+# M6 opening handoff and self-imitation
+
+The campaign started November 19 at 12:00:41 Singapore time under `sailgym-m6-imitation.service`. The [run directory](../../runs/ese3990/M6/imitation) holds the frozen protocol, control hashes, rollout logs and episode stores. The [runner](../../experiments/ese3990/m6_imitation.py) executes the four handoffs, three independent training fits, exact replay, the two retention comparisons and the conditional transfer decision. Initial allowance was 64% for five hours and 73% weekly. No subagents were used.
+
+Inspect `systemctl --user status sailgym-m6-imitation` and the run's status.json and worker logs. To reproduce with the archived M6 first/width inputs and a fresh output directory, run `env -u PYTHONPATH OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 XLA_FLAGS=--xla_cpu_multi_thread_eigen=false .venv/bin/python experiments/ese3990/m6_imitation.py campaign`. The trainer refuses to overwrite existing campaign output. After completion, run `env -u PYTHONPATH .venv/bin/python experiments/ese3990/m6_imitation_report.py` for the numerical results and Markdown tables.
+
+The campaign completed at 12:07:17 Singapore time in 6 min 36 s. Seven focused tests passed. All three training prefixes matched the saved controls and all 2,468 new records replayed exactly. The fresh probe threshold closed the transfer branch. [Report](../ese3990/M6_imitation_report.md) · [Numerical results](../ese3990/M6_imitation_results.json)

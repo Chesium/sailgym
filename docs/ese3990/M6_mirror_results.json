@@ -1,0 +1,919 @@
+{
+ "status": {
+  "phase": "complete",
+  "elapsed_s": 259.98797035217285,
+  "qualified": [],
+  "transfer": false
+ },
+ "seeds": {
+  "0": {
+   "cost": {
+    "real_successes": 2,
+    "real_rows": 570,
+    "mirror_finishes": 2,
+    "mirror_rows": 570,
+    "extra_decisions": 570
+   },
+   "training_success": {
+    "west": {
+     "n": 1,
+     "wins": 1,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 1
+     }
+    },
+    "east": {
+     "n": 1,
+     "wins": 1,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 1
+     }
+    }
+   },
+   "reflections": {
+    "west": {
+     "n": 1,
+     "wins": 1,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 1
+     }
+    },
+    "east": {
+     "n": 1,
+     "wins": 1,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 1
+     }
+    }
+   },
+   "mirror_probes": [
+    1,
+    0,
+    0,
+    1
+   ],
+   "control_probes": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "paired": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 10,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 40
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 0,
+      "settled": 10,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 39,
+       "out_of_bounds": 1
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 1,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 39,
+       "finished": 1
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 0,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 40
+      }
+     }
+    },
+    "west": {
+     "retained": [],
+     "gained": [
+      "train-s615100-000027-west"
+     ],
+     "lost": []
+    },
+    "east": {
+     "retained": [],
+     "gained": [],
+     "lost": []
+    },
+    "both": [
+     0,
+     0
+    ]
+   },
+   "previous": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 6,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 40
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 0,
+      "settled": 10,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 38,
+       "out_of_bounds": 2
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 40
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 0,
+      "settled": 3,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 36,
+       "mark_missed": 4
+      }
+     }
+    },
+    "west": {
+     "retained": [],
+     "gained": [],
+     "lost": []
+    },
+    "east": {
+     "retained": [],
+     "gained": [],
+     "lost": []
+    }
+   },
+   "new": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 6,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 40
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 0,
+      "settled": 9,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 39,
+       "out_of_bounds": 1
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 1,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 40
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 0,
+      "settled": 1,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 38,
+       "mark_missed": 2
+      }
+     }
+    },
+    "west": {
+     "retained": [],
+     "gained": [],
+     "lost": []
+    },
+    "east": {
+     "retained": [],
+     "gained": [],
+     "lost": []
+    }
+   },
+   "validation": [
+    0,
+    0
+   ],
+   "new_replays": 541
+  },
+  "1": {
+   "cost": {
+    "real_successes": 10,
+    "real_rows": 2470,
+    "mirror_finishes": 10,
+    "mirror_rows": 2470,
+    "extra_decisions": 2470
+   },
+   "training_success": {
+    "west": {
+     "n": 2,
+     "wins": 2,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 2
+     }
+    },
+    "east": {
+     "n": 8,
+     "wins": 8,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 8
+     }
+    }
+   },
+   "reflections": {
+    "west": {
+     "n": 8,
+     "wins": 8,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 8
+     }
+    },
+    "east": {
+     "n": 2,
+     "wins": 2,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 2
+     }
+    }
+   },
+   "mirror_probes": [
+    6,
+    0,
+    7,
+    5,
+    4
+   ],
+   "control_probes": [
+    6,
+    0,
+    1,
+    3
+   ],
+   "paired": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 7,
+      "settled": 4,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 18,
+       "mark_missed": 14,
+       "finished": 7,
+       "out_of_bounds": 1
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 6,
+      "settled": 2,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 16,
+       "finished": 6,
+       "truncated": 16,
+       "out_of_bounds": 2
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 8,
+      "settled": 9,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 26,
+       "finished": 8,
+       "mark_missed": 5,
+       "out_of_bounds": 1
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 8,
+      "settled": 5,
+      "settled_wins": 1,
+      "outcomes": {
+       "mark_missed": 7,
+       "finished": 8,
+       "truncated": 21,
+       "out_of_bounds": 4
+      }
+     }
+    },
+    "west": {
+     "retained": [
+      "train-s615100-000009-west",
+      "train-s615100-000015-west",
+      "train-s615100-000021-west",
+      "train-s615100-000031-west",
+      "train-s615100-000039-west"
+     ],
+     "gained": [
+      "train-s615100-000001-west",
+      "train-s615100-000027-west",
+      "train-s615100-000032-west"
+     ],
+     "lost": [
+      "train-s615100-000007-west",
+      "train-s615100-000023-west"
+     ]
+    },
+    "east": {
+     "retained": [
+      "train-s615100-000001-east",
+      "train-s615100-000009-east",
+      "train-s615100-000021-east",
+      "train-s615100-000027-east",
+      "train-s615100-000031-east"
+     ],
+     "gained": [
+      "train-s615100-000015-east",
+      "train-s615100-000032-east",
+      "train-s615100-000039-east"
+     ],
+     "lost": [
+      "train-s615100-000007-east"
+     ]
+    },
+    "both": [
+     4,
+     8
+    ]
+   },
+   "previous": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 10,
+      "settled": 7,
+      "settled_wins": 2,
+      "outcomes": {
+       "mark_missed": 19,
+       "finished": 10,
+       "truncated": 10,
+       "out_of_bounds": 1
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 5,
+      "settled": 3,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 16,
+       "truncated": 19,
+       "finished": 5
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 6,
+      "settled": 2,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 12,
+       "out_of_bounds": 3,
+       "truncated": 19,
+       "finished": 6
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 9,
+      "settled": 5,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 18,
+       "mark_missed": 10,
+       "out_of_bounds": 3,
+       "finished": 9
+      }
+     }
+    },
+    "west": {
+     "retained": [
+      "train-s616101-000008",
+      "train-s616101-000024",
+      "train-s616101-000036",
+      "train-s616101-000044"
+     ],
+     "gained": [
+      "train-s616101-000018",
+      "train-s616101-000068"
+     ],
+     "lost": [
+      "train-s616101-000002",
+      "train-s616101-000012",
+      "train-s616101-000034",
+      "train-s616101-000052",
+      "train-s616101-000062",
+      "train-s616101-000064"
+     ]
+    },
+    "east": {
+     "retained": [
+      "train-s616101-000015",
+      "train-s616101-000025",
+      "train-s616101-000061"
+     ],
+     "gained": [
+      "train-s616101-000037",
+      "train-s616101-000045",
+      "train-s616101-000063",
+      "train-s616101-000065",
+      "train-s616101-000067",
+      "train-s616101-000071"
+     ],
+     "lost": [
+      "train-s616101-000057",
+      "train-s616101-000073"
+     ]
+    }
+   },
+   "new": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 7,
+      "settled": 1,
+      "settled_wins": 1,
+      "outcomes": {
+       "mark_missed": 21,
+       "truncated": 12,
+       "finished": 7
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 1,
+      "settled": 2,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 19,
+       "mark_missed": 20,
+       "finished": 1
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 11,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 19,
+       "mark_missed": 9,
+       "finished": 11,
+       "out_of_bounds": 1
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 3,
+      "settled": 9,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 9,
+       "truncated": 25,
+       "out_of_bounds": 3,
+       "finished": 3
+      }
+     }
+    },
+    "west": {
+     "retained": [
+      "train-s616201-000012",
+      "train-s616201-000014",
+      "train-s616201-000036"
+     ],
+     "gained": [
+      "train-s616201-000018",
+      "train-s616201-000032",
+      "train-s616201-000040",
+      "train-s616201-000048",
+      "train-s616201-000054",
+      "train-s616201-000062",
+      "train-s616201-000066",
+      "train-s616201-000078"
+     ],
+     "lost": [
+      "train-s616201-000004",
+      "train-s616201-000008",
+      "train-s616201-000060",
+      "train-s616201-000076"
+     ]
+    },
+    "east": {
+     "retained": [
+      "train-s616201-000047"
+     ],
+     "gained": [
+      "train-s616201-000031",
+      "train-s616201-000049"
+     ],
+     "lost": []
+    }
+   },
+   "validation": [
+    0,
+    0
+   ],
+   "new_replays": 588
+  },
+  "2": {
+   "cost": {
+    "real_successes": 53,
+    "real_rows": 16119,
+    "mirror_finishes": 53,
+    "mirror_rows": 16119,
+    "extra_decisions": 16119
+   },
+   "training_success": {
+    "west": {
+     "n": 26,
+     "wins": 26,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 26
+     }
+    },
+    "east": {
+     "n": 27,
+     "wins": 27,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 27
+     }
+    }
+   },
+   "reflections": {
+    "west": {
+     "n": 27,
+     "wins": 27,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 27
+     }
+    },
+    "east": {
+     "n": 26,
+     "wins": 26,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "finished": 26
+     }
+    }
+   },
+   "mirror_probes": [
+    0,
+    0,
+    1,
+    3,
+    2,
+    5,
+    3,
+    3
+   ],
+   "control_probes": [
+    0,
+    0,
+    2,
+    4,
+    1
+   ],
+   "paired": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 12,
+       "truncated": 26,
+       "out_of_bounds": 2
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 9,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 24,
+       "finished": 9,
+       "mark_missed": 4,
+       "out_of_bounds": 3
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 11,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 14,
+       "finished": 11,
+       "out_of_bounds": 6,
+       "truncated": 9
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 12,
+      "settled": 2,
+      "settled_wins": 1,
+      "outcomes": {
+       "mark_missed": 12,
+       "finished": 12,
+       "truncated": 14,
+       "out_of_bounds": 2
+      }
+     }
+    },
+    "west": {
+     "retained": [],
+     "gained": [
+      "train-s615100-000001-west",
+      "train-s615100-000004-west",
+      "train-s615100-000007-west",
+      "train-s615100-000015-west",
+      "train-s615100-000021-west",
+      "train-s615100-000023-west",
+      "train-s615100-000025-west",
+      "train-s615100-000027-west",
+      "train-s615100-000031-west",
+      "train-s615100-000032-west",
+      "train-s615100-000038-west"
+     ],
+     "lost": []
+    },
+    "east": {
+     "retained": [
+      "train-s615100-000001-east",
+      "train-s615100-000007-east",
+      "train-s615100-000015-east",
+      "train-s615100-000021-east",
+      "train-s615100-000023-east",
+      "train-s615100-000025-east",
+      "train-s615100-000027-east",
+      "train-s615100-000031-east"
+     ],
+     "gained": [
+      "train-s615100-000004-east",
+      "train-s615100-000005-east",
+      "train-s615100-000032-east",
+      "train-s615100-000038-east"
+     ],
+     "lost": [
+      "train-s615100-000017-east"
+     ]
+    },
+    "both": [
+     0,
+     11
+    ]
+   },
+   "previous": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 0,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 21,
+       "mark_missed": 13,
+       "out_of_bounds": 6
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 11,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 6,
+       "truncated": 21,
+       "finished": 11,
+       "out_of_bounds": 2
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 3,
+      "settled": 2,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 13,
+       "truncated": 17,
+       "out_of_bounds": 7,
+       "finished": 3
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 9,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 14,
+       "mark_missed": 11,
+       "out_of_bounds": 6,
+       "finished": 9
+      }
+     }
+    },
+    "west": {
+     "retained": [],
+     "gained": [
+      "train-s616101-000024",
+      "train-s616101-000044",
+      "train-s616101-000068"
+     ],
+     "lost": []
+    },
+    "east": {
+     "retained": [
+      "train-s616101-000015",
+      "train-s616101-000025",
+      "train-s616101-000031",
+      "train-s616101-000035",
+      "train-s616101-000057",
+      "train-s616101-000065",
+      "train-s616101-000067"
+     ],
+     "gained": [
+      "train-s616101-000059",
+      "train-s616101-000071"
+     ],
+     "lost": [
+      "train-s616101-000007",
+      "train-s616101-000037",
+      "train-s616101-000045",
+      "train-s616101-000051"
+     ]
+    }
+   },
+   "new": {
+    "control": {
+     "west": {
+      "n": 40,
+      "wins": 1,
+      "settled": 1,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 9,
+       "finished": 1,
+       "out_of_bounds": 5,
+       "truncated": 25
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 4,
+      "settled": 0,
+      "settled_wins": 0,
+      "outcomes": {
+       "truncated": 33,
+       "finished": 4,
+       "out_of_bounds": 2,
+       "mark_missed": 1
+      }
+     }
+    },
+    "mirror": {
+     "west": {
+      "n": 40,
+      "wins": 13,
+      "settled": 2,
+      "settled_wins": 2,
+      "outcomes": {
+       "truncated": 10,
+       "mark_missed": 9,
+       "out_of_bounds": 8,
+       "finished": 13
+      }
+     },
+     "east": {
+      "n": 40,
+      "wins": 3,
+      "settled": 3,
+      "settled_wins": 0,
+      "outcomes": {
+       "mark_missed": 8,
+       "truncated": 23,
+       "finished": 3,
+       "out_of_bounds": 6
+      }
+     }
+    },
+    "west": {
+     "retained": [],
+     "gained": [
+      "train-s616201-000012",
+      "train-s616201-000014",
+      "train-s616201-000016",
+      "train-s616201-000032",
+      "train-s616201-000036",
+      "train-s616201-000038",
+      "train-s616201-000040",
+      "train-s616201-000048",
+      "train-s616201-000050",
+      "train-s616201-000054",
+      "train-s616201-000062",
+      "train-s616201-000066",
+      "train-s616201-000078"
+     ],
+     "lost": [
+      "train-s616201-000004"
+     ]
+    },
+    "east": {
+     "retained": [
+      "train-s616201-000049",
+      "train-s616201-000079"
+     ],
+     "gained": [
+      "train-s616201-000007"
+     ],
+     "lost": [
+      "train-s616201-000003",
+      "train-s616201-000011"
+     ]
+    }
+   },
+   "validation": [
+    0,
+    0
+   ],
+   "new_replays": 773
+  }
+ },
+ "exact_replays": 1902
+}

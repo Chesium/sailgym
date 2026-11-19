@@ -1,0 +1,708 @@
+{
+ "wall_s": 396.02049374580383,
+ "exact_replays": 2468,
+ "handoff": {
+  "early_early": {
+   "n": 80,
+   "wins": 16,
+   "settled": 0,
+   "settled_wins": 0,
+   "outcomes": {
+    "mark_missed": 44,
+    "finished": 16,
+    "truncated": 10,
+    "out_of_bounds": 10
+   },
+   "retained": [
+    "train-s615100-000001-east",
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000007-east",
+    "train-s615100-000009-west",
+    "train-s615100-000015-east",
+    "train-s615100-000017-east",
+    "train-s615100-000021-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000031-west",
+    "train-s615100-000032-east",
+    "train-s615100-000039-west"
+   ],
+   "gained": [],
+   "lost": [],
+   "reached_switch": 80
+  },
+  "early_late": {
+   "n": 80,
+   "wins": 0,
+   "settled": 2,
+   "settled_wins": 0,
+   "outcomes": {
+    "truncated": 80
+   },
+   "retained": [],
+   "gained": [],
+   "lost": [
+    "train-s615100-000001-east",
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000007-east",
+    "train-s615100-000009-west",
+    "train-s615100-000015-east",
+    "train-s615100-000017-east",
+    "train-s615100-000021-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000031-west",
+    "train-s615100-000032-east",
+    "train-s615100-000039-west"
+   ],
+   "reached_switch": 80
+  },
+  "late_early": {
+   "n": 80,
+   "wins": 10,
+   "settled": 0,
+   "settled_wins": 0,
+   "outcomes": {
+    "mark_missed": 49,
+    "finished": 10,
+    "truncated": 14,
+    "out_of_bounds": 7
+   },
+   "retained": [
+    "train-s615100-000001-east",
+    "train-s615100-000007-east",
+    "train-s615100-000009-west",
+    "train-s615100-000015-east",
+    "train-s615100-000021-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000039-west"
+   ],
+   "gained": [],
+   "lost": [
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000017-east",
+    "train-s615100-000025-east",
+    "train-s615100-000031-west",
+    "train-s615100-000032-east"
+   ],
+   "reached_switch": 80
+  },
+  "late_late": {
+   "n": 80,
+   "wins": 0,
+   "settled": 2,
+   "settled_wins": 0,
+   "outcomes": {
+    "truncated": 80
+   },
+   "retained": [],
+   "gained": [],
+   "lost": [
+    "train-s615100-000001-east",
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000007-east",
+    "train-s615100-000009-west",
+    "train-s615100-000015-east",
+    "train-s615100-000017-east",
+    "train-s615100-000021-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000031-west",
+    "train-s615100-000032-east",
+    "train-s615100-000039-west"
+   ],
+   "reached_switch": 80
+  }
+ },
+ "seeds": {
+  "0": {
+   "buffer": {
+    "wins": [
+     {
+      "decisions": 161417,
+      "length": 241
+     }
+    ],
+    "anchor": 161552
+   },
+   "buffer_transitions": 241,
+   "training": {
+    "n": 112,
+    "wins": 1,
+    "settled": 17,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 103,
+     "out_of_bounds": 5,
+     "mark_missed": 3,
+     "finished": 1
+    }
+   },
+   "qualifying": null,
+   "exact_replays": 696,
+   "auxiliary_updates": 3756,
+   "advantage_range": [
+    10.811647415161133,
+    12.226099014282227
+   ],
+   "anchor_wins": [
+    "train-s615100-000031-west"
+   ],
+   "baseline": {
+    "first": {
+     "n": 80,
+     "wins": 9,
+     "settled": 16,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 43,
+      "finished": 9,
+      "out_of_bounds": 6,
+      "mark_missed": 22
+     }
+    },
+    "final": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "fresh": {
+     "n": 80,
+     "wins": 0,
+     "settled": 3,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    },
+    "first_retained": [],
+    "anchor_retained": [],
+    "final_wins": [],
+    "probes": [
+     1,
+     0,
+     0,
+     0
+    ]
+   },
+   "imitation": {
+    "first": {
+     "n": 80,
+     "wins": 9,
+     "settled": 16,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 43,
+      "finished": 9,
+      "out_of_bounds": 6,
+      "mark_missed": 22
+     }
+    },
+    "final": {
+     "n": 80,
+     "wins": 0,
+     "settled": 20,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 79,
+      "out_of_bounds": 1
+     }
+    },
+    "fresh": {
+     "n": 80,
+     "wins": 0,
+     "settled": 16,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 78,
+      "out_of_bounds": 2
+     }
+    },
+    "validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 6,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 16,
+      "out_of_bounds": 4
+     }
+    },
+    "first_retained": [],
+    "anchor_retained": [],
+    "final_wins": [],
+    "probes": [
+     1,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "1": {
+   "buffer": {
+    "wins": [
+     {
+      "decisions": 225305,
+      "length": 299
+     },
+     {
+      "decisions": 265197,
+      "length": 292
+     },
+     {
+      "decisions": 348925,
+      "length": 2445
+     },
+     {
+      "decisions": 383286,
+      "length": 171
+     }
+    ],
+    "anchor": 227088
+   },
+   "buffer_transitions": 3207,
+   "training": {
+    "n": 119,
+    "wins": 4,
+    "settled": 18,
+    "settled_wins": 1,
+    "outcomes": {
+     "truncated": 100,
+     "out_of_bounds": 1,
+     "mark_missed": 14,
+     "finished": 4
+    }
+   },
+   "qualifying": null,
+   "exact_replays": 703,
+   "auxiliary_updates": 2732,
+   "advantage_range": [
+    9.176475524902344,
+    12.0496187210083
+   ],
+   "anchor_wins": [
+    "train-s615100-000001-east",
+    "train-s615100-000004-east",
+    "train-s615100-000009-east",
+    "train-s615100-000015-east",
+    "train-s615100-000021-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000039-east"
+   ],
+   "baseline": {
+    "first": {
+     "n": 80,
+     "wins": 8,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 34,
+      "mark_missed": 38,
+      "finished": 8
+     }
+    },
+    "final": {
+     "n": 80,
+     "wins": 2,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 75,
+      "out_of_bounds": 2,
+      "mark_missed": 1,
+      "finished": 2
+     }
+    },
+    "fresh": {
+     "n": 80,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 76,
+      "out_of_bounds": 3,
+      "mark_missed": 1
+     }
+    },
+    "validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    },
+    "first_retained": [
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "anchor_retained": [
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "final_wins": [
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "probes": [
+     6,
+     0,
+     2,
+     0
+    ]
+   },
+   "imitation": {
+    "first": {
+     "n": 80,
+     "wins": 8,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 34,
+      "mark_missed": 38,
+      "finished": 8
+     }
+    },
+    "final": {
+     "n": 80,
+     "wins": 13,
+     "settled": 6,
+     "settled_wins": 0,
+     "outcomes": {
+      "mark_missed": 30,
+      "truncated": 34,
+      "finished": 13,
+      "out_of_bounds": 3
+     }
+    },
+    "fresh": {
+     "n": 80,
+     "wins": 15,
+     "settled": 10,
+     "settled_wins": 2,
+     "outcomes": {
+      "mark_missed": 35,
+      "finished": 15,
+      "truncated": 29,
+      "out_of_bounds": 1
+     }
+    },
+    "validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    },
+    "first_retained": [
+     "train-s615100-000001-east",
+     "train-s615100-000007-east",
+     "train-s615100-000009-east",
+     "train-s615100-000021-east",
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "anchor_retained": [
+     "train-s615100-000001-east",
+     "train-s615100-000009-east",
+     "train-s615100-000021-east",
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "final_wins": [
+     "train-s615100-000001-east",
+     "train-s615100-000007-east",
+     "train-s615100-000007-west",
+     "train-s615100-000009-east",
+     "train-s615100-000009-west",
+     "train-s615100-000015-west",
+     "train-s615100-000021-east",
+     "train-s615100-000021-west",
+     "train-s615100-000023-west",
+     "train-s615100-000027-east",
+     "train-s615100-000031-east",
+     "train-s615100-000031-west",
+     "train-s615100-000039-west"
+    ],
+    "probes": [
+     6,
+     0,
+     1,
+     3
+    ]
+   }
+  },
+  "2": {
+   "buffer": {
+    "wins": [
+     {
+      "decisions": 254556,
+      "length": 267
+     },
+     {
+      "decisions": 262866,
+      "length": 1110
+     },
+     {
+      "decisions": 284197,
+      "length": 434
+     },
+     {
+      "decisions": 284351,
+      "length": 154
+     },
+     {
+      "decisions": 335861,
+      "length": 191
+     },
+     {
+      "decisions": 342135,
+      "length": 199
+     },
+     {
+      "decisions": 342755,
+      "length": 620
+     },
+     {
+      "decisions": 343637,
+      "length": 882
+     },
+     {
+      "decisions": 343815,
+      "length": 178
+     },
+     {
+      "decisions": 353145,
+      "length": 235
+     },
+     {
+      "decisions": 356812,
+      "length": 195
+     },
+     {
+      "decisions": 361942,
+      "length": 211
+     },
+     {
+      "decisions": 385089,
+      "length": 469
+     },
+     {
+      "decisions": 385685,
+      "length": 596
+     }
+    ],
+    "anchor": 255760
+   },
+   "buffer_transitions": 5741,
+   "training": {
+    "n": 145,
+    "wins": 14,
+    "settled": 12,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 82,
+     "mark_missed": 28,
+     "out_of_bounds": 21,
+     "finished": 14
+    }
+   },
+   "qualifying": null,
+   "exact_replays": 749,
+   "auxiliary_updates": 2284,
+   "advantage_range": [
+    10.21800708770752,
+    13.096748352050781
+   ],
+   "anchor_wins": [
+    "train-s615100-000001-east",
+    "train-s615100-000015-east",
+    "train-s615100-000017-east",
+    "train-s615100-000021-east",
+    "train-s615100-000023-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east"
+   ],
+   "baseline": {
+    "first": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "final": {
+     "n": 80,
+     "wins": 7,
+     "settled": 7,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 68,
+      "finished": 7,
+      "mark_missed": 5
+     }
+    },
+    "fresh": {
+     "n": 80,
+     "wins": 3,
+     "settled": 7,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 73,
+      "finished": 3,
+      "mark_missed": 4
+     }
+    },
+    "validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    },
+    "first_retained": [],
+    "anchor_retained": [
+     "train-s615100-000001-east",
+     "train-s615100-000021-east",
+     "train-s615100-000025-east",
+     "train-s615100-000027-east"
+    ],
+    "final_wins": [
+     "train-s615100-000001-east",
+     "train-s615100-000004-east",
+     "train-s615100-000007-east",
+     "train-s615100-000021-east",
+     "train-s615100-000025-east",
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "probes": [
+     0,
+     0,
+     2,
+     1,
+     2
+    ]
+   },
+   "imitation": {
+    "first": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "final": {
+     "n": 80,
+     "wins": 9,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 50,
+      "mark_missed": 16,
+      "finished": 9,
+      "out_of_bounds": 5
+     }
+    },
+    "fresh": {
+     "n": 80,
+     "wins": 11,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 42,
+      "mark_missed": 19,
+      "finished": 11,
+      "out_of_bounds": 8
+     }
+    },
+    "validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    },
+    "first_retained": [],
+    "anchor_retained": [
+     "train-s615100-000001-east",
+     "train-s615100-000015-east",
+     "train-s615100-000017-east",
+     "train-s615100-000021-east",
+     "train-s615100-000023-east",
+     "train-s615100-000025-east",
+     "train-s615100-000027-east"
+    ],
+    "final_wins": [
+     "train-s615100-000001-east",
+     "train-s615100-000007-east",
+     "train-s615100-000015-east",
+     "train-s615100-000017-east",
+     "train-s615100-000021-east",
+     "train-s615100-000023-east",
+     "train-s615100-000025-east",
+     "train-s615100-000027-east",
+     "train-s615100-000031-east"
+    ],
+    "probes": [
+     0,
+     0,
+     2,
+     4,
+     1
+    ]
+   }
+  }
+ },
+ "decision": {
+  "qualified": [],
+  "retained": {
+   "baseline": 6,
+   "imitation": 12
+  },
+  "run_transfer": false
+ }
+}

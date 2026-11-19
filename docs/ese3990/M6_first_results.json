@@ -1,0 +1,426 @@
+{
+  "status": {
+    "phase": "complete",
+    "elapsed_s": 512.705474615097,
+    "ppo_main": false
+  },
+  "freeze_sha256": "84b049d2cba706580217206a4337819a96ac7f3db02532028a5fc953e018b9fb",
+  "widths_m": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    0
+  ],
+  "bands_m": [
+    [
+      1,
+      3
+    ],
+    [
+      3,
+      7
+    ],
+    [
+      7,
+      15
+    ],
+    [
+      15,
+      30
+    ],
+    [
+      30,
+      40
+    ],
+    [
+      40,
+      40
+    ]
+  ],
+  "empirical_ground_tracks": {
+    "-1": {
+      "n": 205,
+      "angle": -52.8317982762978
+    },
+    "1": {
+      "n": 162,
+      "angle": 52.758118044054726
+    }
+  },
+  "controls": [
+    {
+      "neutral": {
+        "finishes": 0,
+        "attempts": 100,
+        "decisions": 319703
+      },
+      "pink": {
+        "finishes": 4,
+        "attempts": 100,
+        "decisions": 321993
+      }
+    },
+    {
+      "neutral": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 64031
+      },
+      "pink": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 69250
+      }
+    },
+    {
+      "neutral": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 63599
+      },
+      "pink": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 72000
+      }
+    },
+    {
+      "neutral": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 63596
+      },
+      "pink": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 72000
+      }
+    },
+    {
+      "neutral": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 62215
+      },
+      "pink": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 72000
+      }
+    },
+    {
+      "neutral": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 72000
+      },
+      "pink": {
+        "finishes": 0,
+        "attempts": 20,
+        "decisions": 72000
+      }
+    }
+  ],
+  "paired_panels": [
+    20,
+    20,
+    20,
+    0,
+    0,
+    0
+  ],
+  "control_exact_replays": 400,
+  "learners": {
+    "ppo_s100": {
+      "run": {
+        "decisions": 400000,
+        "stage": 0,
+        "pilot_pass": false,
+        "updates": 191,
+        "probe_s": 18.27118435202283,
+        "wall_s": 48.562095600005705,
+        "episodes": 125,
+        "complete": true
+      },
+      "probes": [
+        {
+          "finishes": 3,
+          "attempts": 20,
+          "decisions": 36222,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 77991,
+          "wall_s": 2.290326393995201
+        },
+        {
+          "finishes": 2,
+          "attempts": 20,
+          "decisions": 42756,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 143548,
+          "wall_s": 2.6782887919980567
+        },
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 69242,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 219759,
+          "wall_s": 4.312195212027291
+        },
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 72000,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 309759,
+          "wall_s": 4.494160503003513
+        },
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 72000,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 399759,
+          "wall_s": 4.496213450998766
+        }
+      ],
+      "training": {
+        "episodes": 126,
+        "completed": 125,
+        "wins": 3,
+        "w_tack": 4,
+        "w_tack_win": 0,
+        "missed_gate_plane": 21,
+        "failed_tack_episodes": 0,
+        "stalled_five_seconds": 28,
+        "winning_x_start": [
+          2.8,
+          7.0,
+          3.9
+        ],
+        "left_start": [
+          0,
+          66
+        ],
+        "right_start": [
+          3,
+          59
+        ],
+        "outcomes": {
+          "truncated": 96,
+          "out_of_bounds": 5,
+          "mark_missed": 21,
+          "finished": 3
+        },
+        "median_closest_m": 4.36719860088244,
+        "median_abs_x_closest_m": 3.129974570532436,
+        "mean_rudder_travel_rad": 28.296717754936072
+      },
+      "promotion": {
+        "episodes": 100,
+        "completed": 100,
+        "wins": 5,
+        "w_tack": 6,
+        "w_tack_win": 1,
+        "missed_gate_plane": 16,
+        "failed_tack_episodes": 2,
+        "stalled_five_seconds": 18,
+        "winning_x_start": [
+          2.2,
+          -1.2,
+          0.8,
+          1.7,
+          2.5
+        ],
+        "left_start": [
+          1,
+          50
+        ],
+        "right_start": [
+          4,
+          50
+        ],
+        "outcomes": {
+          "mark_missed": 16,
+          "finished": 5,
+          "truncated": 67,
+          "out_of_bounds": 12
+        },
+        "median_closest_m": 4.196429453908982,
+        "median_abs_x_closest_m": 2.701012729493531,
+        "mean_rudder_travel_rad": 1.2664910921251697
+      },
+      "original_start_validation": {
+        "episodes": 20,
+        "completed": 20,
+        "wins": 0,
+        "w_tack": 0,
+        "w_tack_win": 0,
+        "missed_gate_plane": 0,
+        "failed_tack_episodes": 0,
+        "stalled_five_seconds": 0,
+        "winning_x_start": [],
+        "left_start": [
+          0,
+          0
+        ],
+        "right_start": [
+          0,
+          0
+        ],
+        "outcomes": {
+          "truncated": 20
+        },
+        "median_closest_m": 40.0,
+        "median_abs_x_closest_m": 0.0,
+        "mean_rudder_travel_rad": 0.698
+      },
+      "exact_replays": 250
+    },
+    "sac_s100": {
+      "run": {
+        "decisions": 400000,
+        "stage": 0,
+        "pilot_pass": false,
+        "updates": 390000,
+        "probe_s": 20.41519167801016,
+        "wall_s": 421.4120291440049,
+        "episodes": 113,
+        "complete": true
+      },
+      "probes": [
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 61541,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 95821,
+          "wall_s": 4.89746304199798
+        },
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 63908,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 175148,
+          "wall_s": 5.047520963998977
+        },
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 64782,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 265148,
+          "wall_s": 5.1497109979973175
+        },
+        {
+          "finishes": 0,
+          "attempts": 20,
+          "decisions": 67862,
+          "kind": "promotion",
+          "stage": 0,
+          "checkpoint": 351882,
+          "wall_s": 5.320496674015885
+        }
+      ],
+      "training": {
+        "episodes": 114,
+        "completed": 113,
+        "wins": 1,
+        "w_tack": 2,
+        "w_tack_win": 0,
+        "missed_gate_plane": 0,
+        "failed_tack_episodes": 1,
+        "stalled_five_seconds": 19,
+        "winning_x_start": [
+          -9.4
+        ],
+        "left_start": [
+          1,
+          62
+        ],
+        "right_start": [
+          0,
+          51
+        ],
+        "outcomes": {
+          "truncated": 97,
+          "out_of_bounds": 15,
+          "finished": 1
+        },
+        "median_closest_m": 4.442994613416983,
+        "median_abs_x_closest_m": 3.317995133983371,
+        "mean_rudder_travel_rad": 75.54279998602814
+      },
+      "promotion": {
+        "episodes": 80,
+        "completed": 80,
+        "wins": 0,
+        "w_tack": 3,
+        "w_tack_win": 0,
+        "missed_gate_plane": 7,
+        "failed_tack_episodes": 1,
+        "stalled_five_seconds": 13,
+        "winning_x_start": [],
+        "left_start": [
+          0,
+          40
+        ],
+        "right_start": [
+          0,
+          40
+        ],
+        "outcomes": {
+          "truncated": 65,
+          "mark_missed": 7,
+          "out_of_bounds": 8
+        },
+        "median_closest_m": 4.495193132006008,
+        "median_abs_x_closest_m": 2.447288995651936,
+        "mean_rudder_travel_rad": 6.8073072370177155
+      },
+      "original_start_validation": {
+        "episodes": 20,
+        "completed": 20,
+        "wins": 0,
+        "w_tack": 0,
+        "w_tack_win": 0,
+        "missed_gate_plane": 0,
+        "failed_tack_episodes": 0,
+        "stalled_five_seconds": 0,
+        "winning_x_start": [],
+        "left_start": [
+          0,
+          0
+        ],
+        "right_start": [
+          0,
+          0
+        ],
+        "outcomes": {
+          "truncated": 19,
+          "out_of_bounds": 1
+        },
+        "median_closest_m": 40.0,
+        "median_abs_x_closest_m": 0.0,
+        "mean_rudder_travel_rad": 4.627478906099834
+      },
+      "exact_replays": 218,
+      "q_range": [
+        -35.233131408691406,
+        14.00395393371582
+      ]
+    }
+  },
+  "exact_replays": 868
+}

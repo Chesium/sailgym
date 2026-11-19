@@ -1,0 +1,1231 @@
+{
+ "elapsed_s": 739.6450972557068,
+ "audited_episodes": 5219,
+ "retention": {
+  "0077991": {
+   "inside": {
+    "n": 40,
+    "wins": 2,
+    "settled": 0,
+    "settled_wins": 0,
+    "outcomes": {
+     "mark_missed": 28,
+     "truncated": 5,
+     "finished": 2,
+     "out_of_bounds": 5
+    }
+   },
+   "outside": {
+    "n": 40,
+    "wins": 14,
+    "settled": 0,
+    "settled_wins": 0,
+    "outcomes": {
+     "finished": 14,
+     "mark_missed": 16,
+     "truncated": 5,
+     "out_of_bounds": 5
+    }
+   },
+   "won": [
+    "train-s615100-000001-east",
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000007-east",
+    "train-s615100-000009-west",
+    "train-s615100-000015-east",
+    "train-s615100-000017-east",
+    "train-s615100-000021-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000031-west",
+    "train-s615100-000032-east",
+    "train-s615100-000039-west"
+   ],
+   "gained": [
+    "train-s615100-000001-east",
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000007-east",
+    "train-s615100-000009-west",
+    "train-s615100-000015-east",
+    "train-s615100-000017-east",
+    "train-s615100-000021-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000031-east",
+    "train-s615100-000031-west",
+    "train-s615100-000032-east",
+    "train-s615100-000039-west"
+   ],
+   "lost": []
+  },
+  "0143548": {
+   "inside": {
+    "n": 40,
+    "wins": 1,
+    "settled": 2,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 24,
+     "mark_missed": 11,
+     "out_of_bounds": 4,
+     "finished": 1
+    }
+   },
+   "outside": {
+    "n": 40,
+    "wins": 6,
+    "settled": 0,
+    "settled_wins": 0,
+    "outcomes": {
+     "finished": 6,
+     "truncated": 30,
+     "mark_missed": 2,
+     "out_of_bounds": 2
+    }
+   },
+   "won": [
+    "train-s615100-000001-east",
+    "train-s615100-000007-east",
+    "train-s615100-000015-east",
+    "train-s615100-000021-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000032-east"
+   ],
+   "gained": [],
+   "lost": [
+    "train-s615100-000004-east",
+    "train-s615100-000005-east",
+    "train-s615100-000009-west",
+    "train-s615100-000017-east",
+    "train-s615100-000021-west",
+    "train-s615100-000023-east",
+    "train-s615100-000031-east",
+    "train-s615100-000031-west",
+    "train-s615100-000039-west"
+   ]
+  },
+  "0219759": {
+   "inside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 36,
+     "out_of_bounds": 4
+    }
+   },
+   "outside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "out_of_bounds": 3,
+     "truncated": 37
+    }
+   },
+   "won": [],
+   "gained": [],
+   "lost": [
+    "train-s615100-000001-east",
+    "train-s615100-000007-east",
+    "train-s615100-000015-east",
+    "train-s615100-000021-east",
+    "train-s615100-000025-east",
+    "train-s615100-000027-east",
+    "train-s615100-000032-east"
+   ]
+  },
+  "0309759": {
+   "inside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 40
+    }
+   },
+   "outside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 40
+    }
+   },
+   "won": [],
+   "gained": [],
+   "lost": []
+  },
+  "0399759": {
+   "inside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 40
+    }
+   },
+   "outside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 40
+    }
+   },
+   "won": [],
+   "gained": [],
+   "lost": []
+  },
+  "0400000": {
+   "inside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 40
+    }
+   },
+   "outside": {
+    "n": 40,
+    "wins": 0,
+    "settled": 1,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 40
+    }
+   },
+   "won": [],
+   "gained": [],
+   "lost": []
+  }
+ },
+ "controls": {
+  "broad": {
+   "neutral": {
+    "n": 100,
+    "wins": 0,
+    "settled": 0,
+    "settled_wins": 0,
+    "outcomes": {
+     "out_of_bounds": 45,
+     "truncated": 55
+    }
+   },
+   "pink": {
+    "n": 100,
+    "wins": 7,
+    "settled": 11,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 82,
+     "mark_missed": 9,
+     "out_of_bounds": 2,
+     "finished": 7
+    }
+   }
+  },
+  "narrow": {
+   "neutral": {
+    "n": 100,
+    "wins": 0,
+    "settled": 0,
+    "settled_wins": 0,
+    "outcomes": {
+     "out_of_bounds": 46,
+     "truncated": 54
+    }
+   },
+   "pink": {
+    "n": 100,
+    "wins": 4,
+    "settled": 11,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 83,
+     "mark_missed": 12,
+     "out_of_bounds": 1,
+     "finished": 4
+    }
+   }
+  },
+  "heading": {
+   "neutral": {
+    "n": 100,
+    "wins": 0,
+    "settled": 0,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 96,
+     "out_of_bounds": 4
+    }
+   },
+   "pink": {
+    "n": 100,
+    "wins": 8,
+    "settled": 12,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 81,
+     "finished": 8,
+     "mark_missed": 9,
+     "out_of_bounds": 2
+    }
+   }
+  }
+ },
+ "runs": {
+  "broad/ppo_s0": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 45.26016276195878,
+   "wall_s": 118.10515841998858,
+   "episodes": 112,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 112,
+    "wins": 1,
+    "settled": 7,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 105,
+     "out_of_bounds": 4,
+     "mark_missed": 2,
+     "finished": 1
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 1,
+     "attempts": 20,
+     "decisions": 59853,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 100000,
+     "wall_s": 9.495827282953542
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 65286,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 179417,
+     "wall_s": 11.466408981999848
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 266099,
+     "wall_s": 11.977582714986056
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 356099,
+     "wall_s": 12.320343782019336
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  },
+  "broad/ppo_s1": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 15.556779864011332,
+   "wall_s": 49.703197643044405,
+   "episodes": 116,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 116,
+    "wins": 3,
+    "settled": 6,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 102,
+     "out_of_bounds": 2,
+     "mark_missed": 9,
+     "finished": 3
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 6,
+     "attempts": 20,
+     "decisions": 38452,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 91806,
+     "wall_s": 2.7432356390054338
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 181806,
+     "wall_s": 5.058583835023455
+    },
+    {
+     "finishes": 2,
+     "attempts": 20,
+     "decisions": 39125,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 265607,
+     "wall_s": 2.736061098985374
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 71321,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 344053,
+     "wall_s": 5.018899290997069
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 2,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 75,
+      "out_of_bounds": 2,
+      "mark_missed": 1,
+      "finished": 2
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 2,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 75,
+      "mark_missed": 2,
+      "finished": 2,
+      "out_of_bounds": 1
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  },
+  "broad/ppo_s2": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 49.04364713112591,
+   "wall_s": 121.90884086297592,
+   "episodes": 136,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 136,
+    "wins": 11,
+    "settled": 8,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 101,
+     "mark_missed": 22,
+     "out_of_bounds": 2,
+     "finished": 11
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 100000,
+     "wall_s": 11.824730532011017
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 190000,
+     "wall_s": 12.21229925804073
+    },
+    {
+     "finishes": 2,
+     "attempts": 20,
+     "decisions": 50904,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 261756,
+     "wall_s": 8.819217433047015
+    },
+    {
+     "finishes": 1,
+     "attempts": 20,
+     "decisions": 65207,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 338742,
+     "wall_s": 11.243024544033688
+    },
+    {
+     "finishes": 2,
+     "attempts": 20,
+     "decisions": 46542,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 376837,
+     "wall_s": 4.9443753639934584
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 7,
+     "settled": 7,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 68,
+      "finished": 7,
+      "mark_missed": 5
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 4,
+     "settled": 7,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 68,
+      "mark_missed": 8,
+      "finished": 4
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  },
+  "narrow/ppo_s0": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 19.966555822989903,
+   "wall_s": 53.99670724995667,
+   "episodes": 108,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 108,
+    "wins": 0,
+    "settled": 7,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 107,
+     "mark_missed": 1
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 70219,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 100000,
+     "wall_s": 4.929165503010154
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 188978,
+     "wall_s": 5.0113024059683084
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 278978,
+     "wall_s": 5.023037509992719
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 368978,
+     "wall_s": 5.0030504040187225
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  },
+  "narrow/ppo_s1": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 21.23035077401437,
+   "wall_s": 68.27554855000926,
+   "episodes": 113,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 113,
+    "wins": 1,
+    "settled": 7,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 104,
+     "out_of_bounds": 2,
+     "mark_missed": 6,
+     "finished": 1
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 4,
+     "attempts": 20,
+     "decisions": 23385,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 81367,
+     "wall_s": 1.8977215480408631
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 171367,
+     "wall_s": 5.687009243003558
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 261367,
+     "wall_s": 7.463212475006003
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 351367,
+     "wall_s": 6.182407507963944
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 79,
+      "out_of_bounds": 1
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 79,
+      "out_of_bounds": 1
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 34,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 80
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 15,
+      "out_of_bounds": 5
+     }
+    }
+   }
+  },
+  "narrow/ppo_s2": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 43.77194155799225,
+   "wall_s": 115.83099040697562,
+   "episodes": 112,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 112,
+    "wins": 2,
+    "settled": 12,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 104,
+     "out_of_bounds": 1,
+     "finished": 2,
+     "mark_missed": 5
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 100000,
+     "wall_s": 11.164910361985676
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 190000,
+     "wall_s": 12.336519604024943
+    },
+    {
+     "finishes": 1,
+     "attempts": 20,
+     "decisions": 53305,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 276565,
+     "wall_s": 8.775373831973411
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 67634,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 355340,
+     "wall_s": 11.49513776000822
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 2,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 74,
+      "finished": 2,
+      "mark_missed": 4
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 1,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 74,
+      "mark_missed": 5,
+      "finished": 1
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 18,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 74,
+      "mark_missed": 6
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  },
+  "heading/ppo_s0": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 17.048510546039324,
+   "wall_s": 47.464583308959845,
+   "episodes": 109,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 109,
+    "wins": 0,
+    "settled": 9,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 102,
+     "mark_missed": 2,
+     "out_of_bounds": 5
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 100000,
+     "wall_s": 4.584151148039382
+    },
+    {
+     "finishes": 4,
+     "attempts": 20,
+     "decisions": 53237,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 188888,
+     "wall_s": 3.362855651008431
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 278888,
+     "wall_s": 4.522085282020271
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 366597,
+     "wall_s": 4.579418464971241
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 58,
+      "out_of_bounds": 22
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 0,
+     "settled": 2,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 58,
+      "out_of_bounds": 22
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 40,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 79,
+      "out_of_bounds": 1
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  },
+  "heading/ppo_s1": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 22.547015419055242,
+   "wall_s": 60.14270442095585,
+   "episodes": 108,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 108,
+    "wins": 0,
+    "settled": 15,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 108
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 100000,
+     "wall_s": 5.5936726609943435
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 190000,
+     "wall_s": 5.786621536011808
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 280000,
+     "wall_s": 5.5728219270240515
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 71683,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 370000,
+     "wall_s": 5.5938992950250395
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 2,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 70,
+      "mark_missed": 8,
+      "finished": 2
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 0,
+     "settled": 1,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 69,
+      "mark_missed": 11
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 75,
+      "mark_missed": 5
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 18,
+      "mark_missed": 2
+     }
+    }
+   }
+  },
+  "heading/ppo_s2": {
+   "decisions": 400000,
+   "stage": 0,
+   "pilot_pass": false,
+   "updates": 191,
+   "probe_s": 27.997913301049266,
+   "wall_s": 74.42628672102,
+   "episodes": 109,
+   "complete": true,
+   "qualifying_checkpoint": null,
+   "training": {
+    "n": 109,
+    "wins": 0,
+    "settled": 30,
+    "settled_wins": 0,
+    "outcomes": {
+     "truncated": 103,
+     "mark_missed": 2,
+     "out_of_bounds": 4
+    }
+   },
+   "promotion_probes": [
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 97854,
+     "wall_s": 6.899256152042653
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 187854,
+     "wall_s": 6.960657201008871
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 72000,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 277854,
+     "wall_s": 7.05768516700482
+    },
+    {
+     "finishes": 0,
+     "attempts": 20,
+     "decisions": 71753,
+     "kind": "promotion",
+     "stage": 0,
+     "checkpoint": 366910,
+     "wall_s": 7.080314780992921
+    }
+   ],
+   "panels": {
+    "broad": {
+     "n": 80,
+     "wins": 3,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 59,
+      "out_of_bounds": 14,
+      "mark_missed": 4,
+      "finished": 3
+     }
+    },
+    "narrow": {
+     "n": 80,
+     "wins": 1,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 58,
+      "out_of_bounds": 15,
+      "mark_missed": 6,
+      "finished": 1
+     }
+    },
+    "heading": {
+     "n": 80,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 71,
+      "out_of_bounds": 9
+     }
+    },
+    "original_validation": {
+     "n": 20,
+     "wins": 0,
+     "settled": 0,
+     "settled_wins": 0,
+     "outcomes": {
+      "truncated": 20
+     }
+    }
+   }
+  }
+ },
+ "decision": {
+  "phase": "complete",
+  "updated": 1795059243.6587589,
+  "arms": [
+   "broad",
+   "narrow",
+   "heading"
+  ],
+  "conditional_arm": "heading",
+  "passing": []
+ }
+}

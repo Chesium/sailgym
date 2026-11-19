@@ -1,0 +1,7 @@
+# M6 simulator-verified mirror campaign
+
+The user authorized the three-seed mirror augmentation study on November 19. The user service is `sailgym-m6-mirror.service`; see [status and worker logs](../../runs/ese3990/M6/mirror) and the [frozen protocol](../../runs/ese3990/M6/mirror/protocol.json). No subagents. The first quota check reported 28% five-hour and 67% weekly allowance. The nine focused M6 tests passed before launch.
+
+The runner trains from scratch with the prior self-imitation campaign's frozen inputs, verifies the common online prefix, audits all reflected actions against the source, and gates transfer on at least two qualifying seeds. Original side scores for the two older panels come from archived audited controls. Both policies are scored on the new panel. To reproduce with a fresh output directory and the earlier M6 campaigns available, run `env -u PYTHONPATH OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 XLA_FLAGS=--xla_cpu_multi_thread_eigen=false .venv/bin/python experiments/ese3990/m6_mirror.py campaign`. The runner refuses to overwrite an existing run. After status reaches complete, generate the report with `env -u PYTHONPATH .venv/bin/python experiments/ese3990/m6_mirror_report.py`. All edits are local on branch ese3990.
+
+Completed in 4 min 20 s with zero qualifying seeds. The three 400k runs, matched evaluations and 1,902 exact replays completed. The transfer branch stayed closed. [Report](../ese3990/M6_mirror_report.md) · [Numerical results](../ese3990/M6_mirror_results.json)
