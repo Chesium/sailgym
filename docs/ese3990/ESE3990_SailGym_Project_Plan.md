@@ -1,7 +1,7 @@
 # Learning versus Planning for Sailboat Control
 
 **ESE3990 project plan · Shimin Chen · revised 2026-11-14**  
-**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm): all 12 learner runs and the MPC validation sweep are done; the held-out evaluation is running. **M4X** (added 2026-11-14) tests two explanations of the upwind results with post-hoc, exploratory arms. M4X was closed early on 2026-11-17: readings settled, held-out audit and generated files skipped. **M4P** (added and completed 2026-11-17) asks, with no learning, whether random exploration with different noise and action intervals ever produces a tack on U. Per-decision white noise never tacks; correlated or held noise tacks in up to 25% of episodes, but no random episode makes real upwind progress or finishes ([M4P report](M4P_report.md)). **M5** (added 2026-11-17; stage 1 completed the same day, see [M5 report](M5_report.md)) tested two training-side changes on U without demonstrations, for PPO and SAC alike: 0.5 s decision blocks and randomised training starts. No cell finishes (0/6,319 held-out episodes), so the declared reading calls for a second stage. M5b completed on November 18. All four arms missed the threshold and [M5 closes](M5b_report.md). The [first M6 campaign](M6_first_report.md) completed on November 19. Both 400k-decision pilots stalled at the 1–3 m start band. The [M6 tuning campaign](M6_tune_report.md) (November 19, post-hoc) changed only the learner side: fixed feature scaling, 0.5 s decisions, 2 × 256 networks and a set-point action head. From-scratch PPO then finished 450/500 test episodes at 10M decisions on 10 seeds, with 9/10 seeds perfect. SAC finished 183/250 test episodes at 10M decisions on 5 seeds, with 4/5 passing. **M7** (November 20, post-hoc) narrows U to a ±10 m channel, which needs a second tack. Unchanged, the M6 recipe fails with PPO (0/10) and learns with SAC on 4/10 seeds. A width curriculum that starts in open-water U makes PPO as consistent as M6. At 40M decisions, 9/10 seeds are perfect on validation and test (180/200, 450/500, shift 134/200) ([M7 report](M7_channel_report.md)). BPTT-WM moves to after Dec 3. Final presentation/packaging remains MLast. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
+**Status:** M0–M4 are complete (see the [M0](M0_report.md), [M1](M1_report.md), [M2](M2_report.md), [M3](M3_report.md) and [M4](M4_report.md) reports). The frozen R comparison includes three PPO/SAC training seeds, three MPC search seeds and RuleSailor; all 2,840 final-evaluation episodes replay exactly. **M4U** (upwind comparison with an expert-data arm): all 12 learner runs and the MPC validation sweep are done; the held-out evaluation is running. **M4X** (added 2026-11-14) tests two explanations of the upwind results with post-hoc, exploratory arms. M4X was closed early on 2026-11-17: readings settled, held-out audit and generated files skipped. **M4P** (added and completed 2026-11-17) asks, with no learning, whether random exploration with different noise and action intervals ever produces a tack on U. Per-decision white noise never tacks; correlated or held noise tacks in up to 25% of episodes, but no random episode makes real upwind progress or finishes ([M4P report](M4P_report.md)). **M5** (added 2026-11-17; stage 1 completed the same day, see [M5 report](M5_report.md)) tested two training-side changes on U without demonstrations, for PPO and SAC alike: 0.5 s decision blocks and randomised training starts. No cell finishes (0/6,319 held-out episodes), so the declared reading calls for a second stage. M5b completed on November 18. All four arms missed the threshold and [M5 closes](M5b_report.md). The [first M6 campaign](M6_first_report.md) completed on November 19. Both 400k-decision pilots stalled at the 1–3 m start band. The [M6 tuning campaign](M6_tune_report.md) (November 19, post-hoc) changed only the learner side: fixed feature scaling, 0.5 s decisions, 2 × 256 networks and a set-point action head. From-scratch PPO then finished 450/500 test episodes at 10M decisions on 10 seeds, with 9/10 seeds perfect. SAC finished 183/250 test episodes at 10M decisions on 5 seeds, with 4/5 passing. **M7** (November 20, post-hoc) narrows U to a ±10 m channel, which needs a second tack. Unchanged, the M6 recipe fails with PPO (0/10) and learns with SAC on 4/10 seeds. A width curriculum that starts in open-water U makes PPO as consistent as M6. At 40M decisions, 9/10 seeds are perfect on validation and test (180/200, 450/500, shift 134/200) ([M7 report](M7_channel_report.md)). **M8** (November 20–25, post-hoc) trains one general leg follower: any bearing, length and corridor, with leg-relative inputs. A tuned PPO recipe (sailing-angle inputs, more beats, low-lr fine-tunes) reaches 556/600 validation and is general on 9/10 seeds on validation and shift. SAC with 1 s held actions, 2 × 512 networks and a distance input capped after 40M is general on 6/10 seeds on every split. On a fresh held-out set frozen after all tuning, PPO is general on 9/10 seeds and SAC on 6/10, matching M7 ([M8 report](M8_report.md)).. BPTT-WM moves to after Dec 3. Final presentation/packaging remains MLast. PPO/SAC retain the common 1M-decision main budget; prior unequal pilot resources and MPC's exact-model privilege remain explicit.
 **Working question:** In a fast physics-based sailing simulator, how do on-policy learning, off-policy learning, and decision-time planning trade off task success, experience, computation, and robustness?
 
 The main comparison is **from-scratch PPO versus from-scratch SAC versus true-model CEM-MPC**, with the existing RuleSailor as an engineering reference. SailGym is the sole environment. **BPTT through a learned world model is future work after the Dec 3 presentation** (amended 2026-11-14; reasons in [M4X](#m4x--explain-the-upwind-failures-let-learning-shorten-planning--812-h)).
@@ -771,7 +771,121 @@ At 10M decisions, 9/10 seeds finished every held-out episode: 180/200 validation
 
 - **Wider wind-direction range.** Train with the bearing drawn from ±20° instead of ±5°. This is a training-condition change only. It targets the one known weakness of the M6 policies: with the wind backed 15°, the nine converged PPO policies finish 26/72 stress episodes, because every policy sails the same side first.
 - **Changing wind as a contest.** The M6 policies already survive the default gust field (449/450), so survival is not the question. The question is whether a policy trained in gusts uses the shifts, for example by tacking on headers, to beat the current policy on the same wind. Score paired wins on identical realizations, as Suda and Nikovski (2022) did against MPC. Prerequisite: every episode currently gets the same gust realization because the scenario seed is fixed, so per-episode seeds must come first.
-- **Multi-leg courses.** `courses/windward_leeward.json` and `courses/triangle.json` already exist, and the Rust course layer tracks marks and rounding sides. `sailing.Task` handles one gate only. A multi-leg variant needs the current mark as the target feature and shaping per leg. The downwind gybe adds a capsize risk.
+- **Multi-leg courses.** Now covered by M8's chained-route evaluation (below). `courses/windward_leeward.json` and `courses/triangle.json` already exist, and the Rust course layer tracks marks and rounding sides. `sailing.Task` handles one gate only, so M8 uses a leg-frame wrapper instead. The downwind gybe adds a capsize risk.
+
+### M8 · General leg follower: any waypoint, any wind, inside a corridor · planning draft
+
+Added 2026-11-20, after M7. Not started. Every row will be post-hoc and labeled exploratory, and none merges into an earlier table. No task, reward, manifest or earlier freeze changes, and new code goes in new files only. **Start gate:** user approval, with MLast's Dec 3 deliverables on track first. M8 is the shared first rung of two longer tracks:
+
+- *Navigation*: a controller that a waypoint planner (a ROS 2 / Nav2-style stack) can drive; then station keeping, obstacles via the planner's costmaps, and longer voyages.
+- *Racing*: the inner loop of an Olympic-style course racer; then wind-shift tactics, starts and, only with live multi-boat physics, fleets.
+
+**Question.** Can one from-scratch policy sail *any* leg well enough that chaining legs completes standard courses and long channels without per-course training? A leg means any bearing to the wind, any length, with or without a corridor, from rest or under way.
+
+**Evidence that motivates M8.**
+
+| Observation | Source |
+|---|---|
+| M7 policies memorize a route keyed to the gate offset. Zero-shot at an 80 m gate in the ±10 m channel they finish 36/500, and 0/500 at 120 and 160 m | [M7 report](M7_channel_report.md), "Longer channels" |
+| The same policies, fed a virtual gate every 40 m, finish 322/500 at 80 m and 210/500 at 160 m; seeds 1 and 8 finish 46/50 with 8 tacks. Legs compose, but later legs start under way, which training never showed | same |
+| M7 walls are unobserved, so a policy can only infer them from x and cannot transfer across widths | M7 report |
+| RuleSailor is already a hand-built general leg follower (beat / fetch / tack / gybe on any route), and the Rust guidance sensor exposes bearing and distance to the current mark and cross-track error | `crates/sailgym-agent/src/pilot/rule_sailor.rs`, `sensor/guidance.rs` |
+| Published sailing RL trains single targets (Bink; Suda & Nikovski). The notes contain no learned controller that is general across legs | `research_notes/RL methods for sparse upwind sailing/sailing_prior_work.md` |
+
+**Task family: the leg frame.** Every training leg runs along +y from (0, 0) to a 5 m-half-width gate at (0, D). The leg's bearing to the wind is set by rotating the **wind**, not the course. Flat water and a uniform wind are rotation-invariant, so this covers every bearing while keeping the Rust bounds axis-aligned. The bounds' x half-width is then the corridor. Per episode, drawn by a training generator frozen with the manifests:
+
+- true wind direction relative to the leg, uniform over 360°;
+- wind speed 4.5–5.5 m/s, as U;
+- D uniform in [20, 150] m;
+- corridor half-width W ∈ {∞ (U's box), 30, 15, 10} m;
+- start: 25% at rest heading across the leg (as U), 75% under way with heading uniform over 360° and speed uniform in [0, 1.5] m/s (the scenario's `initial_state` already carries speed and heading).
+
+Gusts with a per-episode seed are a later factor, not part of the first freeze. The reward has U's form (−Δt/30, ±10 terminal, Φ = −d/30, γ = 0.99975 per 20 Hz decision). The time limit is 30 s + 3 s/m × D, rounded to whole decisions. Leaving the corridor is the existing out-of-bounds failure.
+
+**Observations: leg-relative only.**
+- distance along the leg to the gate and signed cross-track offset;
+- distances to both corridor edges, clipped at 50 m, with W = ∞ reading as 50;
+- heading and true wind relative to the leg;
+- the existing body-frame velocities, rates, heel, boom, rudder and sheet state.
+
+There is no absolute position. At evaluation on a real route, the same transform runs on the current leg (the Rust route tracker's leg index), so the policy's contract is "sail the current leg", the interface a waypoint planner drives.
+
+**Learner.** Start from M7's best PPO recipe: fixed scaling, 0.5 s decisions, target head, open-water first, then a corridor curriculum with back-off, now on W rather than a fixed channel. Reaching legs are easy and give early finishing signal, so the bearing range is not curriculum-shaped. SAC runs the M6 configuration with no curriculum, since its curricula collapsed in M7. Network width is chosen by the capacity pilots below, not assumed.
+
+**Capacity pilots: is the network big enough?** M6 found that 2 × 64 learns U on only about half the seeds and 2 × 256 on 9/10. That shows width matters for *learning*, but not whether 64 units could *represent* a tacking policy. A small net can fail through optimization or exploration as well as capacity. M8's policy covers far more situations than U's, so three pilots, on pilot seeds 100–102 and the training-distribution panel only, separate those causes before the freeze:
+
+| Pilot | Runs | What it measures |
+|---|---|---|
+| **P1 width sweep** | PPO generalist at 2 × 128, 2 × 256, 2 × 512 and 3 × 256 hidden units, 10M decisions each, 3 seeds | The learning curve and per-bin panel finish rate against width. If gains stop between two widths, the smaller one is not width-limited at this budget |
+| **P2 specialist vs generalist** | At each P1 width, specialists trained on one bearing bin only: upwind, reach or downwind, at W = ∞ and 10 m | Interference: if the generalist matches each specialist on that specialist's bin, the net holds all the skills at once. If it falls short at one width but not at a wider one, capacity is binding |
+| **P3 representational probe (diagnostic only)** | DAgger-distill RuleSailor, and the planner on a validation subset, into students of each width; closed-loop student/teacher finish and time ratios | Whether a net of that width can represent a general leg follower at all, independent of RL exploration. It uses an expert, so its students are never reported as M8 learners and never seed them |
+
+**Width decision rule, written into the freeze.** Take the smallest width whose P1 generalist is within 5 percentage points of panel finishes, and within 5% of mean finish time, of both:
+- the next wider width;
+- the P2 specialists on every bin.
+
+If no width qualifies, use the widest and report M8 as capacity-limited. If P3 students match their teacher at a width where RL does not, the RL gap is exploration or optimization, not capacity; the report says so.
+
+**Evaluation sets, generated and frozen before any pilot.**
+
+- *Single legs* (validation 60, test 150, shift 60): stratified over bearing to the wind (dead upwind, close-hauled, reach, broad reach, run), D ∈ {30, 80, 150} m, W ∈ {∞, 15, 10} m and start state. Shift uses wind 4 or 6 m/s and starts outside the training ranges.
+- *Chained routes* (test only), sailed by the leg-frame wrapper with the course layer's real geometry:
+  - `windward_leeward`, `triangle`;
+  - the 80 m and 160 m ±10 m channels from M7;
+  - three frozen random 5-leg routes.
+- *References*: RuleSailor on every set; the planner (H160_K32) on validation single legs and the two standard courses.
+
+**Threshold and readings declared before results.** A seed is **general** if its panel-selected checkpoint finishes ≥ 90% of validation single legs overall and ≥ 70% in every bearing × corridor bin. M8 meets its bar if ≥ 8/10 PPO seeds are general, at M6/M7 consistency. Also reported:
+- finish time against RuleSailor and the planner;
+- boards, tacks and gybes, counted as x-reversals as well as by the classifier;
+- capsizes, corridor exits and cross-track error;
+- query latency.
+
+| Observation | Reading |
+|---|---|
+| Single legs general, chained routes pass | The leg-follower contract works; navigation and racing build on it |
+| Single legs general, chained routes fail at transitions | Under-way starts are under-trained; add route episodes with 2–4 legs |
+| W = ∞ legs pass, W = 10 fail | The corridor is the bottleneck, as in M7; tune the W curriculum and back-off |
+| Downwind bins fail (gybes, capsize) | A boat-handling problem separate from tacking; report it per bin |
+| P1/P2 show a width effect | Capacity-bound at the smaller width; the frozen rule picks the width |
+| Slower than RuleSailor on a bin | Reported per bin; no superiority claim |
+
+- [x] Start gate: user approval (November 20, 05:14); MLast on track.
+- [x] New files: leg-frame scenario builder (rotated wind, corridor bounds, under-way starts), leg-relative features, and the chained-route wrapper. Unit tests:
+  - at β = 0, D = 40 m, W = ∞, at rest, the builder reproduces U's `TaskEnv` rewards and outcomes;
+  - features are invariant when course and wind rotate together;
+  - a one-leg route through the wrapper equals the single-leg episode;
+  - stored episodes replay exactly.
+- [x] Generate and freeze the manifests, the training generator seed and the chained-route list before any pilot.
+- [x] No-learning feasibility: RuleSailor on all validation legs; the planner on a subset (planner skipped; M7's ±10 m planner and relay evidence used instead). Flag or drop infeasible bins (for example, dead-downwind gybes in a 10 m corridor) before the freeze, recorded.
+- [x] Pilots P1–P2 on seeds 100–102, panel only (P3 cut).
+- [x] Write `configs/M8_freeze.json`: generator, manifest hashes, chosen width and why, curriculum, budgets (PPO 40M, SAC 10M), main seeds 0–9 per learner, selection rule, thresholds, readings and source hashes. Write it **before** any main run.
+- [x] Main runs; retain failed runs.
+- [x] Held-out freeze; test and shift single legs, chained routes, replay audit and diagnostics.
+- [x] `M8_report.md`, results JSON and handoff `docs/handoffs/ese3990-m8.md`.
+
+**Result (November 20, 05:14–09:44 and a 4 h extension to 13:37; continued November 24 to 25, exploratory).** The goal was M7's consistency (PPO 9/10, SAC 4/10) under the general rule. **Both learners meet it on a pre-registered fresh held-out set, frozen after all tuning and scored once: PPO f9 general on 9/10 seeds (1425/1500), SAC two-stage on 6/10 (1370/1500).** An earlier fresh set had shown PPO f8 at only 6/10; f9 fixed its weak cell, running dead downwind in a 10 m corridor, and was checked on a second fresh set.
+- *Pilots.* The open-water-first curriculum stalled all 21 runs, so every width is trained from the start. Width 2 × 256 by the frozen rule.
+- *Frozen configuration.* PPO at 40M learns everything except the dead-upwind beat (2/10 seeds beat; 291/600). SAC is the same on 5/5 seeds (202/300).
+- *What worked for PPO.*
+  - The true wind angle and the bearing to the gate as inputs, plus twice the beats: lift-off on 8–10/10 seeds, the beat on 9/10.
+  - Low-lr (1e-5) fine-tunes with 10 m corridors at a 0.25 share.
+- *Best PPO arm.* The recipe from scratch (`f1`, 100M, annealed lr) plus four +10M fine-tunes (`f5`, 140M): **556/600 validation, 1398/1500 test, 563/600 shift; general 9/10 on validation and shift, 7/10 on test**. A continuation chain (`i10`) also reaches 9/10 on validation. In both chains, one more step gives 8/10 on validation and 9/10 on shift; the last arm (f8, 158M) is again 9/10 on validation. The non-general seed never learns the beat. Continuations were steered while reading held-out results, so the counts are optimistic.
+- *SAC.* Two learner-side changes close the gap:
+  - 1 s held actions plus 2 × 512 networks, so SAC beats everywhere except the 150 m corridor legs, where it hovered near the start;
+  - capping the distance input at 70 m (`--dy-clip 70`), so a 150 m leg looks like the 80 m legs it already sails.
+
+  Run as one two-stage recipe on seeds 0–9 (40M uncapped, then +10M capped), SAC is **general on 6/10 seeds on validation, test and shift, against M7's 4/10** (555/600, 1370/1500, 543/600). Five of the six are selected at the start of the capped stage. Trained with the cap from scratch, SAC is 0/5.
+- *Routes.* With no route training, the leg-frame wrapper sails standard courses and the M7 channels.
+- *Replay.* All held-out episodes replay exactly.
+
+[Report](M8_report.md) · [Results](M8_results.json) · [Run record](../handoffs/ese3990-m8.md)
+
+**Cost estimate.** About a day to build the leg-frame task, wrapper and tests. Pilots take about 1.5 h of CPU. Main runs take about 1 h for PPO (10 × 40M) and about 1.5 h for SAC on the GPU. **Cut order:** SAC main runs, then P3, then shift, then the random routes.
+
+**Later rungs, not planned here.**
+- *Navigation*: station keeping (hold inside a box for N minutes); a ROS 2 node that takes waypoints and publishes rudder and sheet commands against the simulator; then sensor noise (the field exists at 0), currents and waves, which are deferred in v2. A Microtransat-scale voyage needs a different boat model and is outside this simulator's validity.
+- *Racing*: paired races under per-episode gust seeds against RuleSailor or a ghost; then a timed start line; fleets only if live multi-boat physics is built.
 
 ### MLast · Freeze, explain and present · 7–10 h
 

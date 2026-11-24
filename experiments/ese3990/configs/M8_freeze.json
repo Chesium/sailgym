@@ -1,0 +1,51 @@
+{
+ "label": "M8 general leg follower (post-hoc, exploratory). Written before any main run.",
+ "written": "2026-11-20 05:57 +08, before any main run",
+ "manifest": {
+  "path": "experiments/ese3990/configs/M8_legs.json",
+  "sha256": "dce08314553e6ff78e222e3124d6ccaee99d2d6991b8abf91e5a5be4bd0e3984"
+ },
+ "training_generator_seed": 8004,
+ "main_seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9
+ ],
+ "width": {
+  "choice": "2 x 256",
+  "rule": "smallest width within 5 pp of panel finishes of the next wider width and of the P2 specialists on every bin (10M, seeds 100-102, final checkpoints)",
+  "evidence": "runs/ese3990/M8/width_rule.json: panel finish fraction 2x128 0.27 (per seed 0, 23, 9), 2x256 0.53 (19, 22, 23), 2x512 0.17 (20, 0, 0), 3x256 0.03 (0, 0, 3); specialists on their own bins: up+close 0.17, reach 0.29, broad+run 0.75 vs the 2x256 generalist 0.27/0.46/0.83 on the same legs. Only 2x256 passes. The 5% finish-time leg is not applied: mean finish time is over different finished subsets (2x512 has one learning seed). Wider and deeper nets fail by not lifting off on 2/3 seeds, not by a capacity ceiling; P3 cut."
+ },
+ "curriculum": {
+  "choice": "none: every training width {open, 30, 15, 10} from the start",
+  "evidence": "the planned open-water-first curriculum (M7 recipe) left all 21 pilot runs at stage 0 with 0-3/40 at 4-6M while the no-curriculum 2x256 arm reached 14-24/40 (handoff log 05:39)"
+ },
+ "ppo": {
+  "command": "m8_leg.py train m8_ppo --seed S --hidden 256 --decisions 40e6",
+  "defaults": "fixed scaling (MEAN8/STD8, clip 10), target head, 0.5 s decisions (repeat 10), ent 0.001, log_std0 -0.5, lr 3e-4, 16 envs x 256 policy steps, 4 epochs, minibatch 512, lambda 0.95",
+  "budget_decisions": 40000000
+ },
+ "sac": {
+  "command": "m8_leg.py train m8_sac --seed S --learner sac --hidden 256 --decisions 10e6",
+  "defaults": "M6 configuration: target head, repeat 10, replay 400k, UTD 1, warmup 5000, target entropy -2, alpha0 0.2, batch 256, tau 0.005; no curriculum",
+  "budget_decisions": 10000000
+ },
+ "tuning": "post-hoc learner-side iterations, if a main arm misses the session goal, are run on pilot seeds 100-102 first and then on seeds 0-9 as new named arms; main runs are retained unchanged",
+ "selection": "the checkpoint with most finishes on the 40-leg stratified panel; ties go to the later checkpoint",
+ "general": ">= 90% of validation single legs overall and >= 70% (3/4) in every bearing x corridor cell (5 x 3)",
+ "bar": ">= 8/10 PPO seeds general (plan); the session goal is M7 consistency: PPO >= 9/10 and SAC >= 4/10 seeds passing",
+ "source_sha256": {
+  "m8_leg.py": "2e11579dc07053ab00cd8cc58b89b07e1a6e4fa80704d424a3c217614b349732",
+  "m6_tune.py": "3db6cea859680fbf9203e499e12dcbaea200c69f20e3ed597ff8c54b1e813a51",
+  "ppo.py": "b383dc76fd3c280e04d3588c9cb8fe27839ed1b7dbea0f0c7a723e9417a093f2",
+  "sac.py": "470dddb9a70b836a6d04f8b620dfeae9175297e6b1c1dd96ba7adf2f43712447",
+  "sailing.py": "1a7af82a9caafb1af8c6adce924e2aea2c9834f252cd298a531f40ebc3820736"
+ }
+}
